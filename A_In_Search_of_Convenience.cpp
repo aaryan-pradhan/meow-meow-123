@@ -1,0 +1,58 @@
+// orz
+#include <bits/stdc++.h>
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout << "YES" << endl
+#define pn cout << "NO" << endl
+#define pll pair<ll,ll>
+
+using namespace std;
+
+void solve() 
+{
+    ll x0 , y0 , R ; 
+    cin >> x0 >> y0 >> R ; 
+    R *= R ; 
+    for(ll i = -50 ; i <= 50; i++)
+    {
+        for(ll j = -50 ; j<=50 ; j++)
+        {
+            if(((x0 - i) * (x0 - i ) + (y0 - j)*(y0- j)) == R)
+            {
+                cout << i << " " << " " << j << endl ; 
+                return ; 
+            }
+        }
+    }
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    ll t; 
+    cin >> t ; 
+    while(t--)
+    {
+        solve() ; 
+    }
+}
+    
+  
