@@ -59,27 +59,44 @@
     <div class="family-head"><h2>1 &middot; Topological order</h2></div>
     <p class="family-note">DAGs: order vertices so edges point forward, then process in that order.</p>
     <article class="entry" id="course-schedule">
-      <div class="entry-head"><h3>Course Schedule</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Course Schedule</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Order <code>n</code> courses so every prerequisite comes first, or report IMPOSSIBLE.</div>
+        <div class="ask">
+<p><b>Question.</b> You must complete \(n\) courses. There are \(m\) requirements "course \(a\) must be
+completed before course \(b\)". Print an order that respects all requirements, or
+<code>IMPOSSIBLE</code> if none exists.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>An order of all \(n\) courses, or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 5\), requirements \((1,2)(3,1)(4,5)\) → <code>3 4 1 5 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Draw an edge \(a \to b\) for each requirement. We need an order \(\pi\) of the courses with</span>
+\[ \pi(a) \lt \pi(b) \quad \text{for every edge } a \to b \]</li>
+<li><span class="why">Such an order exists iff the graph has no directed cycle. (On a cycle, every course would have to come before itself.)</span></li>
+<li><span class="why">A course with no unmet requirement (in-degree \(0\)) can always go next. Removing it may free others.</span></li>
+<li><span class="why">Simplest form (Kahn): put all in-degree-\(0\) courses in a queue; pop one, print it, lower its children's in-degrees, and queue any that reach \(0\). If fewer than \(n\) are printed, there is a cycle.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A valid order exists iff the prerequisite graph is a DAG.</li>
-          <li>A vertex with in-degree 0 can always go next.</li>
-          <li>If the queue empties early, the remaining vertices all sit on or behind a cycle.</li>
-        </ol>
+<li>A valid order exists iff the requirement graph has no directed cycle.</li>
+<li>A course with in-degree \(0\) can always go next.</li>
+<li>If the queue empties early, every remaining course lies on or behind a cycle.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try permutations.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n! · m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Kahn's algorithm: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every order.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n! \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Kahn's algorithm: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -182,32 +199,79 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    indeg = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        indeg[b] += 1
+    q = deque()
+    for i in range(1, n + 1):
+        if indeg[i] == 0:
+            q.append(i)
+    topo = []
+    while q:
+        node = q.popleft()
+        topo.append(node)
+        for child in g[node]:
+            indeg[child] -= 1
+            if indeg[child] == 0:
+                q.append(child)
+    if len(topo) != n:
+        print("IMPOSSIBLE")
+        return
+    else:
+        print(' '.join(map(str, topo)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Any valid order is accepted; the output depends on queue order and need not match the sample.</div>
       <div class="callout trigger"><strong>Recognize</strong>"order tasks with prerequisites / detect dependency cycle" &rarr; Kahn's topological sort.</div>
     </article>
     <article class="entry" id="game-routes">
-      <div class="entry-head"><h3>Game Routes</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Game Routes</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count paths from level 1 to level n in a DAG, mod 10⁹+7.</div>
+        <div class="ask">
+<p><b>Question.</b> A game has \(n\) levels and \(m\) one-way teleporters, with no directed cycles. In
+how many ways can you get from level \(1\) to level \(n\)? Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of routes \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>teleporters \((1,2)(2,4)(1,3)(3,4)(1,4)\) → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(P(v)\) be the number of routes from \(v\) to \(n\). A route from \(v\) starts with one teleporter \(v \to u\), then any route from \(u\):</span>
+\[ P(n) = 1, \qquad P(v) = \sum_{v \to u} P(u) \]</li>
+<li><span class="why">\(P(v)\) needs its children first. With no cycles, a topological order exists; process vertices in reverse of it.</span></li>
+<li><span class="why">Simplest form: answer \(P(1) \bmod (10^9 + 7)\). Levels that cannot reach \(n\) get \(0\) automatically.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Paths from <code>v</code> = sum over first edge of paths from the child.</li>
-          <li>Children must be finished first &rArr; process vertices in reverse topological order.</li>
-          <li>Vertices that cannot reach n naturally get 0.</li>
-        </ol>
+<li>Routes from \(v\) = sum over the first teleporter of the routes from where it lands.</li>
+<li>Children must be finished first, so process levels in reverse topological order.</li>
+<li>Levels that cannot reach \(n\) get \(0\) with no special case.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DFS enumerating paths.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>; path count is exponential.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">DP over topological order: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DFS that lists every route.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">The number of routes can be exponential in \(n\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">DP over a topological order: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -333,32 +397,94 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+g = []
+
+# def rec(node):
+#     ...
+
+def madd(a, b):
+    return (a % MOD + b % MOD) % MOD
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]          # local g shadows the global one, same as the C++
+    indeg = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        indeg[b] += 1
+    q = deque()
+    for i in range(1, n + 1):
+        if indeg[i] == 0:
+            q.append(i)
+    topo = []
+    while q:
+        v = q.popleft()
+        topo.append(v)
+        for u in g[v]:
+            indeg[u] -= 1
+            if indeg[u] == 0:
+                q.append(u)
+    dp = [0] * (n + 1)
+    topo.reverse()
+    for node in topo:
+        if node == n:
+            dp[node] = 1
+            continue
+        ans = 0
+        for child in g[node]:
+            ans = madd(ans, dp[child])
+        dp[node] = ans
+    print(dp[1])
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Recursive memo DFS is correct but can hit 10⁵ depth; the topo loop avoids recursion entirely.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Recursive memo DFS is correct but can hit \(10^{5}\) depth; the topo loop avoids recursion entirely.</div>
       <div class="callout trigger"><strong>Recognize</strong>"count paths in a DAG" &rarr; DP in reverse topological order.</div>
     </article>
     <article class="entry" id="longest-flight-route">
-      <div class="entry-head"><h3>Longest Flight Route</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Longest Flight Route</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Longest path (most cities) from 1 to n in a DAG, with the route; or IMPOSSIBLE.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights, with no directed cycles. Fly from
+city \(1\) to city \(n\) visiting as many cities as possible. Print that number and the route, or
+<code>IMPOSSIBLE</code> if city \(n\) cannot be reached.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of cities \(k\), then the route; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>flights \((1,2)(2,5)(1,3)(3,4)(4,5)\) → <code>4</code>, <code>1 3 4 5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(L(v)\) be the most cities on a route from \(v\) to \(n\), with \(L(v) = 0\) meaning "cannot reach \(n\)":</span>
+\[ L(n) = 1, \qquad L(v) = 1 + \max_{\substack{v \to u \\ L(u) \gt 0}} L(u) \quad (\text{or } 0 \text{ if no such } u) \]</li>
+<li><span class="why">With no cycles, process cities in reverse topological order, the same shape as Game Routes with \(\max\) instead of \(\sum\).</span></li>
+<li><span class="why">Simplest form: if \(L(1) = 0\), print <code>IMPOSSIBLE</code>. Otherwise rebuild the route: from \(v\), step to any child with \(L(u) = L(v) - 1\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Longest path is easy on a DAG: same shape as path counting with <code>max</code>.</li>
-          <li><code>dp = 0</code> must mean "cannot reach n", so dead ends are skipped, not counted as length 1.</li>
-          <li>Rebuild by following any child with <code>dp[child] = dp[v] &minus; 1</code>.</li>
-        </ol>
+<li>Longest path is easy on a graph without cycles: the same shape as route counting, with <code>max</code>.</li>
+<li>\(L = 0\) must mean "cannot reach \(n\)", so dead ends are skipped, not counted as length \(1\).</li>
+<li>Rebuild by following any child with \(L(u) = L(v) - 1\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DFS all paths.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>; longest path is NP-hard in general graphs.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">DAG &rArr; DP over reverse topo: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DFS over all routes.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\). In general graphs, longest path is NP-hard.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">No cycles, so DP over reverse topological order: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -369,7 +495,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>if (r != 0)</code> filters children that cannot reach n. The walk from 1 always finds a child with <code>dp[node] &minus; 1</code> because <code>dp[1] &gt; 0</code>.</p>
+        <p class="impl-note"><code>if (r != 0)</code> filters children that cannot reach n. The walk from 1 always finds a child with \(\text{dp}[\text{node}] - 1\) because <code>dp[1] &gt; 0</code>.</p>
         <div class="src-meta"><span class="path">graphs/Longest_Flight_Route.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -522,6 +648,64 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+# n, m = 0, 0
+# g = []
+# dp = []
+# def rec(node):
+#     ...
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    dp = [-1] * (n + 1)
+    topo = []
+    indeg = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        indeg[b] += 1
+    q = deque()
+    for i in range(1, n + 1):
+        if indeg[i] == 0:
+            q.append(i)
+    while q:
+        node = q.popleft()
+        topo.append(node)
+        for child in g[node]:
+            indeg[child] -= 1
+            if indeg[child] == 0:
+                q.append(child)
+    topo.reverse()
+    for node in topo:
+        if node == n:
+            dp[node] = 1
+        else:
+            ans = 0
+            for child in g[node]:
+                r = dp[child]
+                if r != 0:
+                    ans = max(ans, r + 1)
+            dp[node] = ans
+    if dp[1] == 0:
+        print("IMPOSSIBLE")
+        return
+    print(dp[1])
+    path = []
+    node = 1
+    while node != n:
+        path.append(node)
+        for child in g[node]:
+            if dp[child] == dp[node] - 1:
+                node = child
+                break
+    path.append(n)
+    print(' '.join(map(str, path)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Treating unreachable children as 0 and taking <code>max(0 + 1)</code> makes dead ends look like valid routes.</div>
       <div class="callout trigger"><strong>Recognize</strong>"longest path / most stops in a DAG" &rarr; reverse-topo DP with an unreachable sentinel.</div>
@@ -532,27 +716,43 @@ signed main()
     <div class="family-head"><h2>2 &middot; Strong connectivity</h2></div>
     <p class="family-note">Reachability in both directions, via the reversed graph.</p>
     <article class="entry" id="flight-routes-check">
-      <div class="entry-head"><h3>Flight Routes Check</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Flight Routes Check</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Can every city reach every other? If not, print a pair <code>a b</code> with no route a &rarr; b.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights. Can you travel from every city to
+every other city? If not, print two cities \(a, b\) such that \(b\) cannot be reached from \(a\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd><code>YES</code>, or <code>NO</code> followed by a pair \(a\ b\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>flights \((1,2)(2,3)(3,1)(1,4)(3,4)\) → <code>NO</code>, <code>4 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Write \(u \leadsto v\) for "\(v\) can be reached from \(u\)". Every pair works iff everything goes through city \(1\):</span>
+\[ \big(\forall u, v : u \leadsto v\big) \iff \big(\forall v : 1 \leadsto v \ \text{ and } \ v \leadsto 1\big) \]
+<span class="why">(\(\Leftarrow\): \(u \leadsto 1 \leadsto v\).)</span></li>
+<li><span class="why">"\(v \leadsto 1\) in \(G\)" is the same as "\(1 \leadsto v\) in the reversed graph" (every flight turned around).</span></li>
+<li><span class="why">Simplest form: BFS from \(1\) in \(G\) and in reversed \(G\). If \(v\) is missed in \(G\), print \(1\ v\); if missed in reversed \(G\), print \(v\ 1\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>All pairs reachable &hArr; 1 reaches everyone and everyone reaches 1.</li>
-          <li>"Everyone reaches 1" is BFS from 1 on the reversed graph.</li>
-          <li>An unreached <code>i</code> gives the witness directly: <code>1 i</code> or <code>i 1</code>.</li>
-        </ol>
+<li>Every pair is reachable iff \(1\) reaches everyone and everyone reaches \(1\).</li>
+<li>"Everyone reaches \(1\)" is a BFS from \(1\) on the reversed graph.</li>
+<li>A missed city \(i\) gives the answer pair directly: <code>1 i</code> or <code>i 1</code>.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">BFS from every vertex.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·(n+m))</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Two BFS: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">BFS from every city.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Two BFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1031,32 +1231,95 @@ This is guaranteed to find some failing pair whenever the graph isn't strongly c
 R and 
 𝐵
 B were "everything," the claim proves the graph would be strongly connected, contradiction. So at least one of the two BFS passes must miss a node whenever the answer is NO.*/</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    rg = [[] for _ in range(n + 1)]
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        rg[b].append(a)
+    q = deque()
+    vis = [False] * (n + 1)
+    q.append(1)
+    vis[1] = True
+    while q:
+        node = q.popleft()
+        for child in g[node]:
+            if not vis[child]:
+                vis[child] = True
+                q.append(child)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            print("NO")
+            print(1, i)
+            return
+    rvis = [False] * (n + 1)
+    rq = deque()
+    rq.append(1)
+    rvis[1] = True
+    while rq:
+        node = rq.popleft()
+        for child in rg[node]:
+            if not rvis[child]:
+                rvis[child] = True
+                rq.append(child)
+    for i in range(1, n + 1):
+        if not rvis[i]:
+            print("NO")
+            print(i, 1)
+            return
+    print("YES")
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The witness order matters: unreached in <code>g</code> &rArr; print <code>1 i</code>; unreached in <code>rg</code> &rArr; print <code>i 1</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"can every node reach every other in a directed graph" &rarr; BFS from one vertex on G and reversed G.</div>
     </article>
     <article class="entry" id="planets-and-kingdoms">
-      <div class="entry-head"><h3>Planets and Kingdoms</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Planets and Kingdoms</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Label strongly connected components.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) planets and \(m\) one-way teleporters. Two planets are in the same
+kingdom exactly when each can be reached from the other. Print the number of kingdoms \(k\) and a
+kingdom label (\(1..k\)) for every planet.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>\(k\), then \(n\) labels. Any valid labelling is accepted.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>teleporters \((1,2)(2,3)(3,1)(3,4)(4,5)(5,4)\) → <code>2</code>, <code>1 1 1 2 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: kingdoms are the classes of the relation</span>
+\[ a \sim b \iff a \leadsto b \ \text{ and } \ b \leadsto a \]
+<span class="why">These are the strongly connected components (SCCs).</span></li>
+<li><span class="why">Shrink each SCC to one node. The result has no cycles. Run DFS on \(G\) and record finish times. The planet that finishes last lies in an SCC with no incoming edges from other SCCs.</span></li>
+<li><span class="why">In the reversed graph that same SCC has no <em>outgoing</em> edges. So a DFS from it in reversed \(G\) visits exactly that SCC.</span></li>
+<li><span class="why">Simplest form (Kosaraju): pass 1 records finish order on \(G\); pass 2 runs DFS on reversed \(G\) in decreasing finish order, and each new start is a new kingdom.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The vertex that finishes last in DFS on G lies in a source component of the condensation.</li>
-          <li>In reverse(G), that component is a sink: DFS from it cannot leak out.</li>
-          <li>Repeat in decreasing finish order; each launch is one SCC.</li>
-        </ol>
+<li>The planet that finishes last in a DFS on \(G\) lies in a source SCC of the shrunk graph.</li>
+<li>In reversed \(G\), that SCC is a sink, so a DFS from it cannot leak out.</li>
+<li>Repeat in decreasing finish order; each new DFS start is one SCC.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Reachability both ways for every pair.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·(n+m))</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Kosaraju: two DFS passes, <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Check reachability both ways for every pair.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Kosaraju, two DFS passes: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1178,32 +1441,100 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+n, m = 0, 0
+g = []
+rg = []
+vis = []
+order = []
+
+def dfsg(node):
+    vis[node] = 1
+    for child in g[node]:
+        if not vis[child]:
+            dfsg(child)
+    order.append(node)
+
+def dfsrg(node, col):
+    vis[node] = col
+    for child in rg[node]:
+        if not vis[child]:
+            dfsrg(child, col)
+
+def solve():
+    global n, m, g, rg, vis
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    rg = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)                     # vis.assign(n+1, 0)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        rg[b].append(a)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfsg(i)
+    vis[:] = [0] * (n + 1)                  # assign again IN PLACE so the dfs functions see it
+    col = 0
+    while order:
+        node = order.pop()                  # back() + pop_back() in one call
+        if not vis[node]:
+            col += 1
+            dfsrg(node, col)
+    print(col)
+    print(' '.join(str(vis[i]) for i in range(1, n + 1)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The second pass must use the reversed graph. On G itself, DFS from a source component floods into everything downstream.</div>
       <div class="callout trigger"><strong>Recognize</strong>"groups where everyone reaches everyone" &rarr; SCC (Kosaraju).</div>
     </article>
     <article class="entry" id="giant-pizza">
-      <div class="entry-head"><h3>Giant Pizza</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Giant Pizza</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Each member wants at least one of two topping choices. Pick toppings to satisfy everyone, or IMPOSSIBLE.<div class="formal">2-SAT: ∧ (ℓ₁ ∨ ℓ₂)</div></div>
+        <div class="ask">
+<p><b>Question.</b> \(n\) family members are ordering a pizza with \(m\) possible toppings. Each member
+makes two wishes, each of the form "topping \(x\) on" (<code>+ x</code>) or "topping \(x\) off"
+(<code>- x</code>). Every member needs at least one of their two wishes to come true. Choose the
+toppings, or print <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(n\) lines, each with two wishes like <code>+ 1 - 3</code>.</dd>
+<dt>Output</dt><dd>\(m\) symbols <code>+</code>/<code>-</code> (topping on or off), or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 10^5\)</dd>
+<dt>Sample</dt><dd>wishes \((+1, +2), (-1, +3), (+4, -2)\) → one valid answer is <code>- + + + -</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(x_i\) be true if topping \(i\) is on. Each wish is a literal \(\ell\) (either \(x_i\) or \(\lnot x_i\)). We need</span>
+\[ \bigwedge_{\text{members}} \big( \ell_1 \lor \ell_2 \big) = \text{true} \]
+<span class="why">This is 2-SAT.</span></li>
+<li><span class="why">Each clause is two implications. Draw them as edges on the \(2m\) literals:</span>
+\[ (\ell_1 \lor \ell_2) \iff (\lnot \ell_1 \Rightarrow \ell_2) \land (\lnot \ell_2 \Rightarrow \ell_1) \]</li>
+<li><span class="why">If \(x_i\) and \(\lnot x_i\) are in the same SCC, each forces the other, so no assignment works:</span>
+\[ \text{IMPOSSIBLE} \iff \exists i : \text{comp}(x_i) = \text{comp}(\lnot x_i) \]</li>
+<li><span class="why">Simplest form: otherwise set \(x_i\) true iff \(\text{comp}(x_i)\) comes <em>later</em> in topological order than \(\text{comp}(\lnot x_i)\). Implications then never lead from a true literal to a false one.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>a &or; b</code> is two implications: <code>&not;a &rArr; b</code> and <code>&not;b &rArr; a</code>.</li>
-          <li><code>x</code> and <code>&not;x</code> in one SCC &rArr; each implies the other &rArr; unsatisfiable.</li>
-          <li>Otherwise set each literal whose component comes later in topological order &mdash; implications never lead from true to false.</li>
-        </ol>
+<li>\(a \lor b\) is two implications: \(\lnot a \Rightarrow b\) and \(\lnot b \Rightarrow a\).</li>
+<li>If \(x\) and \(\lnot x\) share an SCC, each implies the other, so the wishes cannot all be met.</li>
+<li>Otherwise set each literal true if its SCC comes later in topological order. Implications never lead from true to false.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try all 2ᵐ topping sets.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ᵐ · n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>m ≤ 10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Implication graph on 2m literals + Kosaraju: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try all \(2^m\) topping choices.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^m \cdot n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(m = 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Implication graph on \(2m\) literals, then Kosaraju: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1214,7 +1545,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>encode</code> maps <code>+x &rarr; 2x&minus;1</code>, <code>&minus;x &rarr; 2x</code>. Kosaraju numbers components in topological order of the condensation (sources first), so <code>colour[+i] &gt; colour[&minus;i]</code> means +i is later &rArr; choose <code>+</code>. Here <code>n</code> is members and <code>m</code> toppings.</p>
+        <p class="impl-note"><code>encode</code> maps \(+x \to 2x-1\), \(-x \to 2x\). Kosaraju numbers components in topological order of the condensation (sources first), so \(\text{colour}[+i] \gt \text{colour}[-i]\) means +i is later &rArr; choose <code>+</code>. Here <code>n</code> is members and <code>m</code> toppings.</p>
         <div class="src-meta"><span class="path">graphs/Giant_Pizza.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -1382,6 +1713,84 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+def encode(a):
+    if a &gt; 0:
+        return 2 * a - 1
+    else:
+        return 2 * abs(a)
+
+def dfs1(node, g, vis, order):              # &amp; params: lists are passed by reference anyway
+    vis[node] = True
+    for child in g[node]:
+        if not vis[child]:
+            dfs1(child, g, vis, order)
+    order.append(node)
+
+def dfs2(node, col, rg, colour):
+    colour[node] = col
+    for child in rg[node]:
+        if not colour[child]:
+            dfs2(child, col, rg, colour)
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(2 * m + 1)]
+    # +1 -&gt; 1
+    # -1 -&gt; 2
+    # +2 -&gt; 3
+    # -2 -&gt; 4
+    # ...
+    # +m -&gt; 2 * m - 1
+    # -m -&gt; 2 * m
+    rg = [[] for _ in range(2 * m + 1)]
+    for i in range(n):
+        t1 = next(tok)                      # char t1; cin &gt;&gt; t1  -&gt; a 1-char string
+        p1 = int(next(tok))
+        t2 = next(tok)
+        p2 = int(next(tok))
+        if t1 == '+':
+            p1 = p1
+        else:
+            p1 = -p1
+        if t2 == '+':
+            p2 = p2
+        else:
+            p2 = -p2
+        # x1 or x2 is the same as
+        # not x1 implies x2 and not x2 implies x1
+        g[encode(-p1)].append(encode(p2))
+        g[encode(-p2)].append(encode(p1))
+        rg[encode(p2)].append(encode(-p1))
+        rg[encode(p1)].append(encode(-p2))
+    order = []
+    vis = [False] * (2 * m + 1)
+    for i in range(1, 2 * m + 1):
+        if not vis[i]:
+            dfs1(i, g, vis, order)
+    colour = [0] * (2 * m + 1)
+    col = 1
+    for i in range(len(order) - 1, -1, -1):
+        node = order[i]
+        if not colour[node]:
+            dfs2(node, col, rg, colour)
+            col += 1
+    for i in range(1, m + 1):
+        if colour[encode(i)] == colour[encode(-i)]:
+            print("IMPOSSIBLE")
+            return
+    ans = []
+    for i in range(1, m + 1):
+        if colour[encode(i)] &gt; colour[encode(-i)]:
+            ans.append('+')
+        else:
+            ans.append('-')
+    print(' '.join(ans))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The comparison direction flips with Tarjan, which numbers SCCs in <em>reverse</em> topological order. Using Tarjan's ids with this <code>&gt;</code> picks the wrong literals.</div>
       <div class="callout trigger"><strong>Recognize</strong>"each constraint: at least one of two boolean choices" &rarr; 2-SAT via SCC.</div>
@@ -1392,27 +1801,45 @@ signed main()
     <div class="family-head"><h2>3 &middot; Union-find</h2></div>
     <p class="family-note">Merge-only connectivity.</p>
     <article class="entry" id="road-construction">
-      <div class="entry-head"><h3>Road Construction</h3><span class="badge num">O(m α(n))</span></div>
+      <div class="entry-head"><h3>Road Construction</h3><span class="badge num">\(O(m \alpha (n))\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Roads are added one by one; after each, print the number of components and the largest component size.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and no roads. Each day one new two-way road is built, \(m\)
+roads in total. After each day, print the number of components (groups of cities connected by
+roads) and the size of the largest component.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>\(m\) lines: the number of components and the largest size.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 5\), roads \((1,2)(1,3)(4,5)\) → <code>4 2</code>, <code>3 3</code>, <code>2 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Start with \(c = n\) components of size \(1\), and \(\text{best} = 1\).</span></li>
+<li><span class="why">A new road \((a, b)\) either joins two different components or lies inside one. Components only ever merge:</span>
+\[ \text{find}(a) \ne \text{find}(b) \;\Rightarrow\; c \leftarrow c - 1, \quad \text{size} \leftarrow \text{size}_a + \text{size}_b \]</li>
+<li><span class="why">The largest size can only change at a merge, to the new merged size:</span>
+\[ \text{best} \leftarrow \max(\text{best},\ \text{size}_a + \text{size}_b) \]</li>
+<li><span class="why">Simplest form: a union–find (DSU) with path compression and union by size. Print \(c\) and \(\text{best}\) after each road.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Components only merge, never split &rArr; union-find.</li>
-          <li>A successful merge lowers the count by one.</li>
-          <li>The max size can only change at a merge, to the new merged size.</li>
-        </ol>
+<li>Components only merge, never split, so union–find fits.</li>
+<li>A successful merge lowers the count by one.</li>
+<li>The largest size can only change at a merge, to the new merged size.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">BFS/DFS after every addition.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(m·(n+m))</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">DSU with path compression + union by size: <span class="cost">≈ O(m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">BFS/DFS after every new road.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(m \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">DSU with path compression and union by size: <span class="cost">\(\approx O(m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1537,32 +1964,101 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+class UnionFind:                            # struct with methods -&gt; class; every method takes self
+    def __init__(self, a=0):                # both constructors: UnionFind() and UnionFind(a)
+        self.n = self.setsz = a
+        self.parent = list(range(a + 1))    # new ll[a+1], parent[i] = i  (no delete needed: GC frees it)
+        self.rank = [1] * (a + 1)
+        self.maxsz = 1 if a else 0
+
+    def find(self, x):
+        if self.parent[x] == x:
+            return x
+        self.parent[x] = self.find(self.parent[x])  # return parent[x] = find(...) is two lines in Python
+        return self.parent[x]
+
+    def merge(self, x, y):
+        x = self.find(x)
+        y = self.find(y)
+        if x == y:
+            return
+        if self.rank[x] &lt; self.rank[y]:
+            x, y = y, x                     # swap(x, y)
+        # this ensures that the larger set is always the parent of the smaller set, which helps to keep the tree flat and improves the efficiency of the union-find operations.
+        self.parent[y] = x
+        self.rank[x] += self.rank[y]
+        self.maxsz = max(self.maxsz, self.rank[x])
+        self.setsz -= 1
+
+    def connected(self, x, y):
+        return self.find(x) == self.find(y)
+
+    def size(self, x):
+        return self.rank[self.find(x)]
+
+    def sets(self):
+        return self.setsz
+
+    def max_size(self):
+        return self.maxsz
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    uf = UnionFind(n)                       # UnionFind uf(n)
+    out = []
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        uf.merge(a, b)
+        out.append(f"{uf.sets()} {uf.max_size()}")
+    print('\n'.join(out))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Printing after an edge inside one component must still output the unchanged pair; the early return handles it.</div>
       <div class="callout trigger"><strong>Recognize</strong>"edges added over time, report connectivity stats after each" &rarr; DSU.</div>
     </article>
     <article class="entry" id="road-reparation">
-      <div class="entry-head"><h3>Road Reparation</h3><span class="badge num">O(m log m)</span></div>
+      <div class="entry-head"><h3>Road Reparation</h3><span class="badge num">\(O(m \log m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Minimum total cost to keep all cities connected (MST), or IMPOSSIBLE.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) broken two-way roads; repairing road \(i\) costs
+\(c_i\). Repair some roads so that every city can reach every other, at minimum total cost. Print the
+cost, or <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd>The minimum total cost, or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5,\ \ 1 \le c \le 10^9\)</dd>
+<dt>Sample</dt><dd>the 6 roads in the file → <code>14</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">The cheapest connecting set of roads has no cycle (dropping a cycle road keeps things connected and costs less), so it is a spanning tree with \(n - 1\) roads. We want the minimum spanning tree (MST):</span>
+\[ \min_{T \text{ spanning tree}} \sum_{e \in T} c_e \]</li>
+<li><span class="why">Cut rule: for any split of the cities into two groups, the cheapest road crossing the split belongs to some MST.</span></li>
+<li><span class="why">Take roads in increasing cost. A road joining two different components is the cheapest road across the split between them, so it is safe to take. A road inside one component would make a cycle, so skip it.</span></li>
+<li><span class="why">Simplest form (Kruskal): sort, take each road whose ends are in different DSU sets. If more than one set is left, print <code>IMPOSSIBLE</code>.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Cheapest edge crossing any cut is safe to take (cut property).</li>
-          <li>Processing edges by cost, an edge joining two different components is such an edge.</li>
-          <li>If more than one component remains, no spanning tree exists.</li>
-        </ol>
+<li>The cheapest road crossing any split of the cities is safe to take (the cut property).</li>
+<li>Processing roads by cost, a road joining two different components is such a road.</li>
+<li>If more than one component remains at the end, no spanning tree exists.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try all subsets of <code>n&minus;1</code> edges.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Kruskal with DSU: <span class="cost">O(m log m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every set of \(n - 1\) roads.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Kruskal with DSU: <span class="cost">\(O(m \log m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1573,7 +2069,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">Edges are sorted by the <code>second</code> field (cost) with a lambda. <code>ans</code> is <code>long long</code>: up to 10⁵ × 10⁹.</p>
+        <p class="impl-note">Edges are sorted by the <code>second</code> field (cost) with a lambda. <code>ans</code> is <code>long long</code>: up to \(10^{5}\) × \(10^{9}\).</p>
         <div class="src-meta"><span class="path">graphs/Road_Reparation.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -1719,6 +2215,68 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)                # find() recurses before path compression flattens it
+tok = iter(sys.stdin.read().split())
+
+class UnionFind:
+    def __init__(self, a=0):
+        self.n = self.setsz = a
+        self.parent = list(range(a + 1))
+        self.rank = [1] * (a + 1)
+        # rank is the size of the set that the node belongs to
+
+    def find(self, x):
+        if x != self.parent[x]:
+            self.parent[x] = self.find(self.parent[x])
+            return self.parent[x]
+        else:
+            return x
+
+    def merge(self, x, y):
+        parx = self.find(x)
+        pary = self.find(y)
+        if parx == pary:
+            return
+        if parx != pary:
+            if self.rank[parx] &gt;= self.rank[pary]:
+                self.parent[pary] = parx
+                self.rank[parx] += self.rank[pary]
+                # this ensures that the smaller set is merged into the larger set, which helps to keep the tree flat and improves the efficiency of future find operations.
+            else:
+                self.parent[parx] = pary
+                self.rank[pary] += self.rank[parx]
+            self.setsz -= 1
+
+    def connected(self, x, y):
+        return self.find(x) == self.find(y)
+
+    def size(self, x):
+        return self.rank[self.find(x)]
+
+    def sets(self):
+        return self.setsz
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    edges = []
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        edges.append(((a, b), c))
+    edges.sort(key=lambda e: e[1])          # comparator a.second &lt; b.second
+    uf = UnionFind(n)
+    ans = 0
+    for edge in edges:
+        (a, b), c = edge                    # a = .fr.fr, b = .fr.sc, c = .sc
+        if not uf.connected(a, b):
+            uf.merge(a, b)
+            ans += c
+    if uf.sets() &gt; 1:
+        print("IMPOSSIBLE")
+    else:
+        print(ans)
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The IMPOSSIBLE check uses the DSU set count, not <code>ans</code>; a disconnected input still produces a partial sum.</div>
       <div class="callout trigger"><strong>Recognize</strong>"minimum cost to connect everything" &rarr; Kruskal (MST).</div>
@@ -1729,27 +2287,46 @@ signed main()
     <div class="family-head"><h2>4 &middot; Binary lifting</h2></div>
     <p class="family-note">Functional graphs with huge step counts.</p>
     <article class="entry" id="planets-queries-i">
-      <div class="entry-head"><h3>Planets Queries I</h3><span class="badge num">O((n+q) log k)</span></div>
+      <div class="entry-head"><h3>Planets Queries I</h3><span class="badge num">\(O((n+q) \log k)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Every planet has one teleporter. Answer queries: where do you end after <code>k</code> teleports from <code>x</code>?<div class="formal">f(v) given; answer f^k(x),  k ≤ 10⁹</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) planets, and planet \(i\) has one teleporter leading to planet
+\(t_i\) (possibly itself). Answer \(q\) queries: starting on planet \(x\) and using \(k\) teleporters in
+a row, where do you end up?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ q\); then \(t_1, \dots, t_n\); then \(q\) lines \(x\ k\).</dd>
+<dt>Output</dt><dd>For each query, the final planet.</dd>
+<dt>Limits</dt><dd>\(1 \le n, q \le 2\cdot 10^5,\ \ 0 \le k \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(t = [2, 1, 1, 4]\): \((1, 2) \to 1,\ (3, 4) \to 2,\ (4, 1) \to 4\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(f(v) = t_v\). The answer is \(f\) applied \(k\) times:</span>
+\[ \text{ans}(x, k) = f^{k}(x) = \underbrace{f(f(\cdots f}_{k}(x)\cdots)) \]</li>
+<li><span class="why">Store jumps of length \(2^j\). A jump of \(2^j\) is two jumps of \(2^{j-1}\):</span>
+\[ \text{up}_0(v) = t_v, \qquad \text{up}_j(v) = \text{up}_{j-1}\big(\text{up}_{j-1}(v)\big) \]</li>
+<li><span class="why">Write \(k\) in binary, \(k = \sum_j b_j 2^j\) with \(b_j \in \{0, 1\}\). Then do one stored jump per bit that is \(1\):</span>
+\[ f^{k} = f^{2^{j_1}} \circ f^{2^{j_2}} \circ \cdots, \qquad \{j_1, j_2, \dots\} = \{\, j : b_j = 1 \,\} \]</li>
+<li><span class="why">Simplest form: \(k \le 10^9 \lt 2^{30}\), so \(30\) levels are enough. Each query takes at most \(30\) jumps.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Out-degree exactly 1 &rArr; the k-th successor is well defined.</li>
-          <li><code>2ʲ</code> steps = two <code>2ʲ⁻¹</code> step jumps &rArr; a doubling table.</li>
-          <li>Any <code>k</code> is a sum of powers of two: jump once per set bit.</li>
-        </ol>
+<li>Every planet has exactly one outgoing teleporter, so the \(k\)-th successor is well defined.</li>
+<li>\(2^j\) steps are two jumps of \(2^{j-1}\) steps, which gives a doubling table.</li>
+<li>Any \(k\) is a sum of powers of two: jump once per \(1\)-bit of \(k\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Simulate <code>k</code> steps per query.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(q·k)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>q ≤ 2·10⁵</code>, <code>k ≤ 10⁹</code> &rarr; 2·10¹⁴.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Binary lifting with 30 levels: <span class="cost">O(30·(n + q))</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Follow \(k\) teleporters, one at a time, per query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(q \cdot k)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(q = 2\cdot 10^5\), \(k = 10^9\) gives \(2\cdot 10^{14}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Binary lifting with \(30\) levels: <span class="cost">\(O(30 \cdot (n + q))\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1760,7 +2337,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>LOG = 30</code> covers <code>k &lt; 2³⁰</code>. <code>up</code> is <code>LOG × (n+1)</code> of <code>long long</code>, ~48 MB. The query loop applies bit <code>j</code> in any order since jumps commute.</p>
+        <p class="impl-note"><code>LOG = 30</code> covers \(k \lt 2^{30}\). <code>up</code> is \(\text{LOG} \times (n+1)\) of <code>long long</code>, ~48 MB. The query loop applies bit <code>j</code> in any order since jumps commute.</p>
         <div class="src-meta"><span class="path">graphs/Planets_Queries_I.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -1844,8 +2421,38 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+LOG = 30                                    # #define LOG 30
+
+def solve():
+    n, qu = int(next(tok)), int(next(tok))
+    up = [[0] * (n + 1) for _ in range(LOG)]
+    for i in range(1, n + 1):
+        a = int(next(tok))
+        up[0][i] = a
+        # up [ j ] [ node ] = the 2^j th ancestor of node
+    for k in range(1, LOG):
+        # for each node, we will find the 2^k th ancestor of that node
+        # 2^k th ancestor of node = 2^(k-1) th ancestor of 2^(k-1) th ancestor of node
+        for node in range(1, n + 1):
+            # 2 raise to k-1th ancestor of all nodes is already calculated in the previous iteration, so we can use that to calculate the 2^k th ancestor of all nodes
+            up[k][node] = up[k - 1][up[k - 1][node]]
+    out = []
+    for _ in range(qu):                     # while (qu--)
+        node, k = int(next(tok)), int(next(tok))
+        for j in range(LOG):
+            # if the jth bit of k is set, we will move to the 2^j th ancestor of node
+            bit = (k &gt;&gt; j) &amp; 1
+            if bit:
+                node = up[j][node]
+        out.append(node)
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong><code>LOG = 30</code> is exactly enough for <code>k ≤ 10⁹ &lt; 2³⁰</code>. Bits at or above <code>LOG</code> are silently ignored, so a larger bound needs a larger <code>LOG</code>.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>LOG = 30</code> is exactly enough for \(k \le 10^{9} \lt 2^{30}\). Bits at or above <code>LOG</code> are silently ignored, so a larger bound needs a larger <code>LOG</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"k-th successor in a functional graph, k huge" &rarr; binary lifting.</div>
     </article>
   </section>

@@ -11,17 +11,17 @@ LEDGER.add(
       anchor: 'merge-sort-linked-list',
       fam: "Split & merge",
       inv: "fast = head-&gt;next &rArr; first middle; cut; recurse; dummy merge",
-      time: "O(N log N)" },
+      time: '\\(O(N \\log N)\\)' },
     { name: "Reorder List I",
       anchor: 'reorder-list-i',
       fam: "Split & merge",
       inv: "second middle; cut; reverse second half; interleave while second",
-      time: "O(N)" },
+      time: '\\(O(N)\\)' },
     { name: "Reverse Nodes in k-Group",
       anchor: 'reverse-nodes-in-k-group',
       fam: "Group reversal",
       inv: "tail = K&minus;1 steps; cut; reverse; prev-&gt;next = newHead; head-&gt;next = nextGroup; prev = head",
-      time: "O(N)" }
+      time: '\\(O(N)\\)' }
   ],
   [
 

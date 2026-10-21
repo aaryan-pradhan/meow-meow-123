@@ -10,8 +10,8 @@ LEDGER.add(
     { name: "DNA Repetition",
       anchor: 'dna-repetition',
       fam: "Run-length scan",
-      inv: "s[i] == s[i&minus;1] ? count++ : count = 1; max after each",
-      time: "O(n)" }
+      inv: '\\(c_i = c_{i-1} + 1\\) if \\(s_i = s_{i-1}\\), else \\(1\\); \\(\\text{ans} = \\max c_i\\)',
+      time: '\\(O(n)\\)' }
   ],
   [
 

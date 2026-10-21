@@ -63,61 +63,106 @@
     <p class="family-note">Maintaining a two-pointer window where elements are distinct or bounded by a distinct count. The constraint is monotone in window size, allowing a greedy slide.</p>
 
     <article class="entry" id="playlist">
-      <div class="entry-head"><h3>Playlist</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Playlist</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Find the longest contiguous subarray with all distinct elements.
-        </div>
+<p><b>Question.</b> You are given a playlist of \(n\) songs, where song \(i\) has id \(x_i\). What is
+the longest stretch of consecutive songs in which no id repeats?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_0, \dots, x_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the length of the longest such stretch.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>1 2 1 3 2 7 4 2</code> → <code>5</code> (the stretch <code>1 3 2 7 4</code>)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \max \big\{\, r - l + 1 \;:\; x_l, x_{l+1}, \dots, x_r \text{ are all different} \,\big\} \]</li>
+<li><span class="why">If a window has no repeats, every smaller window inside it has none either. So for each left end \(l\), the good right ends are \(l, l+1, \dots, R(l)\) for some \(R(l)\).</span></li>
+<li><span class="why">Moving \(l\) right only removes a song, so \(R(l)\) never moves left:</span>
+\[ l \lt l' \;\Longrightarrow\; R(l) \le R(l') \]</li>
+<li><span class="why">Simplest form: two pointers <code>tail</code> \(= l\) and <code>head</code> \(= R(l)\), both only moving right:</span>
+\[ \text{ans} = \max_{l} \big( R(l) - l + 1 \big) \]</li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Extending the window with a duplicate makes it invalid. This is monotonic, so two pointers work.</li>
-          <li>Keep extending <code>head</code> as long as <code>freq[a[head+1]] == 0</code>.</li>
-          <li>Record the maximum length <code>head - tail + 1</code> at each valid state.</li>
-          <li>When invalid, increment <code>tail</code> and decrement its frequency to make room.</li>
-        </ol>
+<li>A window with no repeats stays repeat-free when it shrinks. So for each left end, the valid
+right ends form one unbroken range.</li>
+<li>Extend <code>head</code> while the next song is not in the window, that is while
+<code>freq[a[head+1]] == 0</code>.</li>
+<li>At each left end, record the length \(\text{head} - \text{tail} + 1\) and keep the maximum.</li>
+<li>Then move <code>tail</code> one step right and lower its song's count, which makes room to extend again.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Check all <code>(i, j)</code> pairs and use a set to verify distinctness.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup3;)</span> or <span class="cost">O(n&sup2;)</span> with a running set.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code></span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Two-pointer sliding window with a frequency map.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Check every pair \((l, r)\) and test the window for repeats with a set.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^3)\)</span>, or <span class="cost">\(O(n^2)\)</span> if the set grows with \(r\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) windows.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Two-pointer sliding window with a frequency map: each pointer moves at most \(n\) times, <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 520 190" role="img" aria-label="Two pointer window extending until duplicate">
-  <text class="s-td" x="8" y="16">1 2 1 3 2 7 4 2</text>
-  <rect class="s-box" x="40" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="85" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="130" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="175" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="220" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="265" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="310" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="355" y="50" width="40" height="30" rx="4"/>
-  <text class="s-t" x="60" y="70" text-anchor="middle">1</text>
-  <text class="s-t" x="105" y="70" text-anchor="middle">2</text>
-  <text class="s-t" x="150" y="70" text-anchor="middle">1</text>
-  <text class="s-t" x="195" y="70" text-anchor="middle">3</text>
-  <text class="s-t" x="240" y="70" text-anchor="middle">2</text>
-  <text class="s-t" x="285" y="70" text-anchor="middle">7</text>
-  <text class="s-t" x="330" y="70" text-anchor="middle">4</text>
-  <text class="s-t" x="375" y="70" text-anchor="middle">2</text>
-  <text class="s-ta" x="150" y="100" text-anchor="middle">tail</text>
-  <text class="s-ta" x="330" y="100" text-anchor="middle">head</text>
-  <text class="s-td" x="8" y="140">Longest window: 5 elements</text>
+<svg viewBox="0 0 506 196" role="img" aria-label="Repeat-free window lengths per left end for 1 2 1 3 2 7 4 2">
+  <text class="s-td" x="8" y="14">1 2 1 3 2 7 4 2: repeat-free window per left end</text>
+  <text class="s-td" x="8" y="34">l</text>
+  <text class="s-td" x="92" y="34" text-anchor="middle">0</text>
+  <text class="s-td" x="144" y="34" text-anchor="middle">1</text>
+  <text class="s-td" x="196" y="34" text-anchor="middle">2</text>
+  <text class="s-td" x="248" y="34" text-anchor="middle">3</text>
+  <text class="s-td" x="300" y="34" text-anchor="middle">4</text>
+  <text class="s-td" x="352" y="34" text-anchor="middle">5</text>
+  <text class="s-td" x="404" y="34" text-anchor="middle">6</text>
+  <text class="s-td" x="456" y="34" text-anchor="middle">7</text>
+  <text class="s-td" x="8" y="60">x</text>
+  <rect class="s-box" x="70" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="61" text-anchor="middle">1</text>
+  <rect class="s-box" x="122" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="61" text-anchor="middle">2</text>
+  <rect class="s-fill" x="174" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="61" text-anchor="middle">1</text>
+  <rect class="s-fill" x="226" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="61" text-anchor="middle">3</text>
+  <rect class="s-fill" x="278" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="61" text-anchor="middle">2</text>
+  <rect class="s-fill" x="330" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="61" text-anchor="middle">7</text>
+  <rect class="s-fill" x="382" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="404" y="61" text-anchor="middle">4</text>
+  <rect class="s-box" x="434" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="456" y="61" text-anchor="middle">2</text>
+  <path class="s-hi" d="M174 78 V84 H426 V78"/>
+  <text class="s-ta" x="300" y="98" text-anchor="middle">window from l = 2</text>
+  <text class="s-td" x="8" y="132">len</text>
+  <rect class="s-box" x="70" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="133" text-anchor="middle">2</text>
+  <rect class="s-box" x="122" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="133" text-anchor="middle">3</text>
+  <rect class="s-good" x="174" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="133" text-anchor="middle">5</text>
+  <rect class="s-box" x="226" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="133" text-anchor="middle">4</text>
+  <rect class="s-box" x="278" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="133" text-anchor="middle">3</text>
+  <rect class="s-box" x="330" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="133" text-anchor="middle">3</text>
+  <rect class="s-box" x="382" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="404" y="133" text-anchor="middle">2</text>
+  <rect class="s-box" x="434" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="456" y="133" text-anchor="middle">1</text>
+  <text class="s-ta" x="8" y="172">max = 5 at l = 2: the window 1 3 2 7 4 (the next 2 repeats)</text>
 </svg>
-          <figcaption>The window extends until it hits a duplicate, then tail advances to clear it.</figcaption>
+          <figcaption>Row <em>len</em> is \(R(l) - l + 1\), the longest repeat-free window starting at \(l\). Both ends only move right. The answer is the largest value, \(5\), for the window <code>1 3 2 7 4</code>.</figcaption>
         </figure>
       </div>
 
@@ -175,57 +220,120 @@ int main() {
     cout &lt;&lt; ans &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    a = [int(next(tok)) for _ in range(n)]   # for (auto&amp; x : a) cin &gt;&gt; x
+
+    freq = {}
+    tail, head = 0, -1
+    ans = 0
+
+    while tail &lt; n:
+        while head + 1 &lt; n and freq.get(a[head + 1], 0) == 0:
+            head += 1
+            freq[a[head]] = freq.get(a[head], 0) + 1
+        ans = max(ans, head - tail + 1)
+
+        if tail &gt; head:
+            tail += 1
+            head = tail - 1
+        else:
+            freq[a[tail]] -= 1              # key surely exists here, so plain [] is safe
+            tail += 1
+
+    print(ans)
+
+main()</code></pre>
       </div>
 
-      <div class="callout gotcha"><strong>Gotcha</strong>Do not use <code>unordered_map</code>, as malicious inputs will cause <span class="cost">O(n&sup2;)</span> hash collisions.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Do not use <code>unordered_map</code>, as malicious inputs will cause <span class="cost">\(O(n^{2})\)</span> hash collisions.</div>
       <div class="callout trigger"><strong>Recognize</strong>"longest contiguous subarray with distinct elements" &rarr; distinct-element window.</div>
     </article>
 
     <article class="entry" id="distinct-subarrays">
-      <div class="entry-head"><h3>Distinct Subarrays</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Distinct Subarrays</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Count the total number of subarrays where every element is distinct.
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) integers. Count the subarrays (contiguous
+blocks) in which every element is different.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_0, \dots, x_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the number of such subarrays.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>1 2 1 3</code> → <code>8</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \#\big\{\, (l, r) : l \le r,\ \ x_l, \dots, x_r \text{ all different} \,\big\} \]</li>
+<li><span class="why">As in Playlist, for each left end \(l\) the good right ends are exactly \(l, \dots, R(l)\). That is \(R(l) - l + 1\) subarrays starting at \(l\).</span></li>
+<li><span class="why">Count by left end. Each subarray is counted once, at its own left end:</span>
+\[ \text{ans} = \sum_{l=0}^{n-1} \big( R(l) - l + 1 \big) \]</li>
+<li><span class="why">Simplest form: the same two pointers as Playlist, but add the window length instead of taking a maximum.</span>
+<span class="why">Sample: \(R = (1, 3, 3, 3)\), so \(2 + 3 + 2 + 1 = 8\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The same distinct-element window from Playlist is used.</li>
-          <li>For any valid window spanning <code>[tail, head]</code>, every subarray starting exactly at <code>tail</code> and ending anywhere up to <code>head</code> is also distinct.</li>
-          <li>There are <code>head - tail + 1</code> such subarrays starting at <code>tail</code>. Accumulating this directly counts all valid subarrays exactly once without combinatorial formulas.</li>
-        </ol>
+<li>Use the same repeat-free window as Playlist.</li>
+<li>If \([\text{tail}, \text{head}]\) is the longest repeat-free window starting at <code>tail</code>,
+then every subarray that starts at <code>tail</code> and ends anywhere up to <code>head</code> is also repeat-free.</li>
+<li>There are \(\text{head} - \text{tail} + 1\) of them. Adding this for every <code>tail</code> counts
+each valid subarray exactly once.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate all subarrays and check each for distinctness.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup3;)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code></span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Accumulate window lengths during a two-pointer scan.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List all subarrays and check each one for repeats.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^3)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives \(\frac{n(n+1)}{2} \approx 2\cdot 10^{10}\) subarrays before any checking.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Add up window lengths during one two-pointer scan: <span class="cost">\(O(n \log n)\)</span>. The answer can reach \(2\cdot 10^{10}\), so use <code>long long</code>.</span></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 520 190" role="img" aria-label="Accumulating subarrays from window">
-  <text class="s-td" x="8" y="16">1 2 1 3</text>
-  <rect class="s-hi" x="40" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="85" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="130" y="50" width="40" height="30" rx="4"/>
-  <text class="s-t" x="60" y="70" text-anchor="middle">1</text>
-  <text class="s-t" x="105" y="70" text-anchor="middle">2</text>
-  <text class="s-t" x="150" y="70" text-anchor="middle">1</text>
-  <text class="s-ta" x="60" y="100" text-anchor="middle">tail</text>
-  <text class="s-ta" x="105" y="100" text-anchor="middle">head</text>
-  <text class="s-td" x="8" y="140">ans += (1-0+1) = 2 subarrays: [1] and [1, 2]</text>
+<svg viewBox="0 0 360 196" role="img" aria-label="Repeat-free window lengths per left end for 1 2 1 3">
+  <text class="s-td" x="8" y="14">1 2 1 3: repeat-free window per left end</text>
+  <text class="s-td" x="8" y="34">l</text>
+  <text class="s-td" x="92" y="34" text-anchor="middle">0</text>
+  <text class="s-td" x="144" y="34" text-anchor="middle">1</text>
+  <text class="s-td" x="196" y="34" text-anchor="middle">2</text>
+  <text class="s-td" x="248" y="34" text-anchor="middle">3</text>
+  <text class="s-td" x="8" y="60">x</text>
+  <rect class="s-box" x="70" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="61" text-anchor="middle">1</text>
+  <rect class="s-fill" x="122" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="61" text-anchor="middle">2</text>
+  <rect class="s-fill" x="174" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="61" text-anchor="middle">1</text>
+  <rect class="s-fill" x="226" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="61" text-anchor="middle">3</text>
+  <path class="s-hi" d="M122 78 V84 H270 V78"/>
+  <text class="s-ta" x="196" y="98" text-anchor="middle">window from l = 1</text>
+  <text class="s-td" x="8" y="132">len</text>
+  <rect class="s-good" x="70" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="133" text-anchor="middle">2</text>
+  <rect class="s-good" x="122" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="133" text-anchor="middle">3</text>
+  <rect class="s-good" x="174" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="133" text-anchor="middle">2</text>
+  <rect class="s-good" x="226" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="133" text-anchor="middle">1</text>
+  <text class="s-ta" x="8" y="172">answer = 2 + 3 + 2 + 1 = 8</text>
 </svg>
-          <figcaption>Each step accumulates all subarrays starting at tail.</figcaption>
+          <figcaption>Every subarray starting at \(l\) and ending inside its window is repeat-free, so \(l\) contributes \(R(l) - l + 1\). Adding the row gives \(2 + 3 + 2 + 1 = 8\).</figcaption>
         </figure>
       </div>
 
@@ -283,6 +391,34 @@ int main() {
     cout &lt;&lt; ans &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    a = [int(next(tok)) for _ in range(n)]
+
+    freq = {}
+    tail, head = 0, -1
+    ans = 0
+
+    while tail &lt; n:
+        while head + 1 &lt; n and freq.get(a[head + 1], 0) == 0:
+            head += 1
+            freq[a[head]] = freq.get(a[head], 0) + 1
+        ans += head - tail + 1
+
+        if tail &gt; head:
+            tail += 1
+            head = tail - 1
+        else:
+            freq[a[tail]] -= 1
+            tail += 1
+
+    print(ans)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Count only subarrays starting at <code>tail</code>. Using a combinatorics formula leads to double-counting overlap regions.</div>
@@ -290,48 +426,91 @@ int main() {
     </article>
 
     <article class="entry" id="distinct-values-subarrays-ii">
-      <div class="entry-head"><h3>Distinct Values Subarrays II</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Distinct Values Subarrays II</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Count the number of subarrays that have at most <code>k</code> distinct values.
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) integers and a number \(k\). Count the
+subarrays that contain <em>at most</em> \(k\) different values.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ k\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>One integer: the number of such subarrays.</dd>
+<dt>Limits</dt><dd>\(1 \le k \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(k = 2\), <code>1 2 3 1 1</code> → <code>10</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly, where \(D(l, r)\) is the number of different values in \(x_l..x_r\):</span>
+\[ \text{ans} = \#\{\, (l, r) : l \le r,\ D(l, r) \le k \,\} \]</li>
+<li><span class="why">\(D\) can only grow when the window grows. So for each \(l\), the good right ends are \(l, \dots, R(l)\), and \(R(l)\) never moves left as \(l\) increases.</span></li>
+<li><span class="why">Count by left end:</span>
+\[ \text{ans} = \sum_{l} \big( R(l) - l + 1 \big) \]</li>
+<li><span class="why">Simplest form: extend <code>head</code> while the next value keeps \(D \le k\):</span>
+\[ x_{h+1} \text{ already in the window} \quad \text{or} \quad D \lt k \]
+<span class="why">Sample: window lengths \(2, 2, 3, 2, 1\) sum to \(10\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Extending a window can only increase or maintain the number of distinct elements, which is monotonic.</li>
-          <li>We can safely absorb <code>v[h+1]</code> if <code>freq.size() &lt; k</code> OR if it's already in the window.</li>
-          <li>To rely on <code>freq.size()</code>, keys with a zero count must be erased, not just decremented.</li>
-        </ol>
+<li>Growing a window can only keep or increase the number of different values, so the valid
+right ends for each left end form one range.</li>
+<li>You can safely add \(x_{h+1}\) if <code>freq.size() &lt; k</code>, or if it is already in the window.</li>
+<li><code>freq.size()</code> is used as \(D\), so a key whose count drops to \(0\) must be erased,
+not just decremented.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate subarrays and count distinct elements using a set.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2;)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code></span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Window accumulation with exact freq size tracking.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">For each \(l\), grow \(r\) with a set and stop when it holds more than \(k\) values.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) (with \(k = n\)) gives about \(2\cdot 10^{10}\) steps.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Two pointers with an exact count of different values: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 520 190" role="img" aria-label="Window with at most k distinct values">
-  <text class="s-td" x="8" y="16">k = 2. Array: 1 2 3 1 1</text>
-  <rect class="s-box" x="40" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="85" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="130" y="50" width="40" height="30" rx="4"/>
-  <text class="s-t" x="60" y="70" text-anchor="middle">1</text>
-  <text class="s-t" x="105" y="70" text-anchor="middle">2</text>
-  <text class="s-t" x="150" y="70" text-anchor="middle">3</text>
-  <text class="s-td" x="8" y="110">Cannot extend past [1, 2] since 3 introduces a 3rd distinct value.</text>
+<svg viewBox="0 0 430 196" role="img" aria-label="Windows with at most two distinct values for 1 2 3 1 1">
+  <text class="s-td" x="8" y="14">1 2 3 1 1, k = 2: window per left end</text>
+  <text class="s-td" x="8" y="34">l</text>
+  <text class="s-td" x="92" y="34" text-anchor="middle">0</text>
+  <text class="s-td" x="144" y="34" text-anchor="middle">1</text>
+  <text class="s-td" x="196" y="34" text-anchor="middle">2</text>
+  <text class="s-td" x="248" y="34" text-anchor="middle">3</text>
+  <text class="s-td" x="300" y="34" text-anchor="middle">4</text>
+  <text class="s-td" x="8" y="60">x</text>
+  <rect class="s-box" x="70" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="61" text-anchor="middle">1</text>
+  <rect class="s-box" x="122" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="61" text-anchor="middle">2</text>
+  <rect class="s-fill" x="174" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="61" text-anchor="middle">3</text>
+  <rect class="s-fill" x="226" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="61" text-anchor="middle">1</text>
+  <rect class="s-fill" x="278" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="61" text-anchor="middle">1</text>
+  <path class="s-hi" d="M174 78 V84 H322 V78"/>
+  <text class="s-ta" x="248" y="98" text-anchor="middle">window from l = 2</text>
+  <text class="s-td" x="8" y="132">len</text>
+  <rect class="s-good" x="70" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="133" text-anchor="middle">2</text>
+  <rect class="s-good" x="122" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="133" text-anchor="middle">2</text>
+  <rect class="s-good" x="174" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="133" text-anchor="middle">3</text>
+  <rect class="s-good" x="226" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="133" text-anchor="middle">2</text>
+  <rect class="s-good" x="278" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="133" text-anchor="middle">1</text>
+  <text class="s-ta" x="8" y="172">answer = 2 + 2 + 3 + 2 + 1 = 10</text>
 </svg>
-          <figcaption>The window tracks exact distinct element counts, rejecting extensions that exceed k.</figcaption>
+          <figcaption>At \(l = 0\) the window stops before <code>3</code>, which would be a third value. At \(l = 2\) it reaches <code>3 1 1</code>. The answer adds the row: \(2 + 2 + 3 + 2 + 1 = 10\).</figcaption>
         </figure>
       </div>
 
@@ -411,6 +590,31 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    k = int(next(tok))
+    v = [int(next(tok)) for _ in range(n)]
+    t, h, ans = 0, -1, 0
+    freq = {}
+    while t &lt; n:
+        while h + 1 &lt; n and (len(freq) &lt; k or (len(freq) == k and v[h + 1] in freq)):  # size() -&gt; len()
+            h += 1
+            freq[v[h]] = freq.get(v[h], 0) + 1
+        ans += (h - t + 1)
+        if t &gt; h:
+            t += 1
+            h = t - 1
+        else:
+            freq[v[t]] -= 1
+            if freq[v[t]] == 0:
+                del freq[v[t]]              # freq.erase(key)
+            t += 1
+    print(ans)
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Failure to <code>erase</code> keys hitting 0 means <code>freq.size()</code> stays artificially high.</div>
@@ -424,46 +628,96 @@ signed main()
     <p class="family-note">When constraints involve negative numbers or divisibility, monotonicity breaks down (the sum can go up and down). Two pointers die. Prefix sums mapped by frequency solve this by tracking what was seen.</p>
 
     <article class="entry" id="subarray-sums-ii">
-      <div class="entry-head"><h3>Subarray Sums II</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Subarray Sums II</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Count the number of subarrays having sum exactly <code>x</code>. Elements can be negative.
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) integers (they can be negative) and a target
+\(x\). Count the subarrays whose sum is exactly \(x\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>One integer: the number of such subarrays.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ -10^9 \le x, a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(x = 7\), <code>2 -1 3 5 -2</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \#\Big\{\, (l, r) : 1 \le l \le r \le n,\ \ \sum_{k=l}^{r} a_k = x \,\Big\} \]</li>
+<li><span class="why">Use prefix sums \(P_0 = 0,\ P_r = a_1 + \dots + a_r\). Then every block sum is a difference:</span>
+\[ \sum_{k=l}^{r} a_k = P_r - P_{l-1} \]</li>
+<li><span class="why">So the condition becomes a lookup of an earlier prefix:</span>
+\[ P_r - P_{l-1} = x \iff P_{l-1} = P_r - x \]</li>
+<li><span class="why">Simplest form: scan \(r = 1..n\), with \(c[v]\) = how many of \(P_0, \dots, P_{r-1}\) equal \(v\):</span>
+\[ \text{ans} = \sum_{r=1}^{n} c\big[P_r - x\big], \qquad \text{then } c[P_r] \mathrel{+}= 1 \]
+<span class="why">Sample: \(P = (0, 2, 1, 4, 9, 7)\). At \(r = 4\), \(9 - 7 = 2\) was seen once; at \(r = 5\), \(7 - 7 = 0\) was seen once. Total \(2\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Negative numbers mean the sum goes down. Two pointers cannot reliably expand/contract.</li>
-          <li>A subarray <code>v[l..r]</code> summing to <code>x</code> means <code>pre[r] - pre[l-1] = x</code>.</li>
-          <li>Rearranging gives <code>pre[l-1] = pre[r] - x</code>. We just look up how many times we've seen this target prefix.</li>
-        </ol>
+<li>With negative numbers, adding an element can make the sum go down. So the window sum is not
+monotone and two pointers do not work.</li>
+<li>A block \(a_l..a_r\) sums to \(x\) exactly when \(P_r - P_{l-1} = x\).</li>
+<li>Rearranged: \(P_{l-1} = P_r - x\). So just count how many earlier prefixes equal \(P_r - x\).</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate all pairs and sum them.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2;)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code></span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Single pass with a prefix frequency map.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every pair \((l, r)\) and add up the block.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span> with a running sum.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One pass with a count map of prefix sums: <span class="cost">\(O(n \log n)\)</span>. Prefix sums reach \(2\cdot 10^{14}\), so use <code>long long</code>.</span></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 520 190" role="img" aria-label="Prefix sum target lookup">
-  <text class="s-td" x="8" y="16">x = 7. Prefix sums needed.</text>
-  <rect class="s-box" x="40" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="85" y="50" width="40" height="30" rx="4"/>
-  <text class="s-t" x="60" y="70" text-anchor="middle">pre[i]</text>
-  <text class="s-ta" x="60" y="100" text-anchor="middle">10</text>
-  <text class="s-td" x="8" y="140">To get sum 7 ending here, we need pre[l-1] = 10 - 7 = 3. freq[3] gives the count.</text>
+<svg viewBox="0 0 470 214" role="img" aria-label="Prefix sums 0 2 1 4 9 7 and the two matching pairs for x = 7">
+  <text class="s-td" x="8" y="14">2 -1 3 5 -2, x = 7: need P[r] - P[l-1] = 7</text>
+  <text class="s-td" x="8" y="34">i</text>
+  <text class="s-td" x="92" y="34" text-anchor="middle">0</text>
+  <text class="s-td" x="144" y="34" text-anchor="middle">1</text>
+  <text class="s-td" x="196" y="34" text-anchor="middle">2</text>
+  <text class="s-td" x="248" y="34" text-anchor="middle">3</text>
+  <text class="s-td" x="300" y="34" text-anchor="middle">4</text>
+  <text class="s-td" x="352" y="34" text-anchor="middle">5</text>
+  <text class="s-td" x="8" y="60">a</text>
+  <rect class="s-box" x="122" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="61" text-anchor="middle">2</text>
+  <rect class="s-box" x="174" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="61" text-anchor="middle">-1</text>
+  <rect class="s-box" x="226" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="61" text-anchor="middle">3</text>
+  <rect class="s-box" x="278" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="61" text-anchor="middle">5</text>
+  <rect class="s-box" x="330" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="61" text-anchor="middle">-2</text>
+  <text class="s-td" x="8" y="104">P</text>
+  <rect class="s-good" x="70" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="105" text-anchor="middle">0</text>
+  <rect class="s-fill" x="122" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="105" text-anchor="middle">2</text>
+  <rect class="s-box" x="174" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="105" text-anchor="middle">1</text>
+  <rect class="s-box" x="226" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="105" text-anchor="middle">4</text>
+  <rect class="s-fill" x="278" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="105" text-anchor="middle">9</text>
+  <rect class="s-good" x="330" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="105" text-anchor="middle">7</text>
+  <path class="s-hi" d="M144 116 V132 H300 V116"/>
+  <text class="s-ta" x="222" y="148" text-anchor="middle">9 - 7 = 2 = P[1]: block -1 3 5</text>
+  <path class="s-edge" d="M92 116 V164 H352 V116"/>
+  <text class="s-tm" x="222" y="180" text-anchor="middle">7 - 7 = 0 = P[0]: the whole array</text>
+  <text class="s-ta" x="8" y="204">two matched pairs: answer = 2</text>
 </svg>
-          <figcaption>Looking backward in time to see if a valid starting point exists.</figcaption>
+          <figcaption>For each \(r\), count the earlier prefix sums equal to \(P_r - 7\). Only \(r = 4\) (\(9 - 7 = 2 = P_1\)) and \(r = 5\) (\(7 - 7 = 0 = P_0\)) find one, so the answer is \(2\).</figcaption>
         </figure>
       </div>
 
@@ -536,6 +790,30 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    x = int(next(tok))
+    pre = [0] * (n + 1)
+    v = [0] * (n + 1)
+    pre[0] = 0
+    for i in range(1, n + 1):
+        v[i] = int(next(tok))
+    for i in range(1, n + 1):
+        pre[i] = pre[i - 1] + v[i]
+    freq = {}
+    ans = 0
+    for i in range(n + 1):                  # i &lt;= n -&gt; range(n + 1)
+
+        if pre[i] - x in freq:
+            ans += freq[pre[i] - x]
+        freq[pre[i]] = freq.get(pre[i], 0) + 1
+
+    print(ans)
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Sliding window will confidently output wrong answers if negative elements exist. </div>
@@ -543,52 +821,112 @@ signed main()
     </article>
 
     <article class="entry" id="subarray-divisibility">
-      <div class="entry-head"><h3>Subarray Divisibility</h3><span class="badge num">O(n)</span></div>
+      <div class="entry-head"><h3>Subarray Divisibility</h3><span class="badge num">\(O(n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Count the number of subarrays whose sum is divisible by <code>n</code>.
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) integers (they can be negative). Count the
+subarrays whose sum is divisible by \(n\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>One integer: the number of such subarrays.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ -10^9 \le a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 1 2 7 4</code> → <code>1</code> (the block <code>1 2 7</code>, sum \(10\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it with prefix sums \(P_0 = 0,\ P_r = a_1 + \dots + a_r\):</span>
+\[ \text{ans} = \#\big\{\, (l, r) : n \mid (P_r - P_{l-1}) \,\big\} \]</li>
+<li><span class="why">A difference is divisible by \(n\) exactly when both numbers leave the same remainder:</span>
+\[ n \mid (P_r - P_{l-1}) \iff P_r \equiv P_{l-1} \pmod n \]</li>
+<li><span class="why">Group the \(n + 1\) prefixes \(P_0, \dots, P_n\) by remainder. Let \(c_t\) be how many have remainder \(t\). Any two in the same group give one valid subarray.</span></li>
+<li><span class="why">Simplest form:</span>
+\[ \text{ans} = \sum_{t=0}^{n-1} \binom{c_t}{2} = \sum_t \frac{c_t (c_t - 1)}{2} \]
+<span class="why">Sample: remainders of \(P\) are \(0, 3, 4, 1, 3, 2\). Only remainder \(3\) appears twice, so the answer is \(1\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>pre[r] - pre[l-1] &equiv; 0 (mod n)</code> reduces to <code>pre[r] &equiv; pre[l-1] (mod n)</code>.</li>
-          <li>Two prefixes with the same remainder modulo <code>n</code> form a divisible subarray.</li>
-          <li>Negative numbers cause negative remainders in C++. Fix with <code>(pre[i] % n + n) % n</code>.</li>
-        </ol>
+<li>\(P_r - P_{l-1} \equiv 0 \pmod n\) is the same as \(P_r \equiv P_{l-1} \pmod n\).</li>
+<li>So any two prefixes with the same remainder mod \(n\) form a divisible subarray.</li>
+<li>In C++, <code>%</code> of a negative number is negative. Fix it with
+<code>(pre[i] % n + n) % n</code> so every remainder is in \([0, n-1]\).</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate all pairs.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2;)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code></span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Prefix modulo frequency map.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every pair \((l, r)\) and test the block sum.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Count prefixes by remainder: <span class="cost">\(O(n)\)</span> with an array of size \(n\).</span></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 520 190" role="img" aria-label="Prefix modulo remainders">
-  <text class="s-td" x="8" y="16">Sum modulo n.</text>
-  <rect class="s-box" x="40" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-box" x="85" y="50" width="40" height="30" rx="4"/>
-  <text class="s-t" x="60" y="70" text-anchor="middle">pre[i]</text>
-  <text class="s-ta" x="60" y="100" text-anchor="middle">R=3</text>
-  <text class="s-td" x="8" y="140">A previous prefix with R=3 means their difference has R=0.</text>
+<svg viewBox="0 0 470 214" role="img" aria-label="Prefix remainders mod 5 for 3 1 2 7 4; remainder 3 appears twice">
+  <text class="s-td" x="8" y="14">3 1 2 7 4, n = 5: need P[r] = P[l-1] (mod 5)</text>
+  <text class="s-td" x="8" y="34">i</text>
+  <text class="s-td" x="92" y="34" text-anchor="middle">0</text>
+  <text class="s-td" x="144" y="34" text-anchor="middle">1</text>
+  <text class="s-td" x="196" y="34" text-anchor="middle">2</text>
+  <text class="s-td" x="248" y="34" text-anchor="middle">3</text>
+  <text class="s-td" x="300" y="34" text-anchor="middle">4</text>
+  <text class="s-td" x="352" y="34" text-anchor="middle">5</text>
+  <text class="s-td" x="8" y="60">a</text>
+  <rect class="s-box" x="122" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="61" text-anchor="middle">3</text>
+  <rect class="s-box" x="174" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="61" text-anchor="middle">1</text>
+  <rect class="s-box" x="226" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="61" text-anchor="middle">2</text>
+  <rect class="s-box" x="278" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="61" text-anchor="middle">7</text>
+  <rect class="s-box" x="330" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="61" text-anchor="middle">4</text>
+  <text class="s-td" x="8" y="104">P</text>
+  <rect class="s-box" x="70" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="105" text-anchor="middle">0</text>
+  <rect class="s-box" x="122" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="105" text-anchor="middle">3</text>
+  <rect class="s-box" x="174" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="105" text-anchor="middle">4</text>
+  <rect class="s-box" x="226" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="105" text-anchor="middle">6</text>
+  <rect class="s-box" x="278" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="105" text-anchor="middle">13</text>
+  <rect class="s-box" x="330" y="86" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="105" text-anchor="middle">17</text>
+  <text class="s-td" x="8" y="142">P mod 5</text>
+  <rect class="s-box" x="70" y="124" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="143" text-anchor="middle">0</text>
+  <rect class="s-fill" x="122" y="124" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="143" text-anchor="middle">3</text>
+  <rect class="s-box" x="174" y="124" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="143" text-anchor="middle">4</text>
+  <rect class="s-box" x="226" y="124" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="143" text-anchor="middle">1</text>
+  <rect class="s-fill" x="278" y="124" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="143" text-anchor="middle">3</text>
+  <rect class="s-box" x="330" y="124" width="44" height="28" rx="4"/>
+  <text class="s-t" x="352" y="143" text-anchor="middle">2</text>
+  <path class="s-hi" d="M144 154 V166 H300 V154"/>
+  <text class="s-ta" x="222" y="182" text-anchor="middle">both 3: block 1 2 7 = 10</text>
+  <text class="s-ta" x="8" y="204">sum over remainders of C(count, 2) = C(2, 2) = 1</text>
 </svg>
-          <figcaption>Any two points with the same remainder bridge a valid subarray.</figcaption>
+          <figcaption>Remainders of \(P\) mod \(5\) are \(0, 3, 4, 1, 3, 2\). Only remainder \(3\) repeats, at \(P_1\) and \(P_4\), giving the block <code>1 2 7</code> with sum \(10\). The answer is \(\binom{2}{2} = 1\).</figcaption>
         </figure>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">Since remainders are exactly <code>0..n-1</code>, a direct <code>vector&lt;ll&gt; freq(n)</code> provides <span class="cost">O(n)</span> lookup without maps.</p>
+        <p class="impl-note">Since remainders are exactly <code>0..n-1</code>, a direct <code>vector&lt;ll&gt; freq(n)</code> provides <span class="cost">\(O(n)\)</span> lookup without maps.</p>
         <div class="src-meta"><span class="path">arrays/Subarray_Divisibility.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -650,6 +988,28 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    pre = [0] * (n + 1)
+    v = [0] * (n + 1)
+    pre[0] = 0
+    for i in range(1, n + 1):
+        v[i] = int(next(tok))
+        pre[i] = pre[i - 1] + v[i]
+    freq = [0] * n
+    ans = 0
+    sum_ = 0
+    for i in range(n + 1):
+        sum_ = (pre[i] % n + n) % n         # Python: pre[i] % n is already in [0, n); the +n is harmless
+        if freq[sum_] &gt; 0:
+            ans += freq[sum_]
+        freq[sum_] += 1
+    print(ans)
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong><code>pre[i] % n</code> yields negative numbers in C++ if <code>pre[i]</code> is negative.</div>
@@ -663,52 +1023,95 @@ signed main()
     <p class="family-note">When elements are strictly positive, the sum is monotonically increasing with length, allowing us to safely slide a two-pointer window.</p>
 
     <article class="entry" id="subarray-sums-i">
-      <div class="entry-head"><h3>Subarray Sums I</h3><span class="badge num">O(n)</span></div>
+      <div class="entry-head"><h3>Subarray Sums I</h3><span class="badge num">\(O(n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Count the number of subarrays having sum exactly <code>x</code>. Elements are strictly POSITIVE.
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) <em>positive</em> integers and a target \(x\).
+Count the subarrays whose sum is exactly \(x\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>One integer: the number of such subarrays.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x, a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(x = 7\), <code>2 4 1 2 7</code> → <code>3</code> (<code>2 4 1</code>, <code>4 1 2</code>, <code>7</code>)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly, with \(S(l, r) = a_l + \dots + a_r\):</span>
+\[ \text{ans} = \#\{\, (l, r) : S(l, r) = x \,\} \]</li>
+<li><span class="why">All \(a_i \ge 1\), so the sum strictly grows as the window grows:</span>
+\[ S(l, r+1) = S(l, r) + a_{r+1} \gt S(l, r) \]
+<span class="why">So for each \(l\) at most one \(r\) works: the last \(r\) with \(S(l, r) \le x\). Call it \(R(l)\).</span></li>
+<li><span class="why">Removing \(a_l\) only lowers the sum, so \(R(l)\) never moves left as \(l\) grows.</span></li>
+<li><span class="why">Simplest form, two pointers:</span>
+\[ \text{ans} = \sum_{l} \big[\, S(l, R(l)) = x \,\big] \]</li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Because elements are positive, extending the window strictly increases the sum. Monotonicity holds.</li>
-          <li>We extend while <code>sum + v[h+1] &le; x</code>.</li>
-          <li>If the sum hits <code>x</code> exactly, it is counted.</li>
-        </ol>
+<li>All elements are positive, so extending the window strictly increases the sum.</li>
+<li>Extend while \(\text{sum} + a_{h+1} \le x\).</li>
+<li>If the sum then equals \(x\) exactly, count it. Then drop the left element and continue.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate pairs.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2;)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code></span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Two-pointer window.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every pair \((l, r)\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Two-pointer window, each pointer moves at most \(n\) times: <span class="cost">\(O(n)\)</span>.</span></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 520 190" role="img" aria-label="Positive sum monotonic window">
-  <text class="s-td" x="8" y="16">x = 7. Positive elements only.</text>
-  <rect class="s-hi" x="40" y="50" width="40" height="30" rx="4"/>
-  <rect class="s-hi" x="85" y="50" width="40" height="30" rx="4"/>
-  <text class="s-t" x="60" y="70" text-anchor="middle">2</text>
-  <text class="s-t" x="105" y="70" text-anchor="middle">4</text>
-  <text class="s-td" x="8" y="110">Sum is 6. Next is 1, hitting exactly 7.</text>
+<svg viewBox="0 0 430 196" role="img" aria-label="Window sums per left end for 2 4 1 2 7 with x = 7">
+  <text class="s-td" x="8" y="14">2 4 1 2 7, x = 7: widest window with sum &lt;= 7</text>
+  <text class="s-td" x="8" y="34">l</text>
+  <text class="s-td" x="92" y="34" text-anchor="middle">0</text>
+  <text class="s-td" x="144" y="34" text-anchor="middle">1</text>
+  <text class="s-td" x="196" y="34" text-anchor="middle">2</text>
+  <text class="s-td" x="248" y="34" text-anchor="middle">3</text>
+  <text class="s-td" x="300" y="34" text-anchor="middle">4</text>
+  <text class="s-td" x="8" y="60">a</text>
+  <rect class="s-fill" x="70" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="61" text-anchor="middle">2</text>
+  <rect class="s-fill" x="122" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="61" text-anchor="middle">4</text>
+  <rect class="s-fill" x="174" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="61" text-anchor="middle">1</text>
+  <rect class="s-box" x="226" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="61" text-anchor="middle">2</text>
+  <rect class="s-box" x="278" y="42" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="61" text-anchor="middle">7</text>
+  <path class="s-hi" d="M70 78 V84 H218 V78"/>
+  <text class="s-ta" x="144" y="98" text-anchor="middle">l = 0: 2 + 4 + 1 = 7</text>
+  <text class="s-td" x="8" y="132">sum</text>
+  <rect class="s-good" x="70" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="92" y="133" text-anchor="middle">7</text>
+  <rect class="s-good" x="122" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="144" y="133" text-anchor="middle">7</text>
+  <rect class="s-box" x="174" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="196" y="133" text-anchor="middle">3</text>
+  <rect class="s-box" x="226" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="248" y="133" text-anchor="middle">2</text>
+  <rect class="s-good" x="278" y="114" width="44" height="28" rx="4"/>
+  <text class="s-t" x="300" y="133" text-anchor="middle">7</text>
+  <text class="s-ta" x="8" y="172">3 windows hit exactly 7: answer = 3</text>
 </svg>
-          <figcaption>Expanding the window always moves us closer to the target (or blows past it).</figcaption>
+          <figcaption>Row <em>sum</em> is \(S(l, R(l))\), the largest window sum \(\le 7\) from each left end. Positive values make that window unique, and three of them equal \(7\).</figcaption>
         </figure>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">The <span class="cost">O(n)</span> two-pointer is lighter than a prefix map since it requires no hash lookups.</p>
+        <p class="impl-note">The <span class="cost">\(O(n)\)</span> two-pointer is lighter than a prefix map since it requires no hash lookups.</p>
         <div class="src-meta"><span class="path">arrays/Subarray_Sums_I.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -780,6 +1183,29 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    x = int(next(tok))
+    v = [int(next(tok)) for _ in range(n)]
+    t, h, sum_, ans = 0, -1, 0, 0
+    while t &lt; n:
+        while h + 1 &lt; n and sum_ + v[h + 1] &lt;= x:
+            h += 1
+            sum_ += v[h]
+        if sum_ == x:
+            ans += 1
+        if t &gt; h:
+            h = t - 1
+            t += 1
+        else:
+            sum_ -= v[t]
+            t += 1
+    print(ans)
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>This only works because values are strictly positive. Zeros can cause counting subtleties, and negatives break it entirely.</div>

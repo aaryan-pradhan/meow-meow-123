@@ -15,7 +15,7 @@
   <p class="dek">Range structures filed under <code>trees/</code>: a segment tree over an
   Euler tour, descending a segment tree to find a position, lazy range updates, and
   the static 2D case where prefix sums are enough. Reach for this page when there are
-  q &le; 2&middot;10&#8309; queries over an array or a flattened tree.</p>
+  q &le; \(2\cdot 10^{5}\) queries over an array or a flattened tree.</p>
   <p class="stats"><b>5</b> problems &middot; <b>4</b> families</p>
 </header>
 
@@ -66,33 +66,50 @@
     <p class="family-note">A DFS visits a subtree as one contiguous stretch of time. Relabel nodes by entry time and every subtree becomes an array range.</p>
 
     <article class="entry" id="subtree-queries">
-      <div class="entry-head"><h3>Subtree Queries</h3><span class="badge num">O((n+q) log n)</span></div>
+      <div class="entry-head"><h3>Subtree Queries</h3><span class="badge num">\(O((n+q) \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">A rooted tree has node values. Queries are either set v<sub>s</sub> = x, or sum the values in the subtree of s.<div class="formal">subtree(s) &harr; positions [tin[s], tout[s]] in DFS order
-query = &sum; arr[tin[s] .. tout[s]]</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given a tree with \(n\) nodes, rooted at node \(1\); each node has a value
+\(v_i\). Process \(q\) queries of two kinds: set the value of node \(s\) to \(x\), or print the sum of
+the values in the subtree of \(s\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ q\); \(v_1, \dots, v_n\); \(n - 1\) edges; then \(q\) lines <code>1 s x</code> or <code>2 s</code>.</dd>
+<dt>Output</dt><dd>For each <code>2 s</code>, the subtree sum.</dd>
+<dt>Limits</dt><dd>\(1 \le n, q \le 2\cdot 10^5,\ \ 1 \le v_i, x \le 10^9\)</dd>
+<dt>Sample</dt><dd>values <code>4 2 5 2 1</code>, edges \((1,2)(1,3)(3,4)(3,5)\): query \(3 \to 8\); set \(v_5 = 3\); query \(3 \to 10\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Run one DFS and number the nodes in the order they are first entered: \(\text{tin}(v)\). A DFS enters \(s\), visits its whole subtree, then leaves, so the subtree gets consecutive numbers:</span>
+\[ \text{subtree}(s) = \{\, u : \text{tin}(s) \le \text{tin}(u) \le \text{tout}(s) \,\} \]
+<span class="why">where \(\text{tout}(s)\) is the largest entry number inside the subtree.</span></li>
+<li><span class="why">Put each value at its entry number: \(\text{arr}[\text{tin}(u)] = v_u\). Then a subtree sum is a range sum:</span>
+\[ \sum_{u \in \text{subtree}(s)} v_u = \sum_{i = \text{tin}(s)}^{\text{tout}(s)} \text{arr}[i] \]</li>
+<li><span class="why">Simplest form: a set is a point update at \(\text{tin}(s)\); a query is a range sum. One sum segment tree, \(O(\log n)\) each.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A DFS enters s, visits the whole subtree, then leaves, so the subtree occupies consecutive entry times.</li>
-          <li>tin = the entry time. tout = the largest entry time inside the subtree.</li>
-          <li>An update is a point write at <code>tin[s]</code>, and a query is a range sum. That is a plain segment tree.</li>
-        </ol>
+<li>A DFS enters \(s\), visits the whole subtree, then leaves, so the subtree has consecutive entry numbers.</li>
+<li>\(\text{tin}\) is the entry number; \(\text{tout}\) is the largest entry number inside the subtree.</li>
+<li>An update is a point write at \(\text{tin}(s)\), and a query is a range sum: a plain segment tree.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DFS the subtree for each query.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n)</span> per query.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, q = 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Flatten, then use a sum segment tree: <span class="cost">O(log n)</span> per operation.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DFS the subtree for each query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n)\)</span> per query.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = q = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Flatten the tree, then a sum segment tree: <span class="cost">\(O(\log n)\)</span> per operation.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 360 110" role="img" aria-label="Euler tour array for sample"><text class="s-td" x="4" y="16">tin order &rarr; node / value</text><rect class="s-box" x="20" y="30" width="56" height="40" rx="4"/><rect class="s-box" x="84" y="30" width="56" height="40" rx="4"/><rect class="s-fill" x="148" y="30" width="56" height="40" rx="4"/><rect class="s-fill" x="212" y="30" width="56" height="40" rx="4"/><rect class="s-fill" x="276" y="30" width="56" height="40" rx="4"/><text class="s-tm" x="48" y="46" text-anchor="middle">1</text><text class="s-tm" x="112" y="46" text-anchor="middle">2</text><text class="s-tm" x="176" y="46" text-anchor="middle">3</text><text class="s-tm" x="240" y="46" text-anchor="middle">4</text><text class="s-tm" x="304" y="46" text-anchor="middle">5</text><text class="s-t" x="48" y="63" text-anchor="middle">4</text><text class="s-t" x="112" y="63" text-anchor="middle">2</text><text class="s-t" x="176" y="63" text-anchor="middle">5</text><text class="s-t" x="240" y="63" text-anchor="middle">2</text><text class="s-t" x="304" y="63" text-anchor="middle">1 &rarr; 3</text><text class="s-ta" x="148" y="92">subtree(3) = [tin 3, tout 5]: 8, then 10</text></svg>
+<svg viewBox="0 0 360 110" role="img" aria-label="Euler tour array for sample"><text class="s-td" x="4" y="16">tin order &rarr; node / value</text><rect class="s-box" x="20" y="30" width="56" height="40" rx="4"/><rect class="s-box" x="84" y="30" width="56" height="40" rx="4"/><rect class="s-fill" x="148" y="30" width="56" height="40" rx="4"/><rect class="s-fill" x="212" y="30" width="56" height="40" rx="4"/><rect class="s-fill" x="276" y="30" width="56" height="40" rx="4"/><text class="s-tm" x="48" y="46" text-anchor="middle">1</text><text class="s-tm" x="112" y="46" text-anchor="middle">2</text><text class="s-tm" x="176" y="46" text-anchor="middle">3</text><text class="s-tm" x="240" y="46" text-anchor="middle">4</text><text class="s-tm" x="304" y="46" text-anchor="middle">5</text><text class="s-t" x="48" y="63" text-anchor="middle">4</text><text class="s-t" x="112" y="63" text-anchor="middle">2</text><text class="s-t" x="176" y="63" text-anchor="middle">5</text><text class="s-t" x="240" y="63" text-anchor="middle">2</text><text class="s-t" x="304" y="63" text-anchor="middle">1 &rarr; 3</text><text class="s-ta" x="20" y="92">subtree(3) = [tin 3, tout 5]: 8, then 10</text></svg>
           <figcaption>With edges 1&ndash;2, 1&ndash;3, 3&ndash;4, 3&ndash;5, the DFS order is 1 2 3 4 5. Subtree of 3 is positions 3..5: 5+2+1 = 8. After setting node 5 to 3, it is 10.</figcaption>
         </figure>
       </div>
@@ -284,8 +301,113 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+n, q = 0, 0
+g = []
+tin = []
+tout = []
+val = []
+s = []
+timer = 1
+
+def dfs(node, parent):
+    global timer
+    tin[node] = timer
+    s[timer] = val[node]
+    timer += 1
+    for child in g[node]:
+        if child != parent:
+            dfs(child, node)
+    tout[node] = timer - 1
+
+class node:
+    def __init__(self):
+        self.sum = 0
+
+st = []
+
+def merge(a, b):
+    res = node()
+    res.sum = a.sum + b.sum
+    return res
+
+def build(id, l, r):
+    # build both inclusive only
+    if l == r:
+        st[id].sum = s[l]
+        return
+    mid = l + (r - l) // 2
+    build(2 * id, l, mid)
+    build(2 * id + 1, mid + 1, r)
+    st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def update(id, l, r, pos, val):             # this val is a parameter: it hides the global val, same as C++
+    if pos &lt; l or pos &gt; r:
+        return
+    elif l == r and l == pos:
+        st[id].sum = val
+        return
+    else:
+        mid = l + (r - l) // 2
+        update(2 * id, l, mid, pos, val)
+        update(2 * id + 1, mid + 1, r, pos, val)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def query(id, l, r, lq, rq):
+    if rq &lt; l:
+        return node()
+    elif lq &gt; r:
+        return node()
+    elif lq &lt;= l and r &lt;= rq:
+        return st[id]
+    else:
+        mid = l + (r - l) // 2
+        left = query(2 * id, l, mid, lq, rq)
+        right = query(2 * id + 1, mid + 1, r, lq, rq)
+        return merge(left, right)
+
+def encode(node):
+    return tin[node]
+
+def encode_tree(node):
+    return (tin[node], tout[node])
+
+def solve():
+    global n, q, val, tin, tout, g, s, st
+    n, q = int(next(tok)), int(next(tok))
+    val = [0] * (n + 1)
+    for i in range(1, n + 1):
+        val[i] = int(next(tok))
+    tin = [0] * (n + 1)
+    tout = [0] * (n + 1)
+    g = [[] for _ in range(n + 1)]
+    for i in range(1, n):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    s = [0] * (n + 1)
+    dfs(1, 0)
+    st = [node() for _ in range(4 * n + 5)]   # st.resize(4*n + 5): each slot is a fresh node()
+    build(1, 1, n)
+    out = []
+    for _ in range(q):
+        type_ = int(next(tok))
+        if type_ == 1:
+            s_, x = int(next(tok)), int(next(tok))  # C++'s block-local "ll s" -&gt; s_, so the global s survives
+            update(1, 1, n, encode(s_), x)
+        else:
+            s_ = int(next(tok))
+            enc = encode_tree(s_)
+            ans = query(1, 1, n, enc[0], enc[1])
+            out.append(ans.sum)
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong><code>tout[node] = timer &minus; 1</code>, because timer has already moved past the last node visited. Inside <code>solve</code>, the local <code>ll s</code> shadows the global vector <code>s</code>. That is only harmless because <code>build</code> has already run.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>\(\text{tout}[\text{node}] = \text{timer} - 1\), because timer has already moved past the last node visited. Inside <code>solve</code>, the local <code>ll s</code> shadows the global vector <code>s</code>. That is only harmless because <code>build</code> has already run.</div>
       <div class="callout trigger"><strong>Recognize</strong>"update a node, query its whole subtree" &rarr; Euler tour flatten plus a segment tree.</div>
     </article>
   </section>
@@ -293,30 +415,48 @@ signed main()
   <!-- ===================== FAMILY 2 ===================== -->
   <section class="family" id="f2">
     <div class="family-head"><h2>2 &middot; Segment tree descent</h2></div>
-    <p class="family-note">The query is a position, not an aggregate. At each node, check whether the left child's aggregate is enough and go left or right. That is one root-to-leaf walk, <span class="cost">O(log n)</span>, with no outer binary search.</p>
+    <p class="family-note">The query is a position, not an aggregate. At each node, check whether the left child's aggregate is enough and go left or right. That is one root-to-leaf walk, <span class="cost">\(O(\log n)\)</span>, with no outer binary search.</p>
 
     <article class="entry" id="hotel-queries">
-      <div class="entry-head"><h3>Hotel Queries</h3><span class="badge num">O((n+m) log n)</span></div>
+      <div class="entry-head"><h3>Hotel Queries</h3><span class="badge num">\(O((n+m) \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">For each group of size r, find the first hotel with at least r free rooms, print its index and subtract r. If there is none, print 0.<div class="formal">i* = min { i : h[i] &ge; r },   h[i*] &minus;= r</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) hotels in a row; hotel \(i\) has \(h_i\) free rooms. Groups arrive one
+after another; a group needing \(r\) rooms goes to the <em>first</em> hotel with at least \(r\) free
+rooms, which then has \(r\) fewer. Print the hotel for each group, or \(0\) if none fits.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\); then \(h_1, \dots, h_n\); then \(r_1, \dots, r_m\).</dd>
+<dt>Output</dt><dd>\(m\) integers: the hotel of each group, or \(0\).</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 2\cdot 10^5,\ \ 1 \le h_i, r_j \le 10^9\)</dd>
+<dt>Sample</dt><dd>hotels <code>3 2 4 1 5 5 2 6</code>, groups <code>4 4 7 1 1</code> → <code>3 5 0 1 1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">For a group of size \(r\):</span>
+\[ i^{*} = \min \{\, i : h_i \ge r \,\}, \qquad h_{i^*} \leftarrow h_{i^*} - r \qquad (\text{print } 0 \text{ if no such } i) \]</li>
+<li><span class="why">Store the maximum of each block in a segment tree. If the whole array's max is \(\lt r\), nothing fits.</span></li>
+<li><span class="why">Otherwise walk down from the root. The first fit is in the left half exactly when the left half has a big enough hotel:</span>
+\[ \max(\text{left}) \ge r \;\Rightarrow\; \text{go left}, \qquad \text{else go right} \]</li>
+<li><span class="why">Simplest form: one descent to find \(i^*\), then a point update of \(h_{i^*}\). Both \(O(\log n)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>If max(left half) &ge; r, the first fit is in the left half. Otherwise it is in the right half.</li>
-          <li>So a max segment tree answers "first fit" with one descent.</li>
-          <li>Subtracting is a point update of the leaf's new value.</li>
-        </ol>
+<li>If \(\max(\text{left half}) \ge r\), the first fit is in the left half. Otherwise it is in the right half.</li>
+<li>So a max segment tree answers "first fit" with one walk down.</li>
+<li>Subtracting is a point update with the leaf's new value.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Scan from hotel 1 for each group.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n)</span> per group.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, m = 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Max segment tree plus descent: <span class="cost">O(log n)</span> per group.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Scan from hotel \(1\) for each group.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n)\)</span> per group.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Max segment tree plus one walk down: <span class="cost">\(O(\log n)\)</span> per group.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -481,33 +621,133 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+n, q = 0, 0
+h = []
+r = []
+
+class stnode:
+    def __init__(self):
+        self.mx = -INF
+
+st = []
+
+def merge(a, b):
+    res = stnode()
+    res.mx = max(a.mx, b.mx)
+    return res
+
+def build(id, l, r):
+    if l == r:
+        st[id].mx = h[l]
+        return
+    else:
+        mid = l + (r - l) // 2
+        build(2 * id, l, mid)
+        build(2 * id + 1, mid + 1, r)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def update(id, l, r, pos, val):
+    if pos &lt; l:
+        return
+    elif pos &gt; r:
+        return
+    elif l == r and l == pos:
+        st[id].mx = val
+        return
+    else:
+        mid = l + (r - l) // 2
+        update(2 * id, l, mid, pos, val)
+        update(2 * id + 1, mid + 1, r, pos, val)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def query(id, l, r, val):
+    if st[id].mx &lt; val:
+        # if the maximum value in this segment is less than val, then there is no hotel in this segment that can accommodate the group, so we return 0
+        return -1
+    elif l == r:
+        # we are at a leaf node, so we return the index of the hotel
+        if st[id].mx &gt;= val:
+            return l
+        else:
+            return -1
+    else:
+        mid = l + (r - l) // 2
+        # we first check the left child, because we want to find the first hotel that can accommodate the group
+        left = query(2 * id, l, mid, val)
+        if left != -1:
+            return left
+        else:
+            return query(2 * id + 1, mid + 1, r, val)
+
+def solve():
+    global n, q, h, r, st
+    n, q = int(next(tok)), int(next(tok))
+    h = [0] * (n + 1)
+    r = [0] * (q + 1)
+    st = [stnode() for _ in range(4 * n + 5)]
+    for i in range(1, n + 1):
+        h[i] = int(next(tok))
+    build(1, 1, n)
+    out = []
+    for i in range(1, q + 1):
+        r[i] = int(next(tok))
+        hotel = query(1, 1, n, r[i])
+        if hotel == -1:
+            out.append(0)
+        else:
+            out.append(hotel)
+            h[hotel] -= r[i]
+            update(1, 1, n, hotel, h[hotel])
+    print(' '.join(map(str, out)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The <code>st[id].mx &lt; val</code> prune at the top of <code>query</code> is what makes it logarithmic. Without it, the left-first recursion is a full O(n) scan. The internal "no fit" is &minus;1, and the print converts it to 0.</div>
       <div class="callout trigger"><strong>Recognize</strong>"first position whose value is at least x, with updates" &rarr; max segment tree, descend left-first.</div>
     </article>
 
     <article class="entry" id="list-removals">
-      <div class="entry-head"><h3>List Removals</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>List Removals</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Repeatedly remove the element at current position p and print it.<div class="formal">alive[i] &isin; {0,1};  remove min { j : &sum;<sub>i&le;j</sub> alive[i] = p }</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given a list of \(n\) integers. Then \(n\) times, remove the element at the given
+<em>current</em> position \(p_i\) (positions are renumbered \(1..k\) after every removal) and print it.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\); then \(x_1, \dots, x_n\); then \(p_1, \dots, p_n\).</dd>
+<dt>Output</dt><dd>The removed elements, in order.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9,\ \ 1 \le p_i \le n - i + 1\)</dd>
+<dt>Sample</dt><dd><code>2 6 1 4 2</code>, positions <code>3 1 3 1 1</code> → <code>1 2 2 6 4</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Keep the original indices and a flag \(\text{alive}_i \in \{0, 1\}\). The element at current position \(p\) is the \(p\)-th alive one:</span>
+\[ j^{*} = \min \Big\{\, j : \sum_{i \le j} \text{alive}_i = p \,\Big\} \]</li>
+<li><span class="why">A segment tree stores how many are alive in each block. Walk down from the root with a target \(k = p\):</span>
+\[ \text{cnt}(\text{left}) \ge k \;\Rightarrow\; \text{go left}, \qquad \text{else go right with } k \leftarrow k - \text{cnt}(\text{left}) \]</li>
+<li><span class="why">Simplest form: print \(x_{j^*}\), then set \(\text{alive}_{j^*} = 0\) (a point update). \(O(\log n)\) per removal.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Keep the original indices and mark a removal by setting its leaf to 0.</li>
-          <li>Current position p = the p-th leaf that is still 1.</li>
-          <li>Descend: if the left count is &ge; k, go left. Otherwise go right with k &minus; left count.</li>
-        </ol>
+<li>Keep the original indices and mark a removal by setting its leaf to \(0\).</li>
+<li>The current position \(p\) is the \(p\)-th leaf that is still \(1\).</li>
+<li>Walk down: if the left count is \(\ge k\), go left. Otherwise go right with \(k - \text{left count}\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v"><code>vector::erase</code> at p.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n)</span> per removal.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code> &rarr; <span class="cost">~2&middot;10&#185;&#8304;</span> shifts.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Count segment tree plus k-th-one descent: <span class="cost">O(log n)</span> per removal.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v"><code>vector::erase</code> at \(p\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n)\)</span> per removal.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) shifts.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Count segment tree plus a find-\(k\)-th walk: <span class="cost">\(O(\log n)\)</span> per removal.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -656,8 +896,81 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+n = 0
+arr = []
+
+class stnode:
+    def __init__(self):
+        self.sum = 0
+
+st = []
+
+def merge(a, b):
+    res = stnode()
+    res.sum = a.sum + b.sum
+    return res
+
+def build(id, l, r):
+    if l == r:
+        st[id].sum = 1
+    else:
+        mid = l + (r - l) // 2
+        build(2 * id, l, mid)
+        build(2 * id + 1, mid + 1, r)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def update(id, l, r, pos):
+    if pos &lt; l:
+        return
+    elif pos &gt; r:
+        return
+    elif l == r and l == pos:
+        st[id].sum = 0
+        return
+    else:
+        mid = l + (r - l) // 2
+        update(2 * id, l, mid, pos)
+        update(2 * id + 1, mid + 1, r, pos)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def query(id, l, r, k):
+    if k &gt; st[id].sum:
+        # if k is greater than the number of elements in the current segment, then we cannot find the kth element in this segment, so we return -1
+        return -1
+    elif l == r and k == 1:
+        return l
+    elif l == r and k != 1:
+        return -1
+    else:
+        mid = l + (r - l) // 2
+        if st[2 * id].sum &gt;= k:
+            return query(2 * id, l, mid, k)
+        else:
+            # if the number of elements in the left child is less than k, then we need to find the (k - st[2 * id].sum)th element in the right child, because we have already counted st[2 * id].sum elements in the left child
+            return query(2 * id + 1, mid + 1, r, k - st[2 * id].sum)
+
+def solve():
+    global n, arr, st
+    n = int(next(tok))
+    arr = [0] * (n + 1)
+    st = [stnode() for _ in range(4 * n + 5)]
+    for i in range(1, n + 1):
+        arr[i] = int(next(tok))
+    build(1, 1, n)
+    out = []
+    for i in range(1, n + 1):
+        k = int(next(tok))
+        index = query(1, 1, n, k)
+        out.append(arr[index])
+        update(1, 1, n, index)
+    print(' '.join(map(str, out)))
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Going right, pass <code>k &minus; st[2&middot;id].sum</code>, not k. The left child's survivors come first.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Going right, pass \(k - \text{st}[2\cdot \text{id}].\text{sum}\), not k. The left child's survivors come first.</div>
       <div class="callout trigger"><strong>Recognize</strong>"remove or find by <em>current</em> position in a shrinking list" &rarr; 0/1 count tree, k-th one by descent.</div>
     </article>
   </section>
@@ -668,27 +981,44 @@ signed main()
     <p class="family-note">A range update stops at the O(log n) nodes that fully cover the range and leaves a tag. Every later visit pushes the tag down first, so no node is read stale.</p>
 
     <article class="entry" id="range-update-queries">
-      <div class="entry-head"><h3>Range Update Queries</h3><span class="badge num">O((n+q) log n)</span></div>
+      <div class="entry-head"><h3>Range Update Queries</h3><span class="badge num">\(O((n+q) \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Queries either add u to every x<sub>i</sub> in [a, b], or print x<sub>k</sub>.<div class="formal">push: sum += (r&minus;l+1)&middot;lazy;  children.lazy += lazy;  lazy = 0</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers. Process \(q\) queries of two kinds: add \(u\)
+to every value in positions \(a..b\), or print the value at position \(k\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ q\); \(x_1, \dots, x_n\); then \(q\) lines <code>1 a b u</code> or <code>2 k</code>.</dd>
+<dt>Output</dt><dd>For each <code>2 k</code>, the value \(x_k\).</dd>
+<dt>Limits</dt><dd>\(1 \le n, q \le 2\cdot 10^5,\ \ 1 \le x_i, u \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 2 4 5 1 1 5 3</code>: \(x_4 \to 5\); add \(1\) on \([2, 5]\); \(x_4 \to 6\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">The range \([a, b]\) splits into \(O(\log n)\) segment tree nodes that it covers fully. Put a "pending add" tag on those nodes and stop.</span></li>
+<li><span class="why">A tag \(t\) on a node covering \([l, r]\) means every element there grows by \(t\), so the node's sum grows by the length times \(t\):</span>
+\[ \text{sum} \mathrel{+}= (r - l + 1) \cdot t \]</li>
+<li><span class="why">Before going below a tagged node, push the tag to its children:</span>
+\[ \text{lazy}(\text{child}) \mathrel{+}= \text{lazy}(\text{node}), \qquad \text{lazy}(\text{node}) \leftarrow 0 \]</li>
+<li><span class="why">Simplest form: push on entry to both update and query; each is \(O(\log n)\). (Even simpler: a difference array \(d_a \mathrel{+}= u,\ d_{b+1} \mathrel{-}= u\) under a plain sum tree, where \(x_k = x_k^{(0)} + \sum_{i \le k} d_i\).)</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>[a, b] splits into O(log n) fully covered nodes, so tag those and stop.</li>
-          <li>A tag on a node applies to its whole range, which is why <code>len&middot;lazy</code> goes into the sum.</li>
-          <li>Push on entry to both update and query, so anything read is current.</li>
-        </ol>
+<li>\([a, b]\) splits into \(O(\log n)\) fully covered nodes, so tag those and stop.</li>
+<li>A tag on a node applies to its whole range, which is why length \(\times\) tag goes into the sum.</li>
+<li>Push on entry to both update and query, so anything read is up to date.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Loop from a to b on every update.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n)</span> per update.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, q = 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Lazy segment tree: <span class="cost">O(log n)</span> per operation. A difference array under a plain sum tree also works, with no tags.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Loop from \(a\) to \(b\) on every update.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n)\)</span> per update.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = q = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Lazy segment tree: <span class="cost">\(O(\log n)\)</span> per operation. A difference array under a plain sum tree also works, with no tags.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -848,6 +1178,88 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+n, q = 0, 0
+arr = []
+out = []
+
+class stnode:
+    def __init__(self):
+        self.sum = 0
+        self.lazy = 0
+
+st = []
+
+def merge(a, b):
+    res = stnode()
+    res.sum = a.sum + b.sum
+    return res
+
+def push(id, l, r):
+    if st[id].lazy != 0:
+        st[id].sum += (r - l + 1) * st[id].lazy
+        if l != r:
+            st[2 * id].lazy += st[id].lazy
+            st[2 * id + 1].lazy += st[id].lazy
+        st[id].lazy = 0
+
+def build(id, l, r):
+    if l == r:
+        st[id].sum = arr[l]
+        return
+    else:
+        mid = l + (r - l) // 2
+        build(2 * id, l, mid)
+        build(2 * id + 1, mid + 1, r)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def update(id, l, r, lq, rq, val):
+    push(id, l, r)
+    if rq &lt; l or lq &gt; r:
+        return
+    elif lq &lt;= l and r &lt;= rq:
+        st[id].lazy += val
+        # why do we need to push here? because we need to update the current node's sum value as well, since we are adding a lazy value to it. If we don't push here, the sum value will not be updated and will be incorrect when we query it later.
+        push(id, l, r)
+    else:
+        mid = l + (r - l) // 2
+        update(2 * id, l, mid, lq, rq, val)
+        update(2 * id + 1, mid + 1, r, lq, rq, val)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def query(id, l, r, pos):
+    push(id, l, r)
+    if pos &lt; l or pos &gt; r:
+        return
+    elif l == r and l == pos:
+        out.append(st[id].sum)              # cout inside query -&gt; append to the shared output list
+        return
+    else:
+        mid = l + (r - l) // 2
+        query(2 * id, l, mid, pos)
+        query(2 * id + 1, mid + 1, r, pos)
+
+def solve():
+    global n, q, arr, st
+    n, q = int(next(tok)), int(next(tok))
+    arr = [0] * (n + 1)
+    for i in range(1, n + 1):
+        arr[i] = int(next(tok))
+    st = [stnode() for _ in range(4 * n + 5)]
+    build(1, 1, n)
+    for _ in range(q):
+        type_ = int(next(tok))
+        if type_ == 1:
+            a, b, u = int(next(tok)), int(next(tok)), int(next(tok))
+            update(1, 1, n, a, b, u)
+        else:
+            k = int(next(tok))
+            query(1, 1, n, k)
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Push <em>before</em> the out-of-range return in <code>update</code>. Otherwise the parent's <code>merge</code> reads a sibling's sum that still has a pending tag.</div>
       <div class="callout trigger"><strong>Recognize</strong>"add to a range, read a point or range, interleaved" &rarr; lazy segment tree.</div>
@@ -860,28 +1272,45 @@ signed main()
     <p class="family-note">A static grid needs no tree. Precompute once, and each rectangle is four corners with inclusion&ndash;exclusion.</p>
 
     <article class="entry" id="forest-queries">
-      <div class="entry-head"><h3>Forest Queries</h3><span class="badge num">O(n&sup2; + q)</span></div>
+      <div class="entry-head"><h3>Forest Queries</h3><span class="badge num">\(O(n^{2} + q)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">For each query, count the trees (<code>*</code>) inside a rectangle of a fixed n&times;n grid.<div class="formal">ps[i][j] = f[i][j] + ps[i&minus;1][j] + ps[i][j&minus;1] &minus; ps[i&minus;1][j&minus;1]
-ans = ps[y2][x2] &minus; ps[y1&minus;1][x2] &minus; ps[y2][x1&minus;1] + ps[y1&minus;1][x1&minus;1]</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given an \(n \times n\) map of a forest; each square is empty (<code>.</code>) or
+has a tree (<code>*</code>). Answer \(q\) queries: how many trees are inside the rectangle with corners
+\((y_1, x_1)\) and \((y_2, x_2)\)?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ q\); \(n\) lines of the map; then \(q\) lines \(y_1\ x_1\ y_2\ x_2\).</dd>
+<dt>Output</dt><dd>For each query, the number of trees in the rectangle.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000,\ \ 1 \le q \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>the \(4 \times 4\) map in the file: \((2,2,3,4) \to 3\); \((3,1,3,1) \to 1\); \((1,1,2,2) \to 2\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(f(i, j) = 1\) if square \((i, j)\) has a tree, else \(0\). Define 2-D prefix sums (with row and column \(0\) equal to \(0\)):</span>
+\[ P(i, j) = \sum_{i' \le i} \sum_{j' \le j} f(i', j') = f(i, j) + P(i-1, j) + P(i, j-1) - P(i-1, j-1) \]
+<span class="why">(The \(-P(i-1, j-1)\) removes the corner that was added twice.)</span></li>
+<li><span class="why">A rectangle is the big prefix, minus the strip above, minus the strip to the left, plus the corner removed twice:</span>
+\[ \text{ans} = P(y_2, x_2) - P(y_1 - 1, x_2) - P(y_2, x_1 - 1) + P(y_1 - 1, x_1 - 1) \]</li>
+<li><span class="why">Simplest form: build \(P\) once in \(O(n^2)\); each query is four lookups.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>There are no updates, so the counts can be precomputed.</li>
-          <li>A rectangle is the big prefix minus the strip above and the strip to the left, plus the corner that was subtracted twice.</li>
-          <li>1-indexing with a zero row and column removes every bounds check.</li>
-        </ol>
+<li>There are no updates, so the counts can be precomputed.</li>
+<li>A rectangle is the big prefix minus the strip above and the strip to the left, plus the corner that was subtracted twice.</li>
+<li>1-indexing with an extra zero row and column removes every bounds check.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Count the cells for each query.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2;)</span> per query.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 1000, q = 2&middot;10&#8309;</code> &rarr; <span class="cost">2&middot;10&#185;&#185;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">2D prefix sums: <span class="cost">O(n&sup2;)</span> build, <span class="cost">O(1)</span> per query.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Count the squares for each query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span> per query.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000,\ q = 2\cdot 10^5\) gives \(2\cdot 10^{11}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">2-D prefix sums: <span class="cost">\(O(n^2)\)</span> build, <span class="cost">\(O(1)\)</span> per query.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -892,7 +1321,7 @@ ans = ps[y2][x2] &minus; ps[y1&minus;1][x2] &minus; ps[y2][x1&minus;1] + ps[y1&m
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>cin &gt;&gt; c</code> reads one non-space character at a time, so the row strings need no parsing. <code>f</code> and <code>ps</code> are both (n+1)&sup2;, and row and column 0 stay zero.</p>
+        <p class="impl-note"><code>cin &gt;&gt; c</code> reads one non-space character at a time, so the row strings need no parsing. <code>f</code> and <code>ps</code> are both \((n+1)^2\), and row and column 0 stay zero.</p>
         <div class="src-meta"><span class="path">trees/Forest_Queries.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -960,8 +1389,31 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, q = int(next(tok)), int(next(tok))
+    f = [[0] * (n + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        row = next(tok)                     # cin &gt;&gt; char one at a time; our token is the whole row
+        for j in range(1, n + 1):
+            c = row[j - 1]                  # row is 0-indexed, j is 1-indexed
+            if c == '*':
+                f[i][j] = 1
+    ps = [[0] * (n + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            ps[i][j] = f[i][j] + ps[i - 1][j] + ps[i][j - 1] - ps[i - 1][j - 1]
+    out = []
+    for _ in range(q):
+        y1, x1, y2, x2 = (int(next(tok)) for _ in range(4))
+        out.append(ps[y2][x2] - ps[y1 - 1][x2] - ps[y2][x1 - 1] + ps[y1 - 1][x1 - 1])
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Add back <code>ps[y1&minus;1][x1&minus;1]</code>, because the two strips both subtracted it. Queries give <code>y</code> (row) first.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Add back \(\text{ps}[y1-1][x1-1]\), because the two strips both subtracted it. Queries give <code>y</code> (row) first.</div>
       <div class="callout trigger"><strong>Recognize</strong>"static grid, many rectangle counts or sums" &rarr; 2D prefix sums.</div>
     </article>
   </section>

@@ -60,27 +60,43 @@
     <div class="family-head"><h2>1 &middot; Flood fill</h2></div>
     <p class="family-note">Label connected components; the answer is a count or a function of the count.</p>
     <article class="entry" id="counting-rooms">
-      <div class="entry-head"><h3>Counting Rooms</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Counting Rooms</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count 4-connected components of <code>.</code> cells in an <code>n × m</code> grid.</div>
+        <div class="ask">
+<p><b>Question.</b> You are given a map of a building, \(n \times m\) squares, where each square is
+floor (<code>.</code>) or wall (<code>#</code>). You can walk left, right, up and down through floor
+squares. A room is a group of floor squares you can walk between. How many rooms are there?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(n\) lines of \(m\) characters.</dd>
+<dt>Output</dt><dd>One integer: the number of rooms.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(5 \times 8\) map in the file → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Make a graph: each floor square is a vertex, and two floor squares sharing a side are joined by an edge.</span></li>
+<li><span class="why">A room is exactly a connected component of this graph:</span>
+\[ \text{ans} = \#\{\text{connected components of the floor graph}\} \]</li>
+<li><span class="why">Simplest form: scan all squares. Each time you meet an unvisited floor square, add \(1\) and flood-fill (DFS/BFS) its whole room. Every square is visited once, so \(O(nm)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A room is a connected component of the implicit grid graph.</li>
-          <li>Each DFS launched from an unvisited floor cell marks exactly one whole room.</li>
-          <li>Every cell is visited once &rArr; linear in the grid size.</li>
-        </ol>
+<li>A room is a connected component of the grid graph.</li>
+<li>Each DFS started from an unvisited floor square marks exactly one whole room.</li>
+<li>Every square is visited once, so the work is linear in the grid size.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">For every pair of floor cells, test connectivity.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O((nm)²)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, m ≤ 1000</code> &rarr; 10⁶ cells, 10¹² pairs.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One flood fill per component, marking as you go: <span class="cost">O(n·m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">For every pair of floor squares, test whether they are connected.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O((nm)^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 1000\) gives \(10^6\) squares and \(10^{12}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One flood fill per room, marking as you go: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -180,32 +196,83 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**7)                # recursive dfs over up to n*m cells
+tok = iter(sys.stdin.read().split())
+
+dx = [0, 0, 1, -1]
+dy = [1, -1, 0, 0]
+vis = []
+v = []
+c = 0
+
+def dfs(x, y, n, m):
+    vis[x][y] = c
+    for i in range(4):
+        nx = x + dx[i]
+        ny = y + dy[i]
+        if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and not vis[nx][ny] and v[nx][ny] == '.':
+            dfs(nx, ny, n, m)
+
+def solve():
+    global vis, v, c
+    n, m = int(next(tok)), int(next(tok))
+    vis = [[0] * m for _ in range(n)]       # vis.resize(n, vector&lt;ll&gt;(m, 0))
+    v = [next(tok) for _ in range(n)]
+    for i in range(n):
+        for j in range(m):
+            if not vis[i][j] and v[i][j] == '.':
+                c += 1
+                dfs(i, j, n, m)
+    maxi = 0
+    for i in range(n):
+        for j in range(m):
+            maxi = max(maxi, vis[i][j])
+    print(maxi)
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Recursive DFS on a 1000 × 1000 open floor goes ~10⁶ frames deep. It passes CSES's stack, but a BFS queue is the safe default elsewhere.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Recursive DFS on a 1000 × 1000 open floor goes \(\approx 10^{6}\) frames deep. It passes CSES's stack, but a BFS queue is the safe default elsewhere.</div>
       <div class="callout trigger"><strong>Recognize</strong>"count regions / islands / rooms in a grid" &rarr; flood fill, count launches.</div>
     </article>
     <article class="entry" id="building-roads">
-      <div class="entry-head"><h3>Building Roads</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Building Roads</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Add the fewest roads to make an undirected graph connected, and list them.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) two-way roads. Build the fewest new roads so that
+every city can reach every other city, and print which roads to build.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of new roads \(k\), then \(k\) lines \(a\ b\). Any valid answer is accepted.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 4\), roads \((1,2), (3,4)\) → <code>1</code>, road <code>2 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(c\) be the number of connected components. A new road joins at most two components, so it lowers \(c\) by at most \(1\). Getting to \(c = 1\) needs:</span>
+\[ k \ge c - 1 \]</li>
+<li><span class="why">\(c - 1\) roads are enough: pick one city \(r_1, \dots, r_c\) from each component and join neighbours in that list:</span>
+\[ (r_1, r_2),\ (r_2, r_3),\ \dots,\ (r_{c-1}, r_c) \]</li>
+<li><span class="why">Simplest form: \(k = c - 1\). Find components with one DFS pass, keep the first city of each.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Each new road can merge at most two components &rArr; at least <code>k &minus; 1</code> roads.</li>
-          <li><code>k &minus; 1</code> suffice: chain one representative of each component to the next.</li>
-          <li>Any vertex is a valid representative.</li>
-        </ol>
+<li>Each new road merges at most two components, so at least \(c - 1\) roads are needed.</li>
+<li>\(c - 1\) are enough: chain one city from each component to the next.</li>
+<li>Any city of a component works as its representative.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try adding edges between arbitrary pairs until connected.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n²) checks</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code> &rarr; 10¹⁰ candidate pairs.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Label components once, chain representatives: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Keep adding roads between pairs and re-checking connectivity.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span> candidate pairs.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\) gives \(10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Label components once, chain the representatives: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -302,6 +369,43 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+g = []
+vis = []
+n, m = 0, 0
+col = 0
+
+def dfs(node):
+    vis[node] = col
+    for child in g[node]:                   # for (auto child : g[node])
+        if not vis[child]:
+            dfs(child)
+
+def solve():
+    global n, m, g, vis, col
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]          # adjacency list: one empty list per node
+    vis = [0] * (n + 1)
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    for i in range(1, n + 1):
+        if vis[i] == 0:
+            col += 1
+            dfs(i)
+    out = [col - 1]
+    comp = [[] for _ in range(col + 1)]
+    for i in range(1, n + 1):
+        comp[vis[i]].append(i)
+    for i in range(1, col):
+        out.append(f"{comp[i][0]} {comp[i + 1][0]}")
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Output differs from the CSES sample (<code>1 3</code> vs <code>2 3</code>) and is still accepted &mdash; any representative works. Don't "fix" it to match.</div>
       <div class="callout trigger"><strong>Recognize</strong>"minimum edges to make connected" &rarr; count components, answer k &minus; 1.</div>
@@ -312,27 +416,43 @@ signed main()
     <div class="family-head"><h2>2 &middot; BFS + parent</h2></div>
     <p class="family-note">Shortest path in edges, with a parent pointer per vertex to rebuild the route.</p>
     <article class="entry" id="message-route">
-      <div class="entry-head"><h3>Message Route</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Message Route</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Fewest computers on a path from 1 to n in an unweighted undirected graph, and the path itself.</div>
+        <div class="ask">
+<p><b>Question.</b> A network has \(n\) computers and \(m\) two-way connections. Can computer \(1\)
+send a message to computer \(n\)? If yes, find a route that passes through the fewest computers, and
+print it. Otherwise print <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of computers \(k\) on the route, then the route; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>edges \((1,2)(1,3)(1,4)(2,3)(5,4)\) → <code>3</code>, route <code>1 4 5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Every connection has the same cost, so we want the fewest edges from \(1\) to \(n\). Let \(d(v)\) be that number for vertex \(v\).</span></li>
+<li><span class="why">BFS visits vertices in order of \(d\): first \(d = 0\), then all with \(d = 1\), and so on. When \(v\) is first reached from \(u\):</span>
+\[ d(v) = d(u) + 1, \qquad \text{par}(v) = u \]</li>
+<li><span class="why">Simplest form: \(k = d(n) + 1\) computers. The route is \(n,\ \text{par}(n),\ \text{par}(\text{par}(n)), \dots, 1\), printed in reverse.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Unweighted &rArr; BFS layers are distances.</li>
-          <li>The first time a vertex is discovered is via a shortest path; record that parent.</li>
-          <li>Walk <code>par</code> back from <code>n</code> and reverse.</li>
-        </ol>
+<li>All edges cost the same, so BFS layers are distances.</li>
+<li>The first time a vertex is reached is along a shortest path. Record that parent.</li>
+<li>Walk <code>par</code> back from \(n\) and reverse.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DFS all simple paths, keep the shortest.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">BFS: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DFS over all simple paths, keep the shortest.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">BFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -435,32 +555,86 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    vis = [0] * (n + 1)
+    par = [-1] * (n + 1)
+    q = deque()                             # queue&lt;ll&gt;: deque, push = append, front+pop = popleft()
+    q.append(1)
+    vis[1] = 1
+    while q:
+        node = q.popleft()                  # q.front(); q.pop();
+        for child in g[node]:
+            if not vis[child]:
+                vis[child] = 1
+                par[child] = node
+                q.append(child)
+    if not vis[n]:
+        print("IMPOSSIBLE")                 # this file redefines pn as IMPOSSIBLE
+        return
+    else:
+        ans = []
+        node = n
+        while node != -1:
+            ans.append(node)
+            node = par[node]
+        ans.reverse()                       # reverse(ans.begin(), ans.end())
+        print(len(ans))
+        print(' '.join(map(str, ans)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Marking visited on pop lets a vertex be queued many times; the path is still shortest but the queue can blow up to O(m).</div>
       <div class="callout trigger"><strong>Recognize</strong>"fewest hops / minimum stops, print the route" &rarr; BFS with parent array.</div>
     </article>
     <article class="entry" id="labyrinth">
-      <div class="entry-head"><h3>Labyrinth</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Labyrinth</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Shortest path from <code>A</code> to <code>B</code> in a grid with walls; print length and moves.</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an \(n \times m\) labyrinth of floor (<code>.</code>) and wall
+(<code>#</code>) squares, with one start <code>A</code> and one end <code>B</code>. You can move left,
+right, up and down. Is there a path from <code>A</code> to <code>B</code>? If yes, print the length of
+a shortest one and its moves as letters <code>L R U D</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(n\) lines of \(m\) characters.</dd>
+<dt>Output</dt><dd><code>YES</code>, the length, and the move string; or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(5 \times 8\) map in the file → <code>YES</code>, <code>9</code>, <code>LDDRRRRRU</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Squares are vertices; neighbouring non-wall squares are joined. Every move costs \(1\), so BFS from <code>A</code> gives the shortest distance \(d(v)\) to every square.</span></li>
+<li><span class="why">When BFS first reaches square \(v\) from \(u\), store \(\text{par}(v) = u\). The move from \(u\) to \(v\) is fixed by the difference \(v - u\):</span>
+\[ (0, -1) \to \texttt{L}, \quad (0, +1) \to \texttt{R}, \quad (-1, 0) \to \texttt{U}, \quad (+1, 0) \to \texttt{D} \]</li>
+<li><span class="why">Simplest form: walk \(\text{par}\) from <code>B</code> back to <code>A</code>, collect the letters, and reverse. The length is \(d(\texttt{B})\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Grid BFS: cells are vertices, 4 neighbours are edges.</li>
-          <li>Store each cell's parent; the move letter is the difference between cell and parent.</li>
-          <li>Reconstruction runs from B to A, so the string must be reversed.</li>
-        </ol>
+<li>Grid BFS: squares are vertices and the 4 neighbours are edges.</li>
+<li>Store each square's parent. The move letter is the difference between the square and its parent.</li>
+<li>Rebuilding runs from <code>B</code> to <code>A</code>, so the string must be reversed.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DFS over all paths.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, m ≤ 1000</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">BFS with parents: <span class="cost">O(n·m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DFS over all paths.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 1000\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">BFS with parents: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -614,32 +788,110 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+dx = [0, 0, 1, -1]
+dy = [1, -1, 0, 0]
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    dist = [[-INF] * m for _ in range(n)]
+    par = [[(-1, -1)] * m for _ in range(n)]
+    a = [next(tok) for _ in range(n)]
+    for i in range(n):
+        for j in range(m):
+            if a[i][j] == 'A':
+                q = deque()
+                q.append((i, j))
+                dist[i][j] = 0
+                par[i][j] = (-1, -1)
+                while q:
+                    x, y = q.popleft()      # p = front; x = p.fr; y = p.sc
+                    for k in range(4):
+                        nx = x + dx[k]
+                        ny = y + dy[k]
+                        if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and dist[nx][ny] == -INF and a[nx][ny] != '#':
+                            dist[nx][ny] = dist[x][y] + 1
+                            par[nx][ny] = (x, y)
+                            q.append((nx, ny))
+    for i in range(n):
+        for j in range(m):
+            if a[i][j] == 'B':
+                if dist[i][j] == -INF:
+                    print("NO")
+                    return
+                else:
+                    print("YES")
+                    print(dist[i][j])
+                    cx = i
+                    cy = j
+                    ans = []                # build a list of chars, join at the end (string += in a loop is slow)
+                    while a[cx][cy] != 'A':
+                        parx, pary = par[cx][cy]
+                        if parx == cx:
+                            if pary &lt; cy:
+                                ans.append('R')
+                            else:
+                                ans.append('L')
+                        else:
+                            if parx &lt; cx:
+                                ans.append('D')
+                            else:
+                                ans.append('U')
+                        cx = parx
+                        cy = pary
+                    ans.reverse()
+                    print(''.join(ans))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The direction is from parent to child. Reading it child-to-parent flips every letter (L↔R, U↔D).</div>
       <div class="callout trigger"><strong>Recognize</strong>"shortest path in a maze, print the moves" &rarr; grid BFS with parent cells.</div>
     </article>
     <article class="entry" id="monsters">
-      <div class="entry-head"><h3>Monsters</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Monsters</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">You and monsters move simultaneously. Reach a border cell before any monster can; print the moves.</div>
+        <div class="ask">
+<p><b>Question.</b> You (<code>A</code>) and some monsters (<code>M</code>) are in an \(n \times m\)
+labyrinth. Each time you take a step, every monster may also take a step. You win by reaching any
+square on the border without ever sharing a square with a monster. The plan must work even if the
+monsters know your path in advance. Is it possible? If yes, print a path.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then the map: <code>.</code> floor, <code>#</code> wall, <code>A</code> you, <code>M</code> monster.</dd>
+<dt>Output</dt><dd><code>YES</code>, the path length, and the moves (<code>L R U D</code>); or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(5 \times 8\) map in the file → <code>YES</code>, <code>5</code>, <code>RRDDR</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(d_M(v)\) be the fewest steps for the nearest monster to reach square \(v\), and \(d_A(v)\) the same for you. A monster that knows your path just walks to the square first. So you are safe on \(v\) only if:</span>
+\[ d_A(v) \lt d_M(v) \]</li>
+<li><span class="why">\(d_M\) for all monsters at once is one BFS that starts with every monster in the queue (a multi-source BFS).</span></li>
+<li><span class="why">If a border square \(b\) is safe, so is every square \(u\) on your shortest path to it. If \(u\) is \(k\) steps before \(b\), a monster reaching \(u\) could then reach \(b\) in \(k\) more steps, so \(d_M(b) \le d_M(u) + k\):</span>
+\[ d_M(u) \ge d_M(b) - k \gt d_A(b) - k = d_A(u) \]</li>
+<li><span class="why">Simplest form: run both BFS, find any border square with \(d_A \lt d_M\), and print your BFS path to it.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Monsters move optimally toward you &rArr; a cell is safe iff you arrive strictly before the nearest monster could.</li>
-          <li>All monsters at once = one multi-source BFS.</li>
-          <li>If the final border cell is safe, every earlier cell on your shortest path is too.</li>
-        </ol>
+<li>Monsters move optimally towards you, so a square is safe iff you arrive strictly before the nearest monster could: \(d_A(v) \lt d_M(v)\).</li>
+<li>All monsters at once is one multi-source BFS.</li>
+<li>If the final border square is safe, every earlier square on your shortest path is safe too (see step 3 of the breakdown).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Simulate every step with every monster.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O((nm)² ) or worse</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, m ≤ 1000</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Two BFS (monsters multi-source, you single-source), then scan the border: <span class="cost">O(n·m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Simulate every step of every monster.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O((nm)^2)\)</span> or worse.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 1000\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Two BFS (monsters from all sources, you from one), then scan the border: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -799,32 +1051,121 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+dx = [0, 0, 1, -1]
+dy = [1, -1, 0, 0]
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    grid = [[''] * m for _ in range(n)]
+    distM = [[-INF] * m for _ in range(n)]
+    distA = [[-INF] * m for _ in range(n)]
+    par = [[(-1, -1)] * m for _ in range(n)]
+    qm = deque()
+    qa = deque()
+    for i in range(n):
+        row = next(tok)                     # cin &gt;&gt; char reads one char; our tokens are whole rows
+        for j in range(m):
+            grid[i][j] = row[j]
+            if grid[i][j] == 'M':
+                distM[i][j] = 0
+                qm.append((i, j))
+            elif grid[i][j] == 'A':
+                distA[i][j] = 0
+                qa.append((i, j))
+                par[i][j] = (-1, -1)
+    while qm:
+        node = qm.popleft()
+        for i in range(4):
+            nx = node[0] + dx[i]
+            ny = node[1] + dy[i]
+            if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and grid[nx][ny] != '#' and distM[nx][ny] == -INF:
+                distM[nx][ny] = distM[node[0]][node[1]] + 1
+                qm.append((nx, ny))
+    while qa:
+        node = qa.popleft()
+        for i in range(4):
+            nx = node[0] + dx[i]
+            ny = node[1] + dy[i]
+            if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and grid[nx][ny] != '#' and distA[nx][ny] == -INF:
+                par[nx][ny] = (node[0], node[1])
+                distA[nx][ny] = distA[node[0]][node[1]] + 1
+                qa.append((nx, ny))
+    for i in range(n):
+        for j in range(m):
+            if i == 0 or i == n - 1 or j == 0 or j == m - 1:
+                if distA[i][j] != -INF and (distM[i][j] == -INF or distA[i][j] &lt; distM[i][j]):
+                    print("YES")
+                    ans = []
+                    node = (i, j)
+                    while node[0] != -1 and node[1] != -1:
+                        pnode = par[node[0]][node[1]]
+                        if pnode[0] != -1 and pnode[1] != -1:
+                            if pnode[0] == node[0] + 1:
+                                ans.append('U')
+                            elif pnode[0] == node[0] - 1:
+                                ans.append('D')
+                            elif pnode[1] == node[1] + 1:
+                                ans.append('L')
+                            elif pnode[1] == node[1] - 1:
+                                ans.append('R')
+                        node = pnode
+                    ans.reverse()
+                    print(len(ans))
+                    print(''.join(ans))
+                    return
+    print("NO")
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Only the exit cell is compared, not the whole path. It is sufficient because a monster that could intercept earlier could also reach the exit in time.</div>
       <div class="callout trigger"><strong>Recognize</strong>"escape before chasers, all move simultaneously" &rarr; multi-source BFS for chasers, compare arrival times.</div>
     </article>
     <article class="entry" id="frog-minimum-jumps">
-      <div class="entry-head"><h3>Frog Minimum Jumps</h3><span class="badge num">O(n+q)</span></div>
+      <div class="entry-head"><h3>Frog Minimum Jumps</h3><span class="badge num">\(O(n+q)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">From stone 1, stone <code>i</code> reaches any of <code>i+1..i+p<sub>i</sub></code>. Answer many queries: min jumps to stone <code>x</code>.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(N\) stones in a row, numbered from \(1\). A frog starts on stone \(1\).
+From stone \(i\) it can jump forward to any stone in \([i+1,\ i + p_i]\), where \(p_i\) is that stone's
+jump power. Answer \(Q\) queries: for target stone \(x\), what is the minimum number of jumps from
+stone \(1\)? (Stone \(1\) itself needs \(0\).)</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\); \(p_1, \dots, p_N\); \(Q\); then \(Q\) targets.</dd>
+<dt>Output</dt><dd>For each query, the minimum number of jumps.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>\(p = [1, 2, 4, 5, 3]\): query \(3 \to 2\), query \(1 \to 0\), query \(5 \to 3\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(J(x)\) be the fewest jumps to stone \(x\). The stones reachable in at most \(k\) jumps always form a prefix \([1, R_k]\), because every jump range is an unbroken interval going right:</span>
+\[ R_0 = 1, \qquad R_{k+1} = \max_{1 \le i \le R_k} \big(i + p_i\big) \]</li>
+<li><span class="why">So the stones needing exactly \(k\) jumps are the block \((R_{k-1}, R_k]\):</span>
+\[ J(x) = \min \{\, k : x \le R_k \,\} \]</li>
+<li><span class="why">Simplest form: one left-to-right sweep. Keep <code>curEnd</code> \(= R_k\) and <code>farthest</code> \(= \max (i + p_i)\) so far. When \(i\) passes <code>curEnd</code>, start the next layer. Store \(J(i)\) for every stone; each query is a lookup.</span>
+<span class="why">Sample: \(R_0 = 1,\ R_1 = 2,\ R_2 = 4,\ R_3 \ge 5\), so \(J(3) = 2,\ J(5) = 3\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>BFS layers here are contiguous index ranges, because reach only grows rightwards.</li>
-          <li><code>curEnd</code> closes the current layer; <code>farthest</code> builds the next one.</li>
-          <li>Precompute every stone once; each query is a lookup.</li>
-        </ol>
+<li>BFS layers here are unbroken ranges of stones, because reach only grows to the right.</li>
+<li><code>curEnd</code> closes the current layer; <code>farthest</code> builds the next one.</li>
+<li>Work out every stone once; each query is then a lookup.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">BFS enqueuing each of <code>i+1..i+p<sub>i</sub></code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n²) edges</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">every <code>p<sub>i</sub> = n</code> &rarr; n² edge scans.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Boundary sweep instead of a queue: <span class="cost">O(n + q)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">BFS that adds every stone in \([i+1, i+p_i]\) as a separate edge.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(N^2)\)</span> edges.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">every \(p_i = N\) gives \(N^2\) edge checks.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Sweep the layer boundaries instead of using a queue: <span class="cost">\(O(N + Q)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -886,6 +1227,30 @@ int main() {
 
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    power = [0] * (n + 1)
+    for i in range(1, n + 1): power[i] = int(next(tok))
+    # dp[i] = min jumps from stone 1 to stone i
+    dp = [0] * (n + 1)
+    jumps, curEnd, farthest = 0, 1, 1
+    for i in range(1, n + 1):
+        if i &gt; curEnd:
+            jumps += 1
+            curEnd = farthest
+        dp[i] = jumps
+        farthest = max(farthest, i + power[i])
+    q = int(next(tok))
+    out = []
+    for _ in range(q):
+        x = int(next(tok))
+        out.append(dp[x])
+    print('\n'.join(map(str, out)))
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Looking back with stone <code>i</code>'s own power is wrong: what reaches <code>i</code> is an earlier stone's power.</div>
       <div class="callout trigger"><strong>Recognize</strong>"min jumps, each position reaches a forward range" &rarr; Jump Game II boundary sweep.</div>
@@ -896,27 +1261,44 @@ int main() {
     <div class="family-head"><h2>3 &middot; DFS colouring / cycles</h2></div>
     <p class="family-note">DFS that carries a per-vertex state (colour, on-stack) and stops at the first contradiction.</p>
     <article class="entry" id="building-teams">
-      <div class="entry-head"><h3>Building Teams</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Building Teams</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Split pupils into two teams so no two friends share a team.<div class="formal">2-colour an undirected graph</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) pupils and \(m\) friendships between them. Split the pupils into two
+teams so that no two friends are on the same team. Print a team (1 or 2) for each pupil, or
+<code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>\(n\) numbers (each <code>1</code> or <code>2</code>), or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 5\), friendships \((1,2)(1,3)(4,5)\) → <code>1 2 2 1 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: find a colouring \(c : \{1..n\} \to \{1, 2\}\) with</span>
+\[ c(u) \ne c(v) \quad \text{for every friendship } (u, v) \]</li>
+<li><span class="why">Inside one component, choosing the colour of one pupil forces every other colour: a friend of a pupil with colour \(c\) gets \(3 - c\).</span></li>
+<li><span class="why">This fails exactly when some friendship joins two pupils that were forced to the same colour. That happens iff the component has a cycle of odd length.</span></li>
+<li><span class="why">Simplest form: DFS from each uncoloured pupil with colour \(1\), give each neighbour \(3 - c\), and stop with <code>IMPOSSIBLE</code> if an edge has equal colours.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Bipartite check: every edge must join different colours.</li>
-          <li>In a component, colouring the first vertex forces everything else.</li>
-          <li>An edge between equal colours is an odd cycle &rArr; impossible.</li>
-        </ol>
+<li>This is a bipartite check: every edge must join different colours.</li>
+<li>In a component, colouring the first pupil forces everything else.</li>
+<li>An edge between equal colours means an odd cycle, so it is impossible.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try all 2ⁿ assignments.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ · m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Propagate colours by DFS: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try all \(2^n\) team assignments.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Spread the colours with a DFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1010,32 +1392,82 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+n, m = 0, 0
+g = []
+vis = []
+
+def dfs(node, col):
+    vis[node] = col
+    for child in g[node]:
+        if not vis[child]:
+            dfs(child, 3 - col)
+        elif vis[child] == col:
+            print("IMPOSSIBLE")             # pn (redefined as IMPOSSIBLE here); then exit(0)
+            sys.exit(0)
+
+def solve():
+    global n, m, g, vis
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs(i, 1)
+    print(' '.join(str(vis[i]) for i in range(1, n + 1)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The DFS never checks the parent specially &mdash; the parent always has the opposite colour, so the <code>vis[child] == col</code> test can only fire on a real odd cycle. <code>pn</code> is redefined in this file to print <code>IMPOSSIBLE</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"split into two groups, no conflicting pair together" &rarr; bipartite 2-colouring.</div>
     </article>
     <article class="entry" id="round-trip">
-      <div class="entry-head"><h3>Round Trip</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Round Trip</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Find any cycle of length ≥ 3 in an undirected graph and print it.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) two-way roads. Find a round trip that starts in a
+city, visits two or more other cities, and returns to the start, with no city repeated in between.
+Print it, or <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of cities \(k\) on the trip (start counted twice), then the cities; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>edges \((1,3)(1,2)(5,3)(1,5)(2,4)(4,5)\) → <code>4</code>, <code>3 5 1 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">We need a cycle of length \(\ge 3\) in an undirected graph.</span></li>
+<li><span class="why">Run DFS. Every edge from the current vertex \(u\) goes either to an unvisited vertex (a tree edge) or to a vertex \(v\) that is still open (an ancestor). If \(v\) is an open ancestor and \(v \ne \text{par}(u)\), then</span>
+\[ v \to \dots \to \text{par}(u) \to u \to v \]
+<span class="why">is a cycle with at least \(3\) cities.</span></li>
+<li><span class="why">Skipping \(v = \text{par}(u)\) is what rules out the fake cycle \(u \to v \to u\) along one road.</span></li>
+<li><span class="why">Simplest form: on finding such an edge, walk \(\text{par}\) from \(u\) up to \(v\), then print \(v, \dots, u, v\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>In undirected DFS, any edge to an already-open vertex other than the parent closes a cycle.</li>
-          <li>Skipping the parent is what excludes the trivial <code>a&ndash;b&ndash;a</code>.</li>
-          <li>Walk <code>par</code> from the current vertex back to the open one.</li>
-        </ol>
+<li>In an undirected DFS, any edge to an already-open vertex other than the parent closes a cycle.</li>
+<li>Skipping the parent is what excludes the trivial \(a \to b \to a\).</li>
+<li>Walk <code>par</code> from the current vertex back to the open one.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Search from every vertex for a path back.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·(n+m))</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One DFS with states 0/1/2 and parents: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Search from every vertex for a path back to itself.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One DFS with states 0/1/2 and parents: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1154,32 +1586,99 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+n, m = 0, 0
+g = []
+vis = []
+par = []
+
+def dfs(node, parent):
+    vis[node] = 1
+    par[node] = parent
+    for child in g[node]:
+        if child == parent:
+            continue
+        if vis[child] == 0:
+            dfs(child, node)
+        elif vis[child] == 1:
+            temp = node
+            ans = []
+            while temp != child:
+                ans.append(temp)
+                temp = par[temp]
+            ans.append(temp)
+            ans.append(node)
+            ans.reverse()
+            print(len(ans))
+            print(' '.join(map(str, ans)))
+            sys.exit(0)                     # exit(0)
+        else:
+            continue
+    vis[node] = 2
+
+def solve():
+    global n, m, g, vis, par
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    par = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        g[b].append(a)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs(i, 0)
+    print("IMPOSSIBLE")
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Skipping by parent <em>vertex</em> is fine only because CSES has no multi-edges; with a doubled edge <code>a&ndash;b</code> it would miss that 2-cycle (which is not a valid answer here anyway).</div>
       <div class="callout trigger"><strong>Recognize</strong>"find any cycle in an undirected graph" &rarr; DFS, back edge to a non-parent.</div>
     </article>
     <article class="entry" id="round-trip-ii">
-      <div class="entry-head"><h3>Round Trip II</h3><span class="badge num">O(n+m)</span></div>
+      <div class="entry-head"><h3>Round Trip II</h3><span class="badge num">\(O(n+m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Find any directed cycle and print it.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights. Find a round trip that starts in a
+city, visits one or more other cities, and returns to the start, with no city repeated in between.
+Print it, or <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\) (a flight from \(a\) to \(b\)).</dd>
+<dt>Output</dt><dd>The number of cities \(k\) on the trip (start counted twice), then the cities; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>flights \(1{\to}3,\ 2{\to}1,\ 2{\to}4,\ 3{\to}2,\ 3{\to}4\) → <code>4</code>, <code>2 1 3 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">We need a directed cycle. Run DFS and give each vertex a state: \(0\) unvisited, \(1\) on the current DFS path, \(2\) finished.</span></li>
+<li><span class="why">A directed cycle exists iff DFS finds an edge \(u \to v\) with \(v\) in state \(1\). Then \(v\) is on the current path, so</span>
+\[ v \to \dots \to u \to v \]
+<span class="why">is a cycle.</span></li>
+<li><span class="why">An edge into a state-\(2\) vertex is not a cycle: everything reachable from it is already finished and none of it leads back.</span></li>
+<li><span class="why">Simplest form: on finding the edge, walk \(\text{par}\) from \(u\) back to \(v\) and print \(v, \dots, u, v\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A directed cycle exists iff DFS finds an edge into a vertex still on the recursion stack (gray).</li>
-          <li>Edges into finished (black) vertices are not cycles &mdash; that is why three states are needed.</li>
-          <li>The cycle is the stack segment from that vertex to the current one.</li>
-        </ol>
+<li>A directed cycle exists iff DFS finds an edge into a vertex still on the recursion stack (state 1, "gray").</li>
+<li>Edges into finished (state 2, "black") vertices are not cycles. That is why three states are needed.</li>
+<li>The cycle is the part of the stack from that vertex to the current one.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">From every vertex, search for a path back to itself.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·(n+m))</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">White/gray/black DFS: <span class="cost">O(n + m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">From every vertex, search for a path back to itself.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Three-state DFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1296,6 +1795,53 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+g = []
+vis = []
+par = []
+
+def dfs(node, parent):
+    vis[node] = 1
+    par[node] = parent
+    for child in g[node]:
+        if child == parent:
+            continue
+        if vis[child] == 0:
+            dfs(child, node)
+        elif vis[child] == 1:
+            ans = []
+            ans.append(child)
+            temp = node
+            while temp != child:
+                ans.append(temp)
+                temp = par[temp]
+            ans.append(child)
+            ans.reverse()
+            print(len(ans))
+            print(' '.join(map(str, ans)))
+            sys.exit(0)
+        else:
+            continue
+    vis[node] = 2
+
+def solve():
+    global g, vis, par
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    par = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs(i, 0)
+    print("IMPOSSIBLE")
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The <code>child == parent</code> skip was carried over from the undirected version and is wrong here: input <code>2 2 / 1 2 / 2 1</code> prints <code>IMPOSSIBLE</code>, but <code>1 2 1</code> is a valid directed round trip.</div>
       <div class="callout trigger"><strong>Recognize</strong>"cycle in a directed graph / dependency loop" &rarr; three-colour DFS.</div>

@@ -348,7 +348,7 @@
   }
 
   @media (max-width:900px){
-    .layout{ grid-template-columns:1fr; }
+    .layout{ grid-template-columns:minmax(0,1fr); }
     nav.toc{
       position:sticky; top:0;
       max-height:none;
@@ -400,13 +400,36 @@
   border-left:2px solid var(--accent);
   padding:0.15rem 0 0.15rem 0.85rem;
 }
-.ask .formal{
-  font-family:'IBM Plex Mono', ui-monospace, monospace;
-  font-size:0.86rem;
-  color:var(--ink-soft);
-  margin-top:0.5rem;
-  white-space:pre-wrap;
+.ask p{ margin:0 0 0.45rem; }
+.ask .io{
+  display:grid; grid-template-columns:6.2rem 1fr; gap:0.2rem 0.8rem;
+  margin:0.5rem 0; font-size:0.92rem;
 }
+.ask .io dt{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--ink-faint); padding-top:0.2rem;
+}
+.ask .io dd{ margin:0; }
+.ask .formal{ color:var(--ink-soft); margin-top:0.4rem; }
+.ask .derive{ margin-top:0.7rem; border-top:1px dashed var(--line); padding-top:0.55rem; }
+.ask .derive-h{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--accent); margin-bottom:0.25rem;
+}
+.ask .derive ol{ margin:0; padding-left:1.35rem; }
+.ask .derive li{ margin:0.3rem 0; font-size:0.92rem; }
+.ask .derive li::marker{ font-family:'IBM Plex Mono', ui-monospace, monospace; color:var(--accent); font-size:0.8rem; }
+.ask .derive li > .why{ color:var(--ink-soft); }
+/* KaTeX: long display formulas scroll instead of overflowing on phones */
+.katex-display{ margin:0.4rem 0; overflow-x:auto; overflow-y:hidden; padding:0.1rem 0; }
+.katex{ font-size:1.05em; position:relative; }
+/* KaTeX's hidden MathML copy is absolutely positioned; pin it inside its formula so it cannot widen the page on phones */
+.katex .katex-mathml{ left:0; top:0; }
+/* long inline paths (excluded box, src-meta) break instead of widening the page */
+:not(pre) > code{ overflow-wrap:anywhere; }
+@media (max-width:640px){ .ask .io{ grid-template-columns:1fr; } }
 
 /* 2 · key observations */
 ol.obs{ margin:0; padding-left:1.35rem; }
@@ -471,7 +494,7 @@ figure.diagram svg{ display:block; max-width:100%; height:auto; margin:0 auto; }
 figure.diagram figcaption{
   margin-top:0.7rem; padding-top:0.6rem;
   border-top:1px solid var(--line);
-  font-size:0.84rem; color:var(--ink-soft); text-align:center;
+  font-size:0.84rem; color:var(--ink-soft); text-align:left;
 }
 svg .s-line  { stroke:var(--line);      fill:none; }
 svg .s-edge  { stroke:var(--ink-faint); fill:none; stroke-width:1.5; }
@@ -511,6 +534,13 @@ pre.source code{ font-size:inherit; white-space:pre; }
   font-size:0.72rem; color:var(--ink-faint);
 }
 .src-meta .path{ color:var(--accent); }
+.lang-tabs{ display:flex; gap:0.3rem; margin-bottom:0.4rem; }
+.lang-tabs button{
+  font:500 0.72rem 'IBM Plex Mono', ui-monospace, monospace;
+  padding:0.2rem 0.7rem; border:1px solid var(--line); border-radius:6px;
+  background:var(--surface); color:var(--ink-faint); cursor:pointer;
+}
+.lang-tabs button[aria-pressed="true"]{ color:var(--accent); border-color:var(--accent); }
 
 /* ============================================================
    MASTER PAGE  (LEDGER.html)

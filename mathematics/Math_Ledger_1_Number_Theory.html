@@ -15,7 +15,7 @@
   <p class="dek">Arithmetic problems where the answer is a formula plus a counting trick:
   cancel pairs, reduce modulo a prime, flip "divisors of i" into "multiples of d", or
   count each bit's contribution instead of each number. Reach for this page when n or a
-  value goes past 10&#8310; and a loop over it is hopeless.</p>
+  value goes past \(10^{6}\) and a loop over it is hopeless.</p>
   <p class="stats"><b>9</b> problems &middot; <b>4</b> families</p>
 </header>
 
@@ -50,11 +50,11 @@
       <div class="rule"><span class="n">1</span>
         <p>Swap "for each i, its divisors" for "for each d, its multiples". The harmonic sum &sum; X/d = O(X log X). See Counting Divisors, Common Divisors, and Sum of Divisors (&sum;&sigma;(i) = &sum; d&middot;&lfloor;n/d&rfloor;).</p></div>
       <div class="rule"><span class="n">2</span>
-        <p>When n reaches 10&#185;&#178;&ndash;10&#185;&#8309;, count contributions, not numbers: per bit position (Counting Bits), or per block of equal &lfloor;n/d&rfloor; (Sum of Divisors).</p></div>
+        <p>When n reaches \(10^{12}\)&ndash;\(10^{15}\), count contributions, not numbers: per bit position (Counting Bits), or per block of equal &lfloor;n/d&rfloor; (Sum of Divisors).</p></div>
       <div class="rule"><span class="n">3</span>
-        <p>An exponent of 10&#8313; or more means square-and-multiply in O(log b). See Exponentiation, Exponentiation II, and the inverse of 2 in Sum of Divisors (<code>mpow(b, MOD&minus;2)</code>).</p></div>
+        <p>An exponent of \(10^{9}\) or more means square-and-multiply in O(log b). See Exponentiation, Exponentiation II, and the inverse of 2 in Sum of Divisors (\(\text{mpow}(b, \text{MOD}-2)\)).</p></div>
       <div class="rule"><span class="n">4</span>
-        <p>A product of two values near 10&#8313; or larger must be shrunk first: divide before multiplying (<code>a / gcd * b</code> in Next Common Height), or reduce both operands mod p (<code>mmul</code> in Sum of Divisors).</p></div>
+        <p>A product of two values near \(10^{9}\) or larger must be shrunk first: divide before multiplying (<code>a / gcd * b</code> in Next Common Height), or reduce both operands mod p (<code>mmul</code> in Sum of Divisors).</p></div>
       <div class="rule"><span class="n">5</span>
         <p>When the answer is the one thing that doesn't cancel, fold everything into one accumulator and store nothing. Missing Number uses XOR pairs. Weird Algorithm uses a plain state loop, with the terminal value printed outside it.</p></div>
     </div>
@@ -66,27 +66,43 @@
     <p class="family-note">No clever structure, just a scalar accumulator. Sometimes the process really is short (Collatz). Sometimes it isn't, and each bit is counted as a periodic pattern.</p>
 
     <article class="entry" id="weird-algorithm">
-      <div class="entry-head"><h3>Weird Algorithm</h3><span class="badge num">O(steps)</span></div>
+      <div class="entry-head"><h3>Weird Algorithm</h3><span class="badge num">\(O(\text{steps})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Print n, then apply n &rarr; n/2 if even and n &rarr; 3n+1 if odd, printing each value until 1.<div class="formal">n&#8342;&#8330;&#8321; = n&#8342;/2  (even),  3n&#8342;+1  (odd);  stop at 1</div></div>
+        <div class="ask">
+<p><b>Question.</b> Start from a positive integer \(n\). If \(n\) is even, divide it by \(2\); if it is
+odd, replace it by \(3n + 1\). Repeat until \(n = 1\). Print every value \(n\) takes, including the
+first value and the final \(1\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>All values of \(n\) in order, separated by spaces.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd>\(3\) → <code>3 10 5 16 8 4 2 1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State the sequence exactly:</span>
+\[ n_0 = n, \qquad n_{k+1} = \begin{cases} n_k / 2 &amp; \text{if } n_k \text{ is even} \\ 3 n_k + 1 &amp; \text{if } n_k \text{ is odd} \end{cases}, \qquad \text{stop when } n_k = 1 \]</li>
+<li><span class="why">There is nothing to optimise: the output <em>is</em> every value, so simulate.</span></li>
+<li><span class="why">Simplest form: loop while \(n \ne 1\), print, apply the rule; print \(1\) after the loop. For \(n \le 10^6\) the values reach \(56\,991\,483\,520 \gt 2^{31}\), so use <code>long long</code>.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>There is no aggregate to compute, so print every state.</li>
-          <li>1 can't enter the transform (1 &rarr; 4 &rarr; 2 &rarr; 1 loops), so print it after the loop.</li>
-          <li>With n &le; 10&#8310;, the longest run is 524 steps (from 837799). The values peak at 56 991 483 520 (from 704511), which overflows <code>int</code>.</li>
-        </ol>
+<li>There is nothing to add up, so print every value.</li>
+<li>\(1\) must not enter the rule (\(1 \to 4 \to 2 \to 1\) loops forever), so print it after the loop.</li>
+<li>For \(n \le 10^6\), the longest run is \(524\) steps (from \(837799\)). The values peak at \(56\,991\,483\,520\) (from \(704511\)), which overflows <code>int</code>.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Simulate.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(steps)</span> &le; 524.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">Nothing on time. <code>int</code> dies at the 5.7&middot;10&#185;&#8304; peak.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">The simulation is the solution. Only the type matters: <code>long long</code>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Simulate.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(\text{steps})\)</span>, at most \(524\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Nothing on time. <code>int</code> overflows at the \(5.7\cdot 10^{10}\) peak.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">The simulation is the solution. Only the type matters: <code>long long</code>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
@@ -123,33 +139,63 @@ int main() {
 
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    out = []
+    while n != 1:
+        out.append(n)
+        if n % 2 == 0: n //= 2              # n /= 2 -&gt; n //= 2 (keeps it an int)
+        else: n = 3 * n + 1
+    out.append(1)
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong><code>long long</code> is <em>required</em>, not just cheap. This file's Recall Trail says 3n+1 never overflows <code>int</code> for n &le; 10&#8310;, but starting from 704511 the sequence reaches 56 991 483 520.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>long long</code> is <em>required</em>, not just cheap. This file's Recall Trail says 3n+1 never overflows <code>int</code> for n &le; \(10^{6}\), but starting from 704511 the sequence reaches 56 991 483 520.</div>
       <div class="callout trigger"><strong>Recognize</strong>"print every value of a process until it hits a fixed state" &rarr; while loop, terminal value printed outside.</div>
     </article>
 
     <article class="entry" id="missing-number">
-      <div class="entry-head"><h3>Missing Number</h3><span class="badge num">O(n)</span></div>
+      <div class="entry-head"><h3>Missing Number</h3><span class="badge num">\(O(n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">The numbers 1..n are given with one missing, in any order. Find the missing one.<div class="formal">x = (1 &oplus; 2 &oplus; &hellip; &oplus; n) &oplus; (a&#8321; &oplus; &hellip; &oplus; a&#8345;&#8331;&#8321;)</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given all numbers \(1, 2, \dots, n\) except one, in any order. Find the
+missing number.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n - 1\) distinct numbers from \(1..n\).</dd>
+<dt>Output</dt><dd>The missing number.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 5\), <code>2 3 1 5</code> → <code>4</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Use bitwise XOR, written \(\oplus\). It has three useful rules:</span>
+\[ v \oplus v = 0, \qquad v \oplus 0 = v, \qquad \text{order does not matter} \]</li>
+<li><span class="why">XOR all of \(1..n\) together with all the given numbers. Every present number appears twice and cancels; the missing number \(x\) appears once:</span>
+\[ x = \big(1 \oplus 2 \oplus \cdots \oplus n\big) \oplus \big(a_1 \oplus \cdots \oplus a_{n-1}\big) \]</li>
+<li><span class="why">Simplest form: one running XOR while reading, no array. (The sum \(\frac{n(n+1)}{2} - \sum a_i\) works too.)</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>v &oplus; v = 0</code>, and XOR is commutative, so order is irrelevant.</li>
-          <li>Every present value appears twice and cancels. Only the missing one survives.</li>
-          <li>Fold each value in as it is read, with no array.</li>
-        </ol>
+<li>\(v \oplus v = 0\), and XOR does not care about order.</li>
+<li>Every present number appears twice and cancels. Only the missing one survives.</li>
+<li>Fold each number in as it is read, with no array.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Sort, or use a seen[] array, and scan for the gap.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n log n)</span> time or <span class="cost">O(n)</span> memory.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">It passes at <code>n &le; 2&middot;10&#8309;</code>. It only loses on memory and code length.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">XOR accumulator: <span class="cost">O(n)</span> time, <span class="cost">O(1)</span> space.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Sort, or use a <code>seen[]</code> array, and look for the gap.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \log n)\)</span> time or <span class="cost">\(O(n)\)</span> memory.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">It passes at \(n \le 2\cdot 10^5\); it only loses on memory and code length.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">XOR accumulator: <span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> space.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -160,7 +206,7 @@ int main() {
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">The first loop XORs 1..n. The second XORs the n&minus;1 inputs as they are read. <code>x</code> is <code>long long</code>, which isn't needed because XOR never exceeds 2&#185;&#8312;.</p>
+        <p class="impl-note">The first loop XORs 1..n. The second XORs the n&minus;1 inputs as they are read. <code>x</code> is <code>long long</code>, which isn't needed because XOR never exceeds \(2^{18}\).</p>
         <div class="src-meta"><span class="path">mathematics/Missing_Number.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// Problem: Missing Number
 // Link: CSES 1083
@@ -194,40 +240,70 @@ int main() {
     cout &lt;&lt; x &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    x = 0
+    for i in range(1, n + 1): x ^= i
+    for i in range(n - 1):
+        v = int(next(tok))
+        x ^= v
+    print(x)
+
+main()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Read exactly n&minus;1 values. The sum alternative <code>n(n+1)/2 &minus; &sum;</code> needs <code>long long</code>, and XOR sidesteps that entirely.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Read exactly n&minus;1 values. The sum alternative \(n(n+1)/2 - \sum\) needs <code>long long</code>, and XOR sidesteps that entirely.</div>
       <div class="callout trigger"><strong>Recognize</strong>"everything appears in pairs except one" &rarr; XOR everything together.</div>
     </article>
 
     <article class="entry" id="counting-bits">
-      <div class="entry-head"><h3>Counting Bits</h3><span class="badge num">O(log n)</span></div>
+      <div class="entry-head"><h3>Counting Bits</h3><span class="badge num">\(O(\log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Total the one bits over all integers 1..n, with n &le; 10&#185;&#8309;.<div class="formal">for bit i, B = 2&#8305;&#8314;&#185;:  (n div B)&middot;B/2 + max(0, n mod B &minus; B/2 + 1)</div></div>
+        <div class="ask">
+<p><b>Question.</b> Count the total number of one bits in the binary forms of all integers from \(1\)
+to \(n\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The total number of one bits.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^{15}\)</dd>
+<dt>Sample</dt><dd>\(7\) → <code>12</code> (\(1, 10, 11, 100, 101, 110, 111\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Count bit by bit. Going \(0, 1, 2, \dots\), bit \(i\) repeats a pattern of length \(B = 2^{i+1}\): \(2^i\) zeros, then \(2^i\) ones.</span></li>
+<li><span class="why">In \(0..n\) there are \(\lfloor n / B \rfloor\) full patterns, each with \(B/2\) ones. The leftover part has length \((n \bmod B) + 1\), and its ones start at position \(B/2\):</span>
+\[ \text{ones}_i = \left\lfloor \frac{n}{B} \right\rfloor \cdot \frac{B}{2} \;+\; \max\!\Big(0,\ (n \bmod B) - \frac{B}{2} + 1\Big) \]</li>
+<li><span class="why">Simplest form: add over the bits; \(n \le 10^{15} \lt 2^{50}\), so about \(50\) terms:</span>
+\[ \text{ans} = \sum_{i \ge 0,\ 2^i \le n} \text{ones}_i \]
+<span class="why">Sample \(n = 7\): bits \(0, 1, 2\) give \(4 + 4 + 4 = 12\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Counting from 0, bit i has period 2&#8305;&#8314;&#185;: 2&#8305; zeros, then 2&#8305; ones.</li>
-          <li>Full periods in 0..n contribute (n div B)&middot;B/2.</li>
-          <li>The partial tail has length (n mod B)+1, and its ones start at offset B/2.</li>
-          <li>n &le; 10&#185;&#8309; needs about 50 bits, so there are 50 terms.</li>
-        </ol>
+<li>Counting from \(0\), bit \(i\) has period \(2^{i+1}\): \(2^i\) zeros, then \(2^i\) ones.</li>
+<li>Full periods in \(0..n\) contribute \(\lfloor n/B \rfloor \cdot B/2\).</li>
+<li>The leftover part has length \((n \bmod B) + 1\), and its ones start at offset \(B/2\).</li>
+<li>\(n \le 10^{15}\) needs about \(50\) bits, so there are about \(50\) terms.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">&sum; <code>__builtin_popcountll(i)</code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n &le; 10&#185;&#8309;</code> &rarr; <span class="cost">10&#185;&#8309;</span> iterations.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Count per bit position: <span class="cost">O(log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Add <code>__builtin_popcountll(i)</code> for every \(i\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^{15}\) iterations.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Count per bit position: <span class="cost">\(O(\log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
 <svg viewBox="0 0 400 130" role="img" aria-label="bit columns 0..7"><text class="s-td" x="4" y="14">0..7  (bit 2, bit 1, bit 0)</text><g><rect class="s-box" x="20" y="24" width="40" height="24"/><rect class="s-box" x="60" y="24" width="40" height="24"/><rect class="s-box" x="100" y="24" width="40" height="24"/><rect class="s-box" x="140" y="24" width="40" height="24"/><rect class="s-fill" x="180" y="24" width="40" height="24"/><rect class="s-fill" x="220" y="24" width="40" height="24"/><rect class="s-fill" x="260" y="24" width="40" height="24"/><rect class="s-fill" x="300" y="24" width="40" height="24"/><rect class="s-box" x="20" y="52" width="40" height="24"/><rect class="s-box" x="60" y="52" width="40" height="24"/><rect class="s-fill" x="100" y="52" width="40" height="24"/><rect class="s-fill" x="140" y="52" width="40" height="24"/><rect class="s-box" x="180" y="52" width="40" height="24"/><rect class="s-box" x="220" y="52" width="40" height="24"/><rect class="s-fill" x="260" y="52" width="40" height="24"/><rect class="s-fill" x="300" y="52" width="40" height="24"/><rect class="s-box" x="20" y="80" width="40" height="24"/><rect class="s-fill" x="60" y="80" width="40" height="24"/><rect class="s-box" x="100" y="80" width="40" height="24"/><rect class="s-fill" x="140" y="80" width="40" height="24"/><rect class="s-box" x="180" y="80" width="40" height="24"/><rect class="s-fill" x="220" y="80" width="40" height="24"/><rect class="s-box" x="260" y="80" width="40" height="24"/><rect class="s-fill" x="300" y="80" width="40" height="24"/></g><text class="s-ta" x="346" y="41">4</text><text class="s-ta" x="346" y="69">4</text><text class="s-ta" x="346" y="97">4</text><text class="s-td" x="20" y="122">0  1  2  3  4  5  6  7   &rarr; total 12</text></svg>
-          <figcaption>Each row is one bit, and its ones (shaded) come in runs of 2&#8305; with period 2&#8305;&#8314;&#185;. For n = 7, each row has 4, so the total is 12.</figcaption>
+          <figcaption>Each row is one bit, and its ones (shaded) come in runs of \(2^{i}\) with period \(2^{i+1}\). For n = 7, each row has 4, so the total is 12.</figcaption>
         </figure>
       </div>
       <div class="sec">
@@ -297,8 +373,35 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    # count = 0
+    # for i in range(1, n + 1):
+    #     count += bin(i).count('1')        # __builtin_popcountll(i); Python 3.10+: i.bit_count()
+    # print(count)
+    # # but n is up to 10^15 so we need to optimize the solution
+    # for n = 5, 0th bit has contributed in 1 , 3 and 5 so 3 times, 1st bit has contributed in 2 and 3 so 2 times, 2nd bit has contributed in 4 and 5 so 2 times. Therefore the total number of one bits is 3 + 2 + 2 = 7.
+    # 0 0 0 , 0 0 1 , 0 1 0 , 0 1 1 , 1 0 0 , 1 0 1 , 1 1 0 , 1 1 1
+    # so there are blocks of 2^k numbers where k is the bit position, and in each block, half of the numbers have the k-th bit set to 1. We can use this observation to count the number of one bits in O(log n) time complexity.
+    ans = 0
+    i = 0
+    while (1 &lt;&lt; i) &lt;= n:                    # for with a non-range condition -&gt; while; 1LL &lt;&lt; i is just 1 &lt;&lt; i
+        block_size = 1 &lt;&lt; (i + 1)
+        full_blocks = n // block_size
+        remainder = n % block_size
+        count = full_blocks * (block_size // 2)
+        if remainder &gt;= (block_size // 2):
+            count += (remainder - (block_size // 2) + 1)
+        ans += count
+        i += 1
+    print(ans)
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong><code>1LL &lt;&lt; i</code>, not <code>1 &lt;&lt; i</code>. n reaches 2&#8309;&#8304;, and an <code>int</code> shift is undefined from i = 31. The tail term is <code>rem &minus; B/2 + 1</code>, because the tail includes position <code>rem</code> itself.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>1LL &lt;&lt; i</code>, not <code>1 &lt;&lt; i</code>. n reaches \(2^{50}\), and an <code>int</code> shift is undefined from i = 31. The tail term is \(\text{rem} - B/2 + 1\), because the tail includes position <code>rem</code> itself.</div>
       <div class="callout trigger"><strong>Recognize</strong>"sum of a bit property over 1..n, with huge n" &rarr; count each bit position's periodic contribution.</div>
     </article>
   </section>
@@ -306,30 +409,49 @@ signed main()
   <!-- ===================== FAMILY 2 ===================== -->
   <section class="family" id="f2">
     <div class="family-head"><h2>2 &middot; GCD / LCM</h2></div>
-    <p class="family-note">Two periodic events line up every lcm steps. Euclid gives the gcd in O(log), and <code>lcm = a / gcd &middot; b</code> keeps the product small.</p>
+    <p class="family-note">Two periodic events line up every lcm steps. Euclid gives the gcd in O(log), and \(\operatorname{lcm} = a / \gcd \cdot b\) keeps the product small.</p>
 
     <article class="entry" id="next-common-height">
-      <div class="entry-head"><h3>Next Common Height</h3><span class="badge num">O(log min(a,b))</span></div>
+      <div class="entry-head"><h3>Next Common Height</h3><span class="badge num">\(O(\log \min (a,b))\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Both climbers start at x. One climbs a per move, the other b per move. Find the next height above x that both reach.<div class="formal">x + lcm(a, b),   lcm = a / gcd(a, b) &middot; b</div></div>
+        <div class="ask">
+<p><b>Question.</b> Two climbers both start at height \(x\). One goes up by \(a\) each move and the other
+by \(b\) each move. What is the next height strictly above \(x\) that both of them will stand on?
+There are \(T\) test cases.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(T\), then \(T\) lines \(x\ a\ b\).</dd>
+<dt>Output</dt><dd>For each case, the next common height.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>\((1,1,2) \to 3\); \((1,19,19) \to 20\); \((17,2,3) \to 23\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Climber 1 visits \(x + ka\), climber 2 visits \(x + jb\) (\(k, j \ge 1\)). A shared height needs</span>
+\[ ka = jb = t \;\Longrightarrow\; t \text{ is a common multiple of } a \text{ and } b \]</li>
+<li><span class="why">The smallest positive common multiple is the least common multiple:</span>
+\[ \operatorname{lcm}(a, b) = \frac{a \cdot b}{\gcd(a, b)} \]</li>
+<li><span class="why">Simplest form, dividing first so the product does not overflow:</span>
+\[ \text{ans} = x + \frac{a}{\gcd(a, b)} \cdot b \]
+<span class="why">Sample \((17, 2, 3)\): \(\operatorname{lcm} = 6\), so \(23\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A shared height is x + k&middot;a = x + m&middot;b, so the offset is a common multiple.</li>
-          <li>The smallest positive common multiple is lcm(a, b).</li>
-          <li><code>gcd</code> by Euclid: <code>a %= b; swap</code> until b = 0.</li>
-        </ol>
+<li>A shared height is \(x + k a = x + j b\), so the offset is a common multiple of \(a\) and \(b\).</li>
+<li>The smallest positive common multiple is \(\operatorname{lcm}(a, b)\).</li>
+<li>\(\gcd\) by Euclid: <code>a %= b; swap</code> until \(b = 0\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Step h = x + a, x + 2a, &hellip; until (h &minus; x) mod b = 0.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(b / gcd)</span> per test.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">Coprime a, b near 10&#8313; &rarr; <span class="cost">10&#8313;</span> steps per test.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Closed form via gcd: <span class="cost">O(log min(a, b))</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Step \(h = x + a, x + 2a, \dots\) until \((h - x) \bmod b = 0\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(b / \gcd(a, b))\)</span> per test.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Coprime \(a, b\) near \(10^9\) give \(10^9\) steps per test.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Closed form via \(\gcd\): <span class="cost">\(O(\log \min(a, b))\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -379,6 +501,25 @@ int main() {
     }
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def gcd(a, b):                              # built-in: math.gcd(a, b)
+    while b:
+        a %= b
+        a, b = b, a                         # swap(a, b)
+    return a
+
+def main():
+    out = []
+    t = int(next(tok))
+    for _ in range(t):
+        x, a, b = int(next(tok)), int(next(tok)), int(next(tok))
+        lcm = a // gcd(a, b) * b            # divide-first matters for overflow in C++; Python never overflows
+        out.append(x + lcm)
+    print('\n'.join(map(str, out)))
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>a * b / gcd</code> can overflow <code>long long</code> even when the lcm itself fits. Divide before multiplying.</div>
       <div class="callout trigger"><strong>Recognize</strong>"two periodic things, when do they next coincide" &rarr; lcm.</div>
@@ -391,27 +532,44 @@ int main() {
     <p class="family-note">Square the base and halve the exponent each round, multiplying the base into the result when the low bit is set. For a tower of powers mod a prime p, reduce the upper exponent mod p&minus;1.</p>
 
     <article class="entry" id="exponentiation">
-      <div class="entry-head"><h3>Exponentiation</h3><span class="badge num">O(n log b)</span></div>
+      <div class="entry-head"><h3>Exponentiation</h3><span class="badge num">\(O(n \log b)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Answer n queries of a<sup>b</sup> mod 10&#8313;+7, with a, b &le; 10&#8313;.<div class="formal">a^b = (a&sup2;)^&lfloor;b/2&rfloor; &middot; a^(b mod 2)</div></div>
+        <div class="ask">
+<p><b>Question.</b> Answer \(n\) queries: for each pair \(a, b\), compute \(a^b \bmod (10^9 + 7)\). Assume
+\(0^0 = 1\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>For each query, \(a^b \bmod (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 0 \le a, b \le 10^9\)</dd>
+<dt>Sample</dt><dd>\((3, 4) \to 81\); \((2, 8) \to 256\); \((123, 123) \to 921450052\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Write \(b\) in binary, \(b = \sum_j b_j 2^j\) with \(b_j \in \{0, 1\}\). Then</span>
+\[ a^b = \prod_{j : b_j = 1} a^{2^j} \]</li>
+<li><span class="why">Each power \(a^{2^j}\) is the square of the previous one: \(a^{2^{j+1}} = \big(a^{2^j}\big)^2\).</span></li>
+<li><span class="why">Simplest form, about \(30\) rounds since \(b \lt 2^{30}\):</span>
+\[ \text{if } b \text{ odd: } r \leftarrow r \cdot a; \qquad a \leftarrow a^2; \qquad b \leftarrow \lfloor b/2 \rfloor \]
+<span class="why">All values stay below \(p \approx 10^9\), so each product is below \(10^{18}\) and fits in <code>long long</code>.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>b in binary picks which of a, a&sup2;, a&#8308;, a&#8312;, &hellip; to multiply together.</li>
-          <li>Each is the square of the previous one, so a loop of about 30 rounds suffices.</li>
-          <li>Operands are &lt; p &asymp; 10&#8313;, so each product is &lt; 10&#185;&#8312; and fits <code>ll</code>.</li>
-        </ol>
+<li>\(b\) in binary picks which of \(a, a^2, a^4, a^8, \dots\) to multiply together.</li>
+<li>Each is the square of the previous one, so a loop of about \(30\) rounds is enough.</li>
+<li>Operands are below \(p \approx 10^9\), so each product is below \(10^{18}\) and fits <code>ll</code>.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Multiply by a, b times.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(b)</span> per query.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>b = 10&#8313;</code>, <code>n = 2&middot;10&#8309;</code> &rarr; <span class="cost">2&middot;10&#185;&#8308;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Binary exponentiation: <span class="cost">O(log b)</span> per query.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Multiply by \(a\), \(b\) times.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(b)\)</span> per query.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(b = 10^9\), \(n = 2\cdot 10^5\) gives \(2\cdot 10^{14}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Binary exponentiation: <span class="cost">\(O(\log b)\)</span> per query.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -422,7 +580,7 @@ int main() {
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>mmul</code> does <code>(a*b) % MOD</code> without reducing the operands first. That is safe here only because every input a is &le; 10&#8313; &lt; MOD. This file has no pasted statement block (CSES 1095).</p>
+        <p class="impl-note"><code>mmul</code> does <code>(a*b) % MOD</code> without reducing the operands first. That is safe here only because every input a is &le; \(10^{9}\) &lt; MOD. This file has no pasted statement block (CSES 1095).</p>
         <div class="src-meta"><span class="path">mathematics/Exponentiation.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -482,40 +640,81 @@ signed main()
         solve();
     }
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def mmul(a, b):
+    return (a * b) % MOD
+
+def mpow(a, b):
+    res = 1
+    while b:
+        if b &amp; 1: res = mmul(res, a)
+        a = mmul(a, a)
+        b &gt;&gt;= 1
+    return res                              # built-in equivalent: pow(a, b, MOD)
+
+def solve():
+    a, b = int(next(tok)), int(next(tok))
+    print(mpow(a, b))
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Squaring <code>a</code> happens every round, even when the bit is 0. Updating it only inside the <code>if</code> is the classic bug. a<sup>0</sup> = 1 falls out because <code>res</code> starts at 1.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"a<sup>b</sup> mod m with b up to 10&#8313;&ndash;10&#185;&#8312;" &rarr; square-and-multiply.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"a<sup>b</sup> mod m with b up to \(10^{9}\)&ndash;\(10^{18}\)" &rarr; square-and-multiply.</div>
     </article>
 
     <article class="entry" id="exponentiation-ii">
-      <div class="entry-head"><h3>Exponentiation II</h3><span class="badge num">O(n log p)</span></div>
+      <div class="entry-head"><h3>Exponentiation II</h3><span class="badge num">\(O(n \log p)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Compute a<sup>b<sup>c</sup></sup> mod p, with p = 10&#8313;+7 and 0<sup>0</sup> = 1.<div class="formal">a^(b^c) &equiv; a^(b^c mod (p&minus;1))  (mod p)    for p &#8740; a</div></div>
+        <div class="ask">
+<p><b>Question.</b> Answer \(n\) queries: for each triple \(a, b, c\), compute \(a^{(b^c)} \bmod p\) with
+\(p = 10^9 + 7\). Assume \(0^0 = 1\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd>For each query, \(a^{(b^c)} \bmod (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 0 \le a, b, c \le 10^9\)</dd>
+<dt>Sample</dt><dd>\((3,7,1) \to 2187\); \((15,2,2) \to 50625\); \((3,4,5) \to 763327764\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">\(p\) is prime. Fermat's little theorem: if \(p \nmid a\), then</span>
+\[ a^{p-1} \equiv 1 \pmod p \]</li>
+<li><span class="why">So the exponent only matters modulo \(p - 1\). Write \(b^c = q(p-1) + e\):</span>
+\[ a^{(b^c)} = \big(a^{p-1}\big)^q \cdot a^{e} \equiv a^{e} \pmod p, \qquad e = b^c \bmod (p - 1) \]</li>
+<li><span class="why">Since \(a \le 10^9 \lt p\), the condition \(p \nmid a\) fails only for \(a = 0\). Then the answer is \(1\) if \(b^c = 0\) (that is, \(b = 0\) and \(c \ge 1\)) and \(0\) otherwise.</span></li>
+<li><span class="why">Simplest form: two fast powers with different moduli:</span>
+\[ e = \text{mpow}(b, c, p - 1), \qquad \text{ans} = \text{mpow}(a, e, p) \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Fermat: a<sup>p&minus;1</sup> &equiv; 1 when p &#8740; a, so exponents live mod p&minus;1.</li>
-          <li>The inner power is <code>mpow(b, c, p&minus;1)</code>, the same function with a different modulus.</li>
-          <li>a &le; 10&#8313; &lt; p, so p &#8739; a only when a = 0. Handle a = 0 by hand.</li>
-          <li>0<sup>b<sup>c</sup></sup> is 1 exactly when b<sup>c</sup> = 0, which means b = 0 and c &ge; 1.</li>
-        </ol>
+<li>Fermat: \(a^{p-1} \equiv 1 \pmod p\) when \(p \nmid a\), so exponents can be taken mod \(p - 1\).</li>
+<li>The inner power is <code>mpow(b, c, p-1)</code>: the same function with a different modulus.</li>
+<li>\(a \le 10^9 \lt p\), so \(p \mid a\) only when \(a = 0\). Handle \(a = 0\) by hand.</li>
+<li>\(0^{(b^c)}\) is \(1\) exactly when \(b^c = 0\), which means \(b = 0\) and \(c \ge 1\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Compute b<sup>c</sup> exactly, then a<sup>that</sup>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">b<sup>c</sup> has up to <span class="cost">30&middot;10&#8313;</span> bits.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>b, c &le; 10&#8313;</code>: it can't even be stored.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Reduce the exponent mod p&minus;1, then use two fast pows: <span class="cost">O(log p)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Compute \(b^c\) exactly, then \(a\) to that power.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">\(b^c\) has up to about <span class="cost">\(3\cdot 10^{10}\)</span> bits.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(b, c \le 10^9\): the number cannot even be stored.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Reduce the exponent mod \(p - 1\), then two fast powers: <span class="cost">\(O(\log p)\)</span> per query.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 400 80" role="img" aria-label="3 4 5 pipeline"><rect class="s-box" x="10" y="20" width="110" height="34" rx="4"/><text class="s-t" x="65" y="42" text-anchor="middle">b=4, c=5</text><path class="s-edge" d="M120 37 H150"/><rect class="s-fill" x="150" y="20" width="110" height="34" rx="4"/><text class="s-t" x="205" y="42" text-anchor="middle">e = 1024</text><path class="s-edge" d="M260 37 H290"/><rect class="s-good" x="290" y="20" width="100" height="34" rx="4"/><text class="s-t" x="340" y="42" text-anchor="middle">3&#185;&#8304;&#178;&#8308;</text><text class="s-ta" x="150" y="74">mod p&minus;1</text><text class="s-ta" x="290" y="74">mod p &rarr; 763327764</text></svg>
-          <figcaption>Sample (3, 4, 5): the inner power is taken mod 10&#8313;+6, then the outer power mod 10&#8313;+7.</figcaption>
+<svg viewBox="0 0 410 80" role="img" aria-label="3 4 5 pipeline"><rect class="s-box" x="10" y="20" width="110" height="34" rx="4"/><text class="s-t" x="65" y="42" text-anchor="middle">b=4, c=5</text><path class="s-edge" d="M120 37 H150"/><rect class="s-fill" x="150" y="20" width="110" height="34" rx="4"/><text class="s-t" x="205" y="42" text-anchor="middle">e = 1024</text><path class="s-edge" d="M260 37 H290"/><rect class="s-good" x="290" y="20" width="100" height="34" rx="4"/><text class="s-t" x="340" y="42" text-anchor="middle">3&#185;&#8304;&#178;&#8308;</text><text class="s-ta" x="150" y="74">mod p&minus;1</text><text class="s-ta" x="290" y="74">mod p &rarr; 763327764</text></svg>
+          <figcaption>Sample (3, 4, 5): the inner power is taken mod \(10^{9}+6\), then the outer power mod \(10^{9}\)+7.</figcaption>
         </figure>
       </div>
       <div class="sec">
@@ -603,6 +802,43 @@ signed main()
     while(t--)
         solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def mmul(a, b, mod=MOD):                    # default arguments work the same way
+    return (a * b) % mod
+
+def mpow(a, b, mod=MOD):
+    res = 1
+    while b:
+        if b &amp; 1: res = mmul(res, a, mod)
+        a = mmul(a, a, mod)
+        b &gt;&gt;= 1
+    return res
+
+def solve():
+    a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+    if a == 0 and b == 0:
+        if c == 0:
+            print(0)
+            return
+        else:
+            print(1)
+            return
+    if a == 0 and b != 0:
+        print(0)
+        return
+    # a raise to b raise to c mod 10^9 + 7
+    # a raise to b raise to c mod 10^9 + 7 = a raise to (b raise to c mod 10^9 + 6) mod 10^9 + 7
+    # a raise to p mod m = a raise to (p mod (m - 1)) mod m // fermat's little theorem
+    x = mpow(b, c, MOD - 1)
+    print(mpow(a, x, MOD))
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Reduce the exponent mod <strong>p&minus;1</strong>, not p. If b<sup>c</sup> &equiv; 0 mod p&minus;1, the result is a<sup>0</sup> = 1, which is correct for a &ne; 0 and wrong for a = 0. That is exactly what the guards cover.</div>
       <div class="callout trigger"><strong>Recognize</strong>"power tower mod a prime" &rarr; Fermat: reduce the upper exponent mod p&minus;1.</div>
@@ -612,35 +848,53 @@ signed main()
   <!-- ===================== FAMILY 4 ===================== -->
   <section class="family" id="f4">
     <div class="family-head"><h2>4 &middot; Divisors &amp; multiples</h2></div>
-    <p class="family-note">Every divisor question can be turned around: instead of asking what divides i, ask which multiples each d reaches. Loop d over its multiples in O(X log X) total. For n up to 10&#185;&#178;, group the d with equal &lfloor;n/d&rfloor;.</p>
+    <p class="family-note">Every divisor question can be turned around: instead of asking what divides i, ask which multiples each d reaches. Loop d over its multiples in O(X log X) total. For n up to \(10^{12}\), group the d with equal &lfloor;n/d&rfloor;.</p>
 
     <article class="entry" id="counting-divisors">
-      <div class="entry-head"><h3>Counting Divisors</h3><span class="badge num">O(X log X + n)</span></div>
+      <div class="entry-head"><h3>Counting Divisors</h3><span class="badge num">\(O(X \log X + n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Given up to 10&#8309; numbers x &le; 10&#8310;, print &tau;(x), the number of divisors of each.<div class="formal">&tau;(x) = |{ i : i | x }|;   for i: for j = i, 2i, &hellip;: d[j]++</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given \(n\) integers. For each one, print how many divisors it has. For
+example, \(18\) has \(6\) divisors: \(1, 2, 3, 6, 9, 18\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) integers \(x\).</dd>
+<dt>Output</dt><dd>For each \(x\), the number of its divisors \(\tau(x)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le x \le 10^6\)</dd>
+<dt>Sample</dt><dd>\(16 \to 5\); \(17 \to 2\); \(18 \to 6\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly, where \(i \mid x\) means "\(i\) divides \(x\)":</span>
+\[ \tau(x) = \#\{\, i : 1 \le i \le x,\ i \mid x \,\} \]</li>
+<li><span class="why">Turn it around: \(i \mid j\) exactly when \(j\) is a multiple of \(i\). So each \(i\) adds \(1\) to every multiple of itself:</span>
+\[ \text{for } i = 1..X: \quad \text{for } j = i, 2i, 3i, \dots \le X: \quad \tau[j] \mathrel{+}= 1 \]</li>
+<li><span class="why">The total work is a harmonic sum:</span>
+\[ \sum_{i=1}^{X} \frac{X}{i} \approx X \ln X \approx 1.4\cdot 10^7 \quad (X = 10^6) \]</li>
+<li><span class="why">Simplest form: build \(\tau[1..10^6]\) once, then each query is a lookup.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>i divides j &hArr; j is a multiple of i, so each i adds 1 to all its multiples.</li>
-          <li>&sum;<sub>i&le;X</sub> X/i &asymp; X ln X &asymp; 1.4&middot;10&#8311; for X = 10&#8310;.</li>
-          <li>Precompute once, then each query is a lookup.</li>
-        </ol>
+<li>\(i\) divides \(j\) iff \(j\) is a multiple of \(i\), so each \(i\) adds \(1\) to all its multiples.</li>
+<li>\(\sum_{i \le X} X/i \approx X \ln X \approx 1.4\cdot 10^7\) for \(X = 10^6\).</li>
+<li>Build the table once; then each query is a lookup.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Trial division up to &radic;x for each query.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&radic;X)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 10&#8309;, X = 10&#8310;</code> &rarr; <span class="cost">10&#8312;</span> modulo operations. That is borderline at 1 s.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Harmonic sieve: <span class="cost">O(X log X)</span> once, <span class="cost">O(1)</span> per query.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Trial division up to \(\sqrt{x}\) for each query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \sqrt{X})\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5,\ X = 10^6\) gives \(10^8\) modulo operations, borderline at 1 s.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Harmonic sieve: <span class="cost">\(O(X \log X)\)</span> once, <span class="cost">\(O(1)\)</span> per query.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 400 150" role="img" aria-label="multiples up to 12"><text class="s-td" x="4" y="14">row i: its multiples &le; 12</text><text class="s-tm" x="4" y="38">1</text><circle class="s-box" cx="48" cy="34" r="5"/><circle class="s-box" cx="76" cy="34" r="5"/><circle class="s-box" cx="104" cy="34" r="5"/><circle class="s-box" cx="132" cy="34" r="5"/><circle class="s-box" cx="160" cy="34" r="5"/><circle class="s-box" cx="188" cy="34" r="5"/><circle class="s-box" cx="216" cy="34" r="5"/><circle class="s-box" cx="244" cy="34" r="5"/><circle class="s-box" cx="272" cy="34" r="5"/><circle class="s-box" cx="300" cy="34" r="5"/><circle class="s-box" cx="328" cy="34" r="5"/><circle class="s-good" cx="356" cy="34" r="7"/><text class="s-tm" x="4" y="58">2</text><circle class="s-box" cx="76" cy="54" r="5"/><circle class="s-box" cx="132" cy="54" r="5"/><circle class="s-box" cx="188" cy="54" r="5"/><circle class="s-box" cx="244" cy="54" r="5"/><circle class="s-box" cx="300" cy="54" r="5"/><circle class="s-good" cx="356" cy="54" r="7"/><text class="s-tm" x="4" y="78">3</text><circle class="s-box" cx="104" cy="74" r="5"/><circle class="s-box" cx="188" cy="74" r="5"/><circle class="s-box" cx="272" cy="74" r="5"/><circle class="s-good" cx="356" cy="74" r="7"/><text class="s-tm" x="4" y="98">4</text><circle class="s-box" cx="132" cy="94" r="5"/><circle class="s-box" cx="244" cy="94" r="5"/><circle class="s-good" cx="356" cy="94" r="7"/><text class="s-tm" x="4" y="118">6</text><circle class="s-box" cx="188" cy="114" r="5"/><circle class="s-good" cx="356" cy="114" r="7"/><text class="s-tm" x="4" y="138">12</text><circle class="s-good" cx="356" cy="134" r="7"/><text class="s-ta" x="200" y="146">column 12 hit 6 times &rarr; &tau;(12) = 6</text></svg>
+<svg viewBox="0 0 400 166" role="img" aria-label="multiples up to 12"><text class="s-td" x="4" y="14">row i: its multiples &le; 12</text><text class="s-tm" x="4" y="38">1</text><circle class="s-box" cx="48" cy="34" r="5"/><circle class="s-box" cx="76" cy="34" r="5"/><circle class="s-box" cx="104" cy="34" r="5"/><circle class="s-box" cx="132" cy="34" r="5"/><circle class="s-box" cx="160" cy="34" r="5"/><circle class="s-box" cx="188" cy="34" r="5"/><circle class="s-box" cx="216" cy="34" r="5"/><circle class="s-box" cx="244" cy="34" r="5"/><circle class="s-box" cx="272" cy="34" r="5"/><circle class="s-box" cx="300" cy="34" r="5"/><circle class="s-box" cx="328" cy="34" r="5"/><circle class="s-good" cx="356" cy="34" r="7"/><text class="s-tm" x="4" y="58">2</text><circle class="s-box" cx="76" cy="54" r="5"/><circle class="s-box" cx="132" cy="54" r="5"/><circle class="s-box" cx="188" cy="54" r="5"/><circle class="s-box" cx="244" cy="54" r="5"/><circle class="s-box" cx="300" cy="54" r="5"/><circle class="s-good" cx="356" cy="54" r="7"/><text class="s-tm" x="4" y="78">3</text><circle class="s-box" cx="104" cy="74" r="5"/><circle class="s-box" cx="188" cy="74" r="5"/><circle class="s-box" cx="272" cy="74" r="5"/><circle class="s-good" cx="356" cy="74" r="7"/><text class="s-tm" x="4" y="98">4</text><circle class="s-box" cx="132" cy="94" r="5"/><circle class="s-box" cx="244" cy="94" r="5"/><circle class="s-good" cx="356" cy="94" r="7"/><text class="s-tm" x="4" y="118">6</text><circle class="s-box" cx="188" cy="114" r="5"/><circle class="s-good" cx="356" cy="114" r="7"/><text class="s-tm" x="4" y="138">12</text><circle class="s-good" cx="356" cy="134" r="7"/><text class="s-ta" x="4" y="160">column 12 hit 6 times &rarr; &tau;(12) = 6</text></svg>
           <figcaption>Only the divisor rows of 12 are drawn. Each row i marks its multiples, and column j collects &tau;(j). The sieve fills every column at once.</figcaption>
         </figure>
       </div>
@@ -717,33 +971,70 @@ signed main()
        cout &lt;&lt; d[x] &lt;&lt; endl;
     }
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+# def solve():
+#     ...
+
+d = [0] * 1000001                           # ll d[1000001] (global arrays start at 0 in C++ too)
+
+def pre():
+    for i in range(1, 1000001):
+        for j in range(i, 1000001, i):      # j = i; j &lt;= 1e6; j += i
+            d[j] += 1
+    # ponytail: ~1.4e7 Python steps, a few seconds; same harmonic-sum sieve as C++
+
+t = int(next(tok))
+pre()
+out = []
+for _ in range(t):
+    x = int(next(tok))
+    out.append(d[x])
+print('\n'.join(map(str, out)))</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Declare <code>d</code> globally. A local array of 10&#8310; <code>ll</code> overflows the stack and is uninitialised. Size it X+1 so <code>d[10&#8310;]</code> is valid.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"divisor count or sum for many x &le; 10&#8310;" &rarr; harmonic sieve over multiples.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Declare <code>d</code> globally. A local array of \(10^{6}\) <code>ll</code> overflows the stack and is uninitialised. Size it X+1 so \(d[10^{6}]\) is valid.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"divisor count or sum for many x &le; \(10^{6}\)" &rarr; harmonic sieve over multiples.</div>
     </article>
 
     <article class="entry" id="common-divisors">
-      <div class="entry-head"><h3>Common Divisors</h3><span class="badge num">O(X log X)</span></div>
+      <div class="entry-head"><h3>Common Divisors</h3><span class="badge num">\(O(X \log X)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Find the largest gcd over all pairs in the array.<div class="formal">max { g : |{ i : g | x&#7522; }| &ge; 2 }</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) positive integers. Choose two of them so that their
+greatest common divisor is as large as possible, and print that gcd.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>One integer: the largest \(\gcd(x_i, x_j)\) over \(i \ne j\).</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^6\)</dd>
+<dt>Sample</dt><dd><code>3 14 15 7 9</code> → <code>7</code> (\(\gcd(14, 7)\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">If \(g\) divides two elements, their gcd is at least \(g\). And the gcd itself divides both. So</span>
+\[ \max_{i \ne j} \gcd(x_i, x_j) = \max \big\{\, g : \#\{ i : g \mid x_i \} \ge 2 \,\big\} \]</li>
+<li><span class="why">With a count array \(\text{freq}[v]\), the number of elements divisible by \(g\) is</span>
+\[ \text{cnt}(g) = \sum_{k \ge 1} \text{freq}[k g] \]</li>
+<li><span class="why">Simplest form: try \(g = 10^6, 10^6 - 1, \dots\) and stop at the first \(g\) with \(\text{cnt}(g) \ge 2\). Even the full scan is a harmonic sum, \(O(X \log X)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>If g divides two elements, their gcd is &ge; g. So the answer is the largest g dividing at least two elements.</li>
-          <li>Count the multiples of g present using a frequency array: &sum; freq[g&middot;k].</li>
-          <li>Try g from max down and stop at the first count &ge; 2. The whole scan is still harmonic, O(X log X).</li>
-        </ol>
+<li>If \(g\) divides two elements, their gcd is \(\ge g\). So the answer is the largest \(g\) that divides at least two elements.</li>
+<li>Count the elements divisible by \(g\) with a count array: \(\sum_k \text{freq}[k g]\).</li>
+<li>Try \(g\) from the maximum down and stop at the first count \(\ge 2\). The whole scan is still harmonic, \(O(X \log X)\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">gcd of every pair.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2; log X)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 2&middot;10&#8309;</code> &rarr; <span class="cost">2&middot;10&#185;&#8304;</span> pairs.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Iterate over the answer g and count multiples: <span class="cost">O(X log X)</span>, X = 10&#8310;.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">\(\gcd\) of every pair.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2 \log X)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives \(2\cdot 10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Loop over the answer \(g\) and count multiples: <span class="cost">\(O(X \log X)\)</span>, \(X = 10^6\).</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -754,7 +1045,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>freq</code> is sized to the actual max, not 10&#8310;. The downward loop <code>return</code>s on the first hit. g = 1 always has cnt = n &ge; 2, so the loop always prints.</p>
+        <p class="impl-note"><code>freq</code> is sized to the actual max, not \(10^{6}\). The downward loop <code>return</code>s on the first hit. g = 1 always has cnt = n &ge; 2, so the loop always prints.</p>
         <div class="src-meta"><span class="path">mathematics/Common_Divisors.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -822,35 +1113,75 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    a = [0] * n
+    mx = 0
+    for i in range(n):
+        a[i] = int(next(tok))
+        mx = max(mx, a[i])
+    freq = [0] * (mx + 1)
+    for i in range(n):
+        freq[a[i]] += 1
+    for i in range(mx, 0, -1):              # i = mx down to 1
+        cnt = 0
+        for j in range(i, mx + 1, i):
+            cnt += freq[j]
+        if cnt &gt; 1:
+            print(i)
+            return
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Use counts, not a presence bitmap. Two equal values, such as 6 6, have gcd 6, and <code>freq[6] = 2</code> is what finds it.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"maximise gcd or common divisor over a pair or subset, values &le; 10&#8310;" &rarr; iterate over the divisor and count its multiples.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"maximise gcd or common divisor over a pair or subset, values &le; \(10^{6}\)" &rarr; iterate over the divisor and count its multiples.</div>
     </article>
 
     <article class="entry" id="sum-of-divisors">
-      <div class="entry-head"><h3>Sum of Divisors</h3><span class="badge num">O(&radic;n log p)</span></div>
+      <div class="entry-head"><h3>Sum of Divisors</h3><span class="badge num">\(O(\sqrt n \log p)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Compute &sum;<sub>i=1</sub><sup>n</sup> &sigma;(i) mod 10&#8313;+7, with n &le; 10&#185;&#178;.<div class="formal">&sum; &sigma;(i) = &sum;<sub>d=1</sub><sup>n</sup> d&middot;&lfloor;n/d&rfloor;
-block [l, r] with v = &lfloor;n/l&rfloor;, r = &lfloor;n/v&rfloor;:  v &middot; (l+r)(r&minus;l+1)/2</div></div>
+        <div class="ask">
+<p><b>Question.</b> Let \(\sigma(i)\) be the sum of the divisors of \(i\); for example
+\(\sigma(12) = 1 + 2 + 3 + 4 + 6 + 12 = 28\). Compute \(\sigma(1) + \sigma(2) + \dots + \sigma(n)\)
+modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>\(\sum_{i=1}^{n} \sigma(i) \bmod (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^{12}\)</dd>
+<dt>Sample</dt><dd>\(5\) → <code>21</code> (\(1 + 3 + 4 + 7 + 6\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Swap the order of summation. Each \(d\) is a divisor of the \(\lfloor n/d \rfloor\) numbers \(d, 2d, \dots \le n\), and adds \(d\) to each:</span>
+\[ \sum_{i=1}^{n} \sigma(i) = \sum_{i=1}^{n} \sum_{d \mid i} d = \sum_{d=1}^{n} d \left\lfloor \frac{n}{d} \right\rfloor \]</li>
+<li><span class="why">\(\lfloor n/d \rfloor\) takes at most \(2\sqrt{n}\) different values. Group the \(d\) with the same value \(v\) into a block \([l, r]\):</span>
+\[ v = \left\lfloor \frac{n}{l} \right\rfloor, \qquad r = \left\lfloor \frac{n}{v} \right\rfloor \]</li>
+<li><span class="why">Inside a block, \(\sum d\) is an arithmetic series:</span>
+\[ \sum_{d=l}^{r} d \cdot v = v \cdot \frac{(l + r)(r - l + 1)}{2} \]</li>
+<li><span class="why">Simplest form: walk the blocks \(l = 1,\ l \leftarrow r + 1\). About \(2\cdot 10^6\) blocks for \(n = 10^{12}\). The \(/2\) is done mod \(p\) by multiplying with \(2^{-1}\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>d is a divisor of exactly &lfloor;n/d&rfloor; numbers &le; n, and contributes d to each of them.</li>
-          <li>&lfloor;n/d&rfloor; takes at most 2&radic;n distinct values, so group d into blocks.</li>
-          <li>Within a block, &sum; d is an arithmetic series.</li>
-          <li>The series needs /2, and after reducing mod p that means multiplying by the inverse of 2.</li>
-        </ol>
+<li>\(d\) divides exactly \(\lfloor n/d \rfloor\) numbers \(\le n\), and adds \(d\) to each of them.</li>
+<li>\(\lfloor n/d \rfloor\) takes at most \(2\sqrt{n}\) different values, so group the \(d\) into blocks.</li>
+<li>Inside a block, \(\sum d\) is an arithmetic series.</li>
+<li>The series needs \(/2\). After reducing mod \(p\) that means multiplying by the inverse of \(2\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">&sum;<sub>d</sub> d&middot;&lfloor;n/d&rfloor; one d at a time, or a &sigma; sieve.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 10&#185;&#178;</code> &rarr; <span class="cost">10&#185;&#178;</span> iterations.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Quotient blocks: <span class="cost">O(&radic;n)</span> &asymp; 2&middot;10&#8310; blocks.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">\(\sum_d d \lfloor n/d \rfloor\) one \(d\) at a time, or a \(\sigma\) sieve.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^{12}\) iterations.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Quotient blocks: <span class="cost">\(O(\sqrt{n})\)</span>, about \(2\cdot 10^6\) blocks.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -861,7 +1192,7 @@ block [l, r] with v = &lfloor;n/l&rfloor;, r = &lfloor;n/v&rfloor;:  v &middot; 
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">Every helper reduces its operands before combining them, which is needed because <code>l</code> and <code>r</code> reach 10&#185;&#178;. <code>mdiv(&hellip;, 2)</code> multiplies by <code>mpow(2, MOD&minus;2)</code>. <code>l = r + 1</code> jumps to the next block.</p>
+        <p class="impl-note">Every helper reduces its operands before combining them, which is needed because <code>l</code> and <code>r</code> reach \(10^{12}\). <code>mdiv(&hellip;, 2)</code> multiplies by \(\text{mpow}(2, \text{MOD}-2)\). <code>l = r + 1</code> jumps to the next block.</p>
         <div class="src-meta"><span class="path">mathematics/Sum_of_Divisors.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -945,9 +1276,51 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a % MOD + b % MOD) % MOD
+
+def mmul(a, b):
+    return ((a % MOD) * (b % MOD)) % MOD
+
+def mpow(a, b):
+    res = 1
+    while b:
+        if b &amp; 1: res = mmul(res, a)
+        a = mmul(a, a)
+        b &gt;&gt;= 1
+    return res
+
+def mdiv(a, b):
+    return mmul(a, mpow(b, MOD - 2))
+
+def msub(a, b):
+    return (a % MOD - b % MOD + MOD) % MOD
+
+def mcorr(a):
+    return (a % MOD + MOD) % MOD
+
+def solve():
+    n = int(next(tok))
+    ans = 0
+    l = 1
+    while l &lt;= n:
+        v = n // l
+        r = n // v
+        cnt = madd(msub(r, l), 1)
+        sum_ = mdiv(mmul(cnt, madd(l, r)), 2)
+        ans = madd(ans, mmul(sum_, v))
+        l = r + 1
+    print(mcorr(ans))
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>You can't compute <code>(x mod p) / 2</code>. Once reduced, the product may be odd. Use the inverse of 2, or halve the even factor before reducing. Raw <code>l * r</code> with 10&#185;&#178; operands overflows, so reduce first.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"&sum; over d &le; n of f(d)&middot;&lfloor;n/d&rfloor;, with n &le; 10&#185;&#178;" &rarr; group equal quotients into &radic;n blocks.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>You can't compute <code>(x mod p) / 2</code>. Once reduced, the product may be odd. Use the inverse of 2, or halve the even factor before reducing. Raw <code>l * r</code> with \(10^{12}\) operands overflows, so reduce first.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"&sum; over d &le; n of f(d)&middot;&lfloor;n/d&rfloor;, with n &le; \(10^{12}\)" &rarr; group equal quotients into &radic;n blocks.</div>
     </article>
   </section>
 </main>

@@ -53,7 +53,7 @@
       Every rule must be demonstrated by at least two entries on this page.</p></div>
     <div class="rules">
       <div class="rule"><span class="n">1</span>
-        <p>Two pointers come in two shapes. <strong>Converging</strong> (<span class="rule-code">i=0, j=n&minus;1</span>)
+        <p>Two pointers come in two shapes. <strong>Converging</strong> (\(i=0, j=n-1\))
         when pairing elements <em>within</em> one array &mdash; Ferris Wheel, and the
         inner loop of Sum of Three Values. <strong>Parallel</strong> (both start at 0)
         when matching <em>between</em> two arrays &mdash; Apartments. Ask "am I pairing
@@ -72,24 +72,24 @@
         Values needs the explicit <span class="rule-code">a!=i &amp;&amp; a!=j &amp;&amp; b!=i &amp;&amp; b!=j</span>
         guard because the stored pair may reuse an index it already spent.</p></div>
       <div class="rule"><span class="n">4</span>
-        <p>When the objective is <span class="rule-code">&sum; position &times; value</span>,
+        <p>When the objective is \(\sum \text{position} \times \text{value}\),
         the sort direction falls out of an adjacent swap. Reducing Dishes <em>maximises</em>,
         so large values must take large multipliers &rarr; ascending. Tasks and Deadlines
-        <em>minimises</em> <span class="rule-code">&sum;(n&minus;k+1)&middot;a&#8342;</span>,
+        <em>minimises</em> \(\sum (n-k+1)\cdot a_{k}\),
         so small values take large multipliers &rarr; also ascending, but for the opposite
         reason. Write the two-element comparison first; the order is whatever it says.</p></div>
       <div class="rule"><span class="n">5</span>
         <p>Before sorting, check whether a closed-form bound already answers it. Reading
-        Books is <span class="rule-code">max(&sum;t, 2&middot;t_max)</span> in one unsorted pass
+        Books is \(\max (\sum t, 2\cdot t_{\max})\) in one unsorted pass
         &mdash; two lower bounds that happen to be jointly achievable. Stick Lengths only
         needs the sorted order to <em>locate</em> the median (an <span class="rule-code">nth_element</span>
         would do), and Missing Coin Sum only needs it to justify breaking early. Sorting is
         the scaffold for the proof more often than it is the computation.</p></div>
       <div class="rule"><span class="n">6</span>
-        <p>Answer width, every time: <span class="rule-code">2&middot;10&#8309;</span> values of
-        <span class="rule-code">10&#8313;</span> is <span class="rule-code">2&middot;10&#185;&#8308;</span> &mdash;
+        <p>Answer width, every time: \(2\cdot 10^{5}\) values of
+        \(10^{9}\) is \(2\cdot 10^{14}\) &mdash;
         Stick Lengths and Reading Books both overflow <span class="rule-code">int</span> on the
-        accumulator alone, and Tasks and Deadlines reaches ~<span class="rule-code">2&middot;10&#185;&#8310;</span>
+        accumulator alone, and Tasks and Deadlines reaches \(\approx 2\cdot 10^{16}\)
         because its sum is of <em>prefix</em> sums. Only Ferris Wheel's and Apartments' answers
         (counts bounded by <span class="rule-code">n</span>) actually fit in 32 bits.</p></div>
     </div>
@@ -106,56 +106,62 @@
     so the sweep is linear and the sort dominates.</p>
 
     <article class="entry" id="ferris-wheel">
-      <div class="entry-head"><h3>Ferris Wheel</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Ferris Wheel</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> children with weights <code>p[0..n&minus;1]</code>. A gondola
-          carries one or two of them and their total weight must not exceed
-          <code>x</code>. Use as few gondolas as possible.
-          <div class="formal">minimise  |P|
-subject to  P partitions {0..n&minus;1},  |S| &le; 2  and  &sum;&#8342;&#8712;&#8347; p&#8342; &le; x  for every S &isin; P</div>
-        </div>
+<p><b>Question.</b> There are \(n\) children with weights \(p_0, \dots, p_{n-1}\). Each gondola
+carries one or two children, and their total weight must not exceed \(x\). What is the minimum
+number of gondolas needed?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(p_0, \dots, p_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the minimum number of gondolas.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x \le 10^9,\ \ 1 \le p_i \le x\)</dd>
+<dt>Sample</dt><dd>\(x = 10\), weights <code>7 2 3 9</code> → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: split the children into groups \(S\) of size 1 or 2:</span>
+\[ \min |\mathcal{P}| \quad \text{subject to} \quad |S| \le 2,\ \ \sum_{k \in S} p_k \le x \ \ \text{for every } S \in \mathcal{P} \]</li>
+<li><span class="why">Sort so that \(p_0 \le p_1 \le \dots \le p_{n-1}\). The heaviest child \(p_j\) needs a gondola now. The only question is who joins.</span></li>
+<li><span class="why">If anyone fits with \(p_j\), the lightest \(p_i\) fits. Swapping the lightest in never hurts:</span>
+\[ p_i + p_j \le x \;\Longrightarrow\; \text{pair } (i, j); \qquad p_i + p_j \gt x \;\Longrightarrow\; j \text{ rides alone} \]</li>
+<li><span class="why">Simplest form, two pointers \(i = 0,\ j = n-1\):</span>
+\[ \text{while } i \le j:\ \ \text{if } p_i + p_j \le x \text{ then } i{+}{+};\quad j{-}{-};\quad \text{count}{+}{+} \]</li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The heaviest unmatched child rides <em>this</em> step no matter what &mdash;
-              the only open question is whether anyone joins them.</li>
-          <li>If anyone fits with the heaviest, the <em>lightest</em> fits. So pairing
-              heaviest with lightest is never worse: swapping in the lightest frees a
-              heavier child for a later gondola.</li>
-          <li>If the lightest does not fit with the heaviest, nobody does &mdash; the
-              heaviest rides alone.</li>
-          <li>Both branches consume the heaviest and cost one gondola &rarr;
-              <code>j&minus;&minus;</code> and <code>count++</code> are unconditional; only
-              <code>i++</code> depends on the test.</li>
-          <li><code>i == j</code> (one child left) needs no special case: the self-test
-              either passes or fails, and one gondola is charged either way.</li>
-        </ol>
+<li>The heaviest unseated child rides in <em>this</em> step no matter what. The only open
+question is whether someone joins them.</li>
+<li>If anyone fits with the heaviest, the <em>lightest</em> fits too. Pairing heaviest with
+lightest is never worse: it keeps the heavier light children free for later.</li>
+<li>If the lightest does not fit with the heaviest, nobody does, so the heaviest rides alone.</li>
+<li>Both cases use up the heaviest and cost one gondola, so <code>j--</code> and
+<code>count++</code> always run. Only <code>i++</code> depends on the test.</li>
+<li>\(i = j\) (one child left) needs no special case: one gondola is charged either way.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate
-            partitions into gondolas, or rescan the remaining children for the best
-            partner of the current heaviest.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&sup2;)</span> for the rescan; super-exponential for the
-            partition search.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>
-            comparisons for the rescan alone.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Sort once and converge two pointers &mdash; <span class="cost">O(n log n)</span>
-            total, <span class="cost">O(1)</span> extra state, one pass after the sort.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Search all groupings, or
+rescan the remaining children for the best partner of the current heaviest.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> for the rescan; exponential for the search.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) comparisons for the rescan alone.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Sort once and move two pointers inward: <span class="cost">\(O(n \log n)\)</span> total,
+<span class="cost">\(O(1)\)</span> extra space.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -237,6 +243,25 @@ int main() {
     cout &lt;&lt; count &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+
+    p = [int(next(tok)) for _ in range(n)]
+
+    p.sort()
+
+    i, j, count = 0, n - 1, 0
+    while i &lt;= j:
+        if p[i] + p[j] &lt;= x: i += 1
+        j -= 1
+        count += 1
+
+    print(count)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong><code>j--</code> and
@@ -250,66 +275,71 @@ int main() {
     </article>
 
     <article class="entry" id="apartments">
-      <div class="entry-head"><h3>Apartments</h3><span class="badge num">O(n log n + m log m)</span></div>
+      <div class="entry-head"><h3>Apartments</h3><span class="badge num">\(O(n \log n + m \log m)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> applicants, applicant <code>i</code> accepts any apartment whose
-          size lies in <code>[a&#7522;&minus;k, a&#7522;+k]</code>; <code>m</code> apartments
-          of fixed size <code>b&#11388;</code>. Each applicant gets at most one apartment and each
-          apartment at most one applicant. Maximise the number of matches.
-          <div class="formal">maximise |M|  over matchings M &sube; A &times; B
-subject to  |b&#11388; &minus; a&#7522;| &le; k  for every (i,j) &isin; M</div>
-        </div>
+<p><b>Question.</b> There are \(n\) applicants and \(m\) apartments. Applicant \(i\) wants size
+\(a_i\) and accepts any apartment whose size is within \(k\) of it. Apartment \(j\) has size
+\(b_j\). Each applicant gets at most one apartment and each apartment goes to at most one
+applicant. How many applicants can get an apartment?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n, m, k\); then \(a_0..a_{n-1}\); then \(b_0..b_{m-1}\).</dd>
+<dt>Output</dt><dd>One integer: the maximum number of matched applicants.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 2\cdot 10^5,\ \ 0 \le k \le 10^9,\ \ 1 \le a_i, b_j \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(k = 5\), \(a =\) <code>60 45 80 60</code>, \(b =\) <code>30 60 75</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: a matching \(M\) pairs applicants with apartments, one-to-one:</span>
+\[ \max |M| \quad \text{subject to} \quad |b_j - a_i| \le k \ \ \text{for every } (i, j) \in M \]</li>
+<li><span class="why">Sort both lists ascending. Give each applicant the <em>smallest</em> apartment that fits. A larger one that also fits is better kept for a later, larger applicant.</span></li>
+<li><span class="why">Compare the smallest unmatched applicant \(a_i\) with the smallest unused apartment \(b_j\):</span>
+\[ b_j \lt a_i - k \Rightarrow j{+}{+}, \qquad b_j \gt a_i + k \Rightarrow i{+}{+}, \qquad \text{else match: } i{+}{+},\ j{+}{+} \]</li>
+<li><span class="why">Simplest form: each step moves at least one pointer, so the scan takes \(n + m\) steps after the two sorts.</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>An apartment is consumed by a match, so "does <em>some</em> apartment fit
-              applicant <code>i</code>" answered per applicant double-counts the same
-              apartment across several applicants.</li>
-          <li>Sort both sides ascending and give each applicant the <em>smallest</em>
-              apartment that fits: any larger fitting one is better saved for a larger
-              applicant (exchange argument).</li>
-          <li><code>b&#11388; &lt; a&#7522;&minus;k</code>: too small for this applicant, hence too small for
-              every later (larger) applicant &rarr; discard the apartment,
-              <code>j++</code>.</li>
-          <li><code>b&#11388; &gt; a&#7522;+k</code>: too big for this applicant, but a later larger
-              applicant may take it &rarr; discard the <em>applicant</em>,
-              <code>i++</code>.</li>
-          <li>Every step advances at least one pointer, so the sweep is
-              <code>O(n+m)</code> and the two sorts dominate.</li>
-        </ol>
+<li>A match uses up an apartment. Asking "does <em>some</em> apartment fit applicant \(i\)?"
+separately for each applicant can count the same apartment several times.</li>
+<li>Sort both sides and give each applicant the <em>smallest</em> apartment that fits. Any
+larger fitting one is better saved for a larger applicant (exchange argument).</li>
+<li>If \(b_j \lt a_i - k\), the apartment is too small for this applicant, and so for every
+later (larger) one. Discard it: <code>j++</code>.</li>
+<li>If \(b_j \gt a_i + k\), the apartment is too big for this applicant, but a later one may
+take it. Discard the <em>applicant</em>: <code>i++</code>.</li>
+<li>Every step moves at least one pointer, so the scan is \(O(n + m)\) and the sorts dominate.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">For each applicant,
-            scan every apartment for a free one inside the tolerance window.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&middot;m)</span>.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n, m &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>
-            checks. Replacing the scan with a binary search is faster but
-            <em>wrong</em>: it never marks the apartment as taken.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Sort both arrays and sweep one pointer per side, consuming on a match &mdash;
-            <span class="cost">O(n log n + m log m)</span>, <span class="cost">O(1)</span>
-            extra.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">For each applicant, scan all
+apartments for a free one in range.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = m = 2\cdot 10^5\) gives \(4\cdot 10^{10}\) checks. A binary search instead of the scan
+is faster but <em>wrong</em>: it never marks the apartment as taken.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Sort both and sweep one pointer per side:
+<span class="cost">\(O(n \log n + m \log m)\)</span>, <span class="cost">\(O(1)\)</span> extra.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 560 210" role="img" aria-label="Applicant tolerance windows against apartment sizes on a size axis">
+<svg viewBox="0 0 560 222" role="img" aria-label="Applicant tolerance windows against apartment sizes on a size axis">
   <text class="s-td" x="8" y="16">k = 5   a = 45 60 60 80 (sorted)   b = 30 60 75</text>
   <!-- apartment ticks -->
   <path class="s-edge" d="M80 30 V180"/>
@@ -328,11 +358,11 @@ subject to  |b&#11388; &minus; a&#7522;| &le; k  for every (i,j) &isin; M</div>
   <rect class="s-good" x="440" y="144" width="80" height="26" rx="4"/>
   <text class="s-tm" x="448" y="162">80&plusmn;5</text>
   <!-- annotations -->
-  <text class="s-td" x="96" y="54">30 &lt; 40 &rarr; drop flat</text>
+  <text class="s-td" x="248" y="54">30 &lt; 40 &rarr; drop flat</text>
   <text class="s-ta" x="370" y="90">match</text>
   <text class="s-td" x="370" y="126">75 &gt; 65 &rarr; drop applicant</text>
   <text class="s-ta" x="440" y="138">match (75 &ge; 75)</text>
-  <text class="s-td" x="8" y="210">matched = 2</text>
+  <text class="s-td" x="8" y="216">matched = 2</text>
 </svg>
           <figcaption>Each applicant is a window on the size axis; each apartment a
           vertical tick. A tick left of the window is gone forever; a tick right of it
@@ -392,6 +422,27 @@ int main() {
     cout &lt;&lt; count &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n, m, k = int(next(tok)), int(next(tok)), int(next(tok))
+
+    a = [int(next(tok)) for _ in range(n)]
+    b = [int(next(tok)) for _ in range(m)]
+
+    a.sort()
+    b.sort()
+
+    i, j, count = 0, 0, 0
+    while i &lt; n and j &lt; m:
+        if b[j] &lt; a[i] - k: j += 1
+        elif b[j] &gt; a[i] + k: i += 1        # else if -&gt; elif
+        else: count += 1; i += 1; j += 1
+
+    print(count)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>The two discard branches are not
@@ -409,60 +460,68 @@ int main() {
     <div class="family-head"><h2>2 &middot; Sort + fixed-k value search</h2></div>
     <p class="family-note">Find <code>k</code> elements hitting an exact target, with
     <code>k</code> a small constant. The move is always to spend nested loops on
-    <code>k&minus;2</code> of them and solve the remaining 2-sum in better than linear time
+    \(k-2\) of them and solve the remaining 2-sum in better than linear time
     &mdash; by converging pointers on a sorted array, or by a hash/tree map of pair sums.
     The trap in both is index bookkeeping: the answer is <em>positions</em>, not values,
     and every position must be distinct.</p>
 
     <article class="entry" id="sum-of-three-values">
-      <div class="entry-head"><h3>Sum of Three Values</h3><span class="badge num">O(n&sup2;)</span></div>
+      <div class="entry-head"><h3>Sum of Three Values</h3><span class="badge num">\(O(n^{2})\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Find three <em>distinct positions</em> whose values sum to <code>x</code>, and
-          print those positions (1-based); print <code>IMPOSSIBLE</code> if none exist.
-          <div class="formal">find  i &lt; j &lt; k  with  a&#7522; + a&#11388; + a&#8342; = x     (n &le; 5000)</div>
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) integers and a target \(x\). Find three
+values at distinct positions whose sum is \(x\), and print their positions (1-based, any
+valid answer). Print <code>IMPOSSIBLE</code> if there is none.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>Three positions, or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 5000,\ \ 1 \le x, a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(x = 8\), <code>2 7 5 1</code> → <code>1 3 4</code> (\(2 + 5 + 1\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{find } i \lt j \lt k \ \text{ with } \ a_i + a_j + a_k = x \]</li>
+<li><span class="why">Sort the values, keeping each value's original position. Fix the smallest of the three, \(a_i\). What remains is a two-value problem on the part to its right:</span>
+\[ a_j + a_k = x - a_i, \qquad i \lt j \lt k \]</li>
+<li><span class="why">On sorted data, two pointers \(l = i+1,\ r = n-1\) solve it. Let \(s = a_l + a_r\):</span>
+\[ s \lt x - a_i \Rightarrow l{+}{+}, \qquad s \gt x - a_i \Rightarrow r{-}{-}, \qquad s = x - a_i \Rightarrow \text{found} \]</li>
+<li><span class="why">Simplest form: \(n\) choices of \(i\), each followed by one linear scan, so \(O(n^2)\) in total.</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Sorting destroys the answer's own output format &mdash; so carry the original
-              index with each value: <code>pair&lt;value, index&gt;</code>, sorted on
-              <code>.fr</code> only.</li>
-          <li>Fix the smallest of the three. What remains is 2-sum for
-              <code>x &minus; a&#7522;</code> over the sorted suffix <code>[i+1, n&minus;1]</code>.</li>
-          <li>2-sum on sorted data is a converging scan: <code>sum &lt; x</code> can only be
-              fixed by raising the low end (<code>l++</code>), <code>sum &gt; x</code> only by
-              lowering the high end (<code>r--</code>). No branch discards a real
-              solution.</li>
-          <li>Starting <code>l</code> at <code>i+1</code> makes the three positions distinct
-              by construction &mdash; no equality checks needed anywhere.</li>
-          <li>Values may repeat; nothing in the scan cares, because it compares sums, not
-              values.</li>
-        </ol>
+<li>Sorting loses the original positions, which the output needs. So store each value with its
+index, as <code>pair&lt;value, index&gt;</code>, and sort by value only.</li>
+<li>Fix the smallest of the three, \(a_i\). What remains is two-sum for \(x - a_i\) on the sorted
+suffix \([i+1,\ n-1]\).</li>
+<li>Two-sum on sorted data is a converging scan. If the sum is too small, only raising the low
+end helps (<code>l++</code>). If it is too big, only lowering the high end helps (<code>r--</code>).
+Neither move skips a real solution.</li>
+<li>Starting \(l\) at \(i + 1\) makes the three positions distinct automatically.</li>
+<li>Repeated values cause no trouble, because the scan compares sums, not values.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Three nested loops
-            over all index triples.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&sup3;)</span>.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 5000</code> &rarr; <span class="cost">~2&middot;10&#185;&#8304;</span> triples
-            (<code>n&sup3;/6</code>), far past a 1s limit.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Sort with indices attached, fix one element, collapse the inner two loops into a
-            converging two-pointer scan &mdash; <span class="cost">O(n&sup2;)</span>
-            &asymp; <span class="cost">2.5&middot;10&#8311;</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Three nested loops over all triples.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^3)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 5000\) gives \(\binom{n}{3} \approx 2\cdot 10^{10}\) triples, far past a 1 s limit.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Sort with indices, fix one value, replace the inner two loops with a two-pointer scan:
+<span class="cost">\(O(n^2)\)</span> \(\approx 2.5\cdot 10^7\).</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -615,6 +674,32 @@ signed main()
 }
 
 // how to solve 2 SUM</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    x = int(next(tok))
+    v = [(0, 0)] * n                        # vector&lt;pll&gt;: tuples (fr, sc)
+    for i in range(n):
+        v[i] = (int(next(tok)), i + 1)       # tuples are immutable: build the whole pair at once
+    v.sort(key=lambda p: p[0])              # comparator a.fr &lt; b.fr -&gt; key = first field
+    for i in range(n):
+        l, r = i + 1, n - 1
+        while l &lt; r:
+            sum_ = v[i][0] + v[l][0] + v[r][0]    # .fr -&gt; [0], .sc -&gt; [1]; "sum" is a builtin, so sum_
+            if sum_ == x:
+                print(v[i][1], v[l][1], v[r][1])  # print(a, b, c) puts spaces between
+                return
+            elif sum_ &lt; x:
+                l += 1
+            else:
+                r -= 1
+    print("IMPOSSIBLE")
+
+solve()
+
+# how to solve 2 SUM</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Printing <code>i l r</code> (the
@@ -624,61 +709,68 @@ signed main()
       printed &mdash; mixing the two conventions is how off-by-ones get in.</div>
       <div class="callout trigger"><strong>Recognize</strong>"find exactly <code>k</code>
       values summing to <code>x</code>, <code>k</code> fixed and small" &rarr; sort, brute the
-      first <code>k&minus;2</code>, two-pointer the last two.</div>
+      first \(k-2\), two-pointer the last two.</div>
     </article>
 
     <article class="entry" id="sum-of-four-values">
-      <div class="entry-head"><h3>Sum of Four Values</h3><span class="badge num">O(n&sup2; log n)</span></div>
+      <div class="entry-head"><h3>Sum of Four Values</h3><span class="badge num">\(O(n^{2} \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Same question one dimension up: four <em>distinct positions</em> summing to
-          <code>x</code>, printed 1-based, or <code>IMPOSSIBLE</code>.
-          <div class="formal">find  p &lt; q &lt; r &lt; s  with  a[p] + a[q] + a[r] + a[s] = x     (n &le; 1000)</div>
-        </div>
+<p><b>Question.</b> You are given an array of \(n\) integers and a target \(x\). Find four
+values at distinct positions whose sum is \(x\), and print their positions (1-based, any valid
+answer). Print <code>IMPOSSIBLE</code> if there is none.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>Four positions, or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000,\ \ 1 \le x, a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(x = 15\), <code>3 2 5 8 1 3 2 3</code> → <code>2 4 6 7</code> (\(2 + 8 + 3 + 2\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{find } p \lt q \lt r \lt s \ \text{ with } \ a_p + a_q + a_r + a_s = x \]</li>
+<li><span class="why">Group the four into two pairs. Then it is two-sum over <em>pair sums</em>:</span>
+\[ \underbrace{(a_p + a_q)}_{\text{pair 1}} + \underbrace{(a_r + a_s)}_{\text{pair 2}} = x \]</li>
+<li><span class="why">There are only \(\binom{n}{2} \approx 5\cdot 10^5\) pairs. Store, for each pair sum \(t\), one pair of indices \(m[t] = (i, j)\).</span></li>
+<li><span class="why">Simplest form: for each pair \((p, q)\), look up the complement and check the four indices are distinct:</span>
+\[ (r, s) = m\big[x - a_p - a_q\big], \qquad \{p, q\} \cap \{r, s\} = \varnothing \]</li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Split the quadruple into two pairs: 4-sum becomes 2-sum over
-              <em>pair sums</em>. There are only <code>n&sup2;/2</code> pairs.</li>
-          <li>One stored pair per sum is enough. <code>m[s]</code> is overwritten as the
-              loops run, so it ends up holding the lexicographically <em>largest</em>
-              <code>(i,j)</code> with that sum.</li>
-          <li>That is exactly what makes overwriting safe: for an answer
-              <code>p&lt;q&lt;r&lt;s</code>, when the outer loop reaches <code>(p,q)</code>
-              the stored pair for <code>x&minus;a[p]&minus;a[q]</code> is &ge; <code>(r,s)</code>,
-              so both of its indices exceed <code>q</code> &mdash; disjoint, always.</li>
-          <li>The four-way index check is still needed: an <em>earlier</em>
-              <code>(i,j)</code> can find a matching sum whose stored pair overlaps it, and
-              that candidate must be rejected, not printed.</li>
-          <li>The array is stored 1-based, so the indices in the map are already the
-              output format.</li>
-        </ol>
+<li>Split the four values into two pairs. Four-sum becomes two-sum over <em>pair sums</em>, and
+there are only about \(n^2/2\) pairs.</li>
+<li>One stored pair per sum is enough. <code>m[s]</code> is overwritten as the loops run, so it
+ends up holding the lexicographically <em>largest</em> pair \((i, j)\) with that sum.</li>
+<li>That is why overwriting is safe. For an answer \(p \lt q \lt r \lt s\), when the outer loop
+reaches \((p, q)\), the stored pair for \(x - a_p - a_q\) is \(\ge (r, s)\), so both its indices
+are \(\gt q\) and it is disjoint from \((p, q)\).</li>
+<li>The four-index distinctness check is still needed. An <em>earlier</em> pair can find a stored
+pair that shares an index with it, and that candidate must be rejected.</li>
+<li>The array is stored 1-based, so the indices in the map are already in output format.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Four nested loops
-            over all index quadruples.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&#8308;)</span>.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 1000</code> &rarr; <span class="cost">10&#185;&sup2;</span> quadruples.
-            (Fixing two and two-pointering the rest is <span class="cost">O(n&sup3;)</span> =
-            <span class="cost">10&#8313;</span> &mdash; still too slow.)</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Tabulate every pair sum in a <code>map</code>, then scan pairs again looking up
-            the complement &mdash; <span class="cost">O(n&sup2; log n)</span> &asymp;
-            <span class="cost">5&middot;10&#8309;&middot;20</span>, with
-            <span class="cost">O(n&sup2;)</span> memory.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Four nested loops over all quadruples.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^4)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 1000\) gives about \(10^{12}\) quadruples. Fixing two and two-pointering the rest is
+<span class="cost">\(O(n^3)\)</span> \(= 10^9\), still too slow.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Store every pair sum in a <code>map</code>, then scan the pairs again looking up the complement:
+<span class="cost">\(O(n^2 \log n)\)</span>, with <span class="cost">\(O(n^2)\)</span> memory.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -726,11 +818,11 @@ signed main()
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">Two identical double loops: the first fills
         <code>m[v[i]+v[j]] = {i,j}</code> for every pair, the second re-walks the same pairs
-        and looks up <code>x &minus; sum</code>. The line that looks like a bug &mdash;
+        and looks up \(x - \text{sum}\). The line that looks like a bug &mdash;
         blindly overwriting <code>m[sum]</code> &mdash; is the one observation 3 defends. The
         map is <code>std::map</code>, not <code>unordered_map</code>: ordered containers are
         immune to the CSES anti-hash test, and <code>log n</code> on
-        <code>5&middot;10&#8309;</code> entries is affordable.</p>
+        \(5\cdot 10^{5}\) entries is affordable.</p>
         <div class="src-meta"><span class="path">arrays/Sum_of_Four_Values.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -808,6 +900,35 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    x = int(next(tok))
+    v = [0] * (n + 1)
+    for i in range(1, n + 1):
+        v[i] = int(next(tok))
+    m = {}                                  # map&lt;ll, array&lt;ll,2&gt;&gt; -&gt; dict: sum -&gt; (i, j)
+
+    for i in range(1, n + 1):
+        for j in range(i + 1, n + 1):
+            m[v[i] + v[j]] = (i, j)
+            # store the sum of every pair of numbers along with their indices
+            # if two pairs have the same sum, we can overwrite the previous pair since we only need one pair for each sum
+
+    for i in range(1, n + 1):
+        for j in range(i + 1, n + 1):
+            sum_ = v[i] + v[j]
+            rem = x - sum_
+            if rem in m:                    # m.find(rem) != m.end()
+                a, b = m[rem]
+                if a != i and a != j and b != i and b != j:
+                    print(i, j, a, b)
+                    return
+    print("IMPOSSIBLE")
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Dropping the
@@ -822,27 +943,46 @@ signed main()
     </article>
 
     <article class="entry" id="sum-of-two-values">
-      <div class="entry-head"><h3>Sum of Two Values</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Sum of Two Values</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Find two <em>distinct positions</em> whose values sum to <code>x</code>, or IMPOSSIBLE.<div class="formal">find i ≠ j with aᵢ + aⱼ = x</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers and a target \(x\). Find two values
+at distinct positions whose sum is \(x\), and print their positions (1-based, any valid answer).
+Print <code>IMPOSSIBLE</code> if there is none.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>Two positions, or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x, a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(x = 8\), <code>2 7 5 1</code> → <code>2 4</code> (\(7 + 1\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{find } i \ne j \ \text{ with } \ a_i + a_j = x \]</li>
+<li><span class="why">For a fixed \(i\), the partner's value is forced:</span>
+\[ a_j = x - a_i \]</li>
+<li><span class="why">Simplest form: store value → position in a map, then one lookup per element:</span>
+\[ \text{for each } i:\ \ j = \text{pos}[x - a_i] \ \text{ exists and } j \ne i \;\Rightarrow\; \text{answer } (i, j) \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>For each <code>i</code> the partner value is forced: <code>x &minus; a&#7522;</code>.</li>
-          <li>A map from value to index answers "does the partner exist" in <code>O(log n)</code>.</li>
-          <li>Storing the <em>last</em> index per value handles <code>a&#7522; = x/2</code>: the first copy finds the last copy, a different position.</li>
-        </ol>
+<li>For each \(i\), the partner value is forced: \(x - a_i\).</li>
+<li>A map from value to position answers "does the partner exist?" in \(O(\log n)\).</li>
+<li>Storing the <em>last</em> position of each value handles \(a_i = x/2\): the first copy finds
+the last copy, which is a different position.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Check every pair.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n²)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 2·10⁵</code> &rarr; 2·10¹⁰ pairs.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Value &rarr; index map, one lookup per element: <span class="cost">O(n log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Check every pair.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Value → position map, one lookup per element: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -916,8 +1056,28 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, x = int(next(tok)), int(next(tok))
+    v = [0] * (n + 1)
+    freq = {}
+    for i in range(1, n + 1):
+        v[i] = int(next(tok))
+        freq[v[i]] = i
+
+    for i in range(1, n + 1):
+        rem = x - v[i]
+        f = freq.get(rem, 0)                # C++ freq[rem] silently inserts 0; dict[] would raise KeyError
+        if f != 0 and f != i:
+            print(i, f)
+            return
+    print("IMPOSSIBLE")
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Without <code>freq[rem] != i</code>, <code>a&#7522; = x/2</code> pairs an element with itself. Keeping the <em>last</em> index (overwrite on insert) is what lets two equal halves still match.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Without <code>freq[rem] != i</code>, \(a_{i} = x/2\) pairs an element with itself. Keeping the <em>last</em> index (overwrite on insert) is what lets two equal halves still match.</div>
       <div class="callout trigger"><strong>Recognize</strong>"two positions summing to a target" &rarr; value&rarr;index map, check the complement.</div>
     </article>
   </section>
@@ -933,56 +1093,65 @@ signed main()
     step (Reducing Dishes).</p>
 
     <article class="entry" id="stick-lengths">
-      <div class="entry-head"><h3>Stick Lengths</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Stick Lengths</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> sticks of length <code>p&#7522;</code>. Cutting or extending a stick
-          by one unit costs one. Make all sticks equal length, as cheaply as possible.
-          <div class="formal">minimise  f(t) = &sum; |p&#7522; &minus; t|   over integer t</div>
-        </div>
+<p><b>Question.</b> There are \(n\) sticks with lengths \(p_1, \dots, p_n\). You want all sticks to
+have the same length. Changing a stick's length by \(1\) (longer or shorter) costs \(1\). What is
+the minimum total cost?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(p_1, \dots, p_n\).</dd>
+<dt>Output</dt><dd>One integer: the minimum total cost.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le p_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>2 3 1 5 2</code> → <code>5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: pick a target length \(t\):</span>
+\[ \min_{t} \; f(t), \qquad f(t) = \sum_{i=1}^{n} |p_i - t| \]</li>
+<li><span class="why">Sort the lengths: \(p_1 \le \dots \le p_n\). Pair the smallest with the largest, the second smallest with the second largest, and so on. For one pair:</span>
+\[ |p_i - t| + |p_{n+1-i} - t| \;\ge\; p_{n+1-i} - p_i, \quad \text{with equality iff } p_i \le t \le p_{n+1-i} \]</li>
+<li><span class="why">These intervals are nested inside each other, so one \(t\) in the innermost interval reaches every lower bound at once. The innermost interval contains the median.</span></li>
+<li><span class="why">Simplest form, 0-based after sorting:</span>
+\[ t = p_{\lfloor n/2 \rfloor}, \qquad \text{ans} = \sum_{i} \big| p_i - p_{\lfloor n/2 \rfloor} \big| \]
+<span class="why">Sample: sorted \(1,2,2,3,5\), median \(2\), cost \(1+0+0+1+3 = 5\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Sort, then pair smallest with largest. Any <code>t</code> inside
-              <code>[p&#7522;, p&#8345;&#8331;&#8321;&#8331;&#7522;]</code> pays exactly that pair's width;
-              any <code>t</code> outside pays more.</li>
-          <li>Those intervals are nested, so a single <code>t</code> in the innermost one is
-              simultaneously optimal for every pair &mdash; the lower bounds all bind at
-              once.</li>
-          <li>The innermost interval is the median. <code>p[n/2]</code> lies in it for both
-              parities.</li>
-          <li>For even <code>n</code> every point of the median range costs the same, so no
-              averaging and no floating point is ever needed.</li>
-          <li>The mean is the wrong answer &mdash; it minimises squared deviation, not
-              absolute.</li>
-        </ol>
+<li>Sort, then pair smallest with largest. Any \(t\) inside \([p_i,\ p_{n+1-i}]\) pays exactly that
+pair's width. Any \(t\) outside pays more.</li>
+<li>Those intervals are nested, so one \(t\) in the innermost one is optimal for every pair at
+the same time.</li>
+<li>The innermost interval holds the median. \(p_{\lfloor n/2 \rfloor}\) (0-based) lies in it for both
+odd and even \(n\).</li>
+<li>For even \(n\), every point between the two middle values costs the same. No averaging and
+no floating point is needed.</li>
+<li>The mean is the wrong answer. It minimises \(\sum (p_i - t)^2\), not \(\sum |p_i - t|\).</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try every candidate
-            target &mdash; every stick length, or every value in the range &mdash; and sum the
-            deviations.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&sup2;)</span> over stick lengths;
-            <span class="cost">O(n&middot;max p)</span> over the value range.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>;
-            over the value range <code>p&#7522; &le; 10&#8313;</code> it is hopeless. The answer itself
-            reaches <span class="cost">~2&middot;10&#185;&#8308;</span>, past <code>int</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            The optimum is provably the median &mdash; sort, read <code>p[n/2]</code>, one
-            summing pass: <span class="cost">O(n log n)</span>, accumulator in
-            <code>long long</code>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every candidate target
+(every stick length, or every value in the range) and sum the costs.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> over stick lengths; <span class="cost">\(O(n \cdot \max p)\)</span> over the value range.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\). Over the range \(p_i \le 10^9\) it is hopeless.
+The answer can reach about \(2\cdot 10^{14}\), past <code>int</code>.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+The best target is the median: sort, read \(p_{\lfloor n/2 \rfloor}\), sum once.
+<span class="cost">\(O(n \log n)\)</span>, sum in <code>long long</code>.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -1064,6 +1233,23 @@ int main() {
     cout &lt;&lt; cost &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    p = [int(next(tok)) for _ in range(n)]
+
+    p.sort()
+    median = p[n // 2]                      # n / 2 on ints -&gt; n // 2 (single / gives a float)
+
+    cost = 0
+    for i in range(n): cost += abs(p[i] - median)
+
+    print(cost)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Median, not mean. And no
@@ -1075,56 +1261,62 @@ int main() {
     </article>
 
     <article class="entry" id="missing-coin-sum">
-      <div class="entry-head"><h3>Missing Coin Sum</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Missing Coin Sum</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Given coin values <code>x&#7522;</code>, find the smallest positive integer that no
-          subset of the coins sums to.
-          <div class="formal">min { s &ge; 1 : no S &sube; coins with &sum; S = s }</div>
-        </div>
+<p><b>Question.</b> You have \(n\) coins with positive integer values. What is the smallest
+positive sum that you <em>cannot</em> make using a subset of the coins?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>One integer: the smallest sum that cannot be made.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>2 9 1 2 7</code> → <code>6</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \min \Big\{\, s \ge 1 : \text{no subset } S \text{ has } \sum_{c \in S} c = s \,\Big\} \]</li>
+<li><span class="why">Sort the coins ascending. Claim: after processing some prefix, the sums you can make are exactly \(\{0, 1, \dots, R\}\). At the start \(R = 0\).</span></li>
+<li><span class="why">Add the next coin \(c\). The new sums are the old ones plus the old ones shifted by \(c\):</span>
+\[ [0, R] \,\cup\, [c,\ R + c] \;=\; [0,\ R + c] \quad \text{iff} \quad c \le R + 1 \]</li>
+<li><span class="why">Simplest form: if \(c \gt R + 1\), the sum \(R + 1\) can never be made, because every remaining coin is \(\ge c\). So:</span>
+\[ \text{for } c \text{ in sorted order: } \ \text{if } c \gt R + 1 \text{ stop; else } R \leftarrow R + c. \qquad \text{ans} = R + 1 \]
+<span class="why">Sample: sorted \(1,2,2,7,9\) gives \(R = 1, 3, 5\); then \(7 \gt 6\), so the answer is \(6\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Sort ascending and carry one invariant: after some prefix, the achievable
-              sums are exactly the contiguous range <code>[0, R]</code>.</li>
-          <li>The next coin <code>x</code> keeps it contiguous iff
-              <code>x &le; R+1</code>; the new range is <code>[0, R+x]</code>. Equality is
-              included &mdash; <code>x = R+1</code> closes the gap exactly.</li>
-          <li>If <code>x &gt; R+1</code>, then <code>R+1</code> is unreachable now, and every
-              remaining coin is <code>&ge; x</code>, so it stays unreachable &mdash; stop
-              immediately, the answer is <code>R+1</code>.</li>
-          <li>Running out of coins is the same conclusion: <code>R+1</code> again, so the
-              print sits outside the loop and covers both exits.</li>
-          <li>Sorting is what licenses the early stop; without it, a later small coin could
-              still close the gap.</li>
-        </ol>
+<li>Sort ascending and keep one fact true: the sums made so far are exactly the range \([0, R]\).</li>
+<li>The next coin \(c\) keeps the range unbroken iff \(c \le R + 1\), and the new range is
+\([0, R + c]\). Equality counts: \(c = R + 1\) closes the gap exactly.</li>
+<li>If \(c \gt R + 1\), then \(R + 1\) cannot be made now. Every later coin is \(\ge c\), so it stays
+impossible. Stop: the answer is \(R + 1\).</li>
+<li>Running out of coins leads to the same answer, \(R + 1\). So the print sits after the loop
+and covers both exits.</li>
+<li>Sorting is what makes the early stop correct. Unsorted, a later small coin could still fill the gap.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Mark every achievable
-            sum &mdash; enumerate subsets, or run a boolean subset-sum DP over
-            <code>[0, &sum;x]</code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(2&#8319;)</span> for subsets,
-            <span class="cost">O(n &middot; &sum;x)</span> for the DP.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 10&#8309;</code>, <code>x&#7522; &le; 10&#8313;</code> &rarr;
-            <code>&sum;x</code> up to <span class="cost">10&#185;&#8308;</span> DP cells &mdash;
-            unstorable, never mind untraversable.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            The reachable set is always one interval, so store its right end only &mdash;
-            sort plus one scalar <code>R</code>: <span class="cost">O(n log n)</span>,
-            <span class="cost">O(1)</span> beyond the input.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Mark every reachable sum:
+list all subsets, or run a yes/no subset-sum DP over \([0, \sum x]\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(2^n)\)</span> for subsets, <span class="cost">\(O(n \cdot \sum x)\)</span> for the DP.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5,\ x_i \le 10^9\) means \(\sum x\) up to \(2\cdot 10^{14}\) DP cells. That cannot even be stored.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+The reachable set is always one interval, so store only its right end \(R\):
+<span class="cost">\(O(n \log n)\)</span>, <span class="cost">\(O(1)\)</span> beyond the input.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -1198,10 +1390,28 @@ int main() {
     cout &lt;&lt; r + 1 &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    x = [int(next(tok)) for _ in range(n)]
+
+    x.sort()
+
+    r = 0
+    for i in range(n):
+        if x[i] &gt; r + 1: break
+        r += x[i]
+
+    print(r + 1)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong><code>x == r + 1</code> must
-      <em>extend</em>, not break &mdash; using <code>&ge;</code> in the guard reports a gap
+      <em>extend</em>, not break &mdash; using \(\ge\) in the guard reports a gap
       that is actually reachable. And it must be <code>break</code>, not
       <code>continue</code>: skipping the offending coin and carrying on would extend
       <code>R</code> past an already-proven hole.</div>
@@ -1211,57 +1421,66 @@ int main() {
     </article>
 
     <article class="entry" id="reducing-dishes">
-      <div class="entry-head"><h3>Reducing Dishes</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Reducing Dishes</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Choose any subset of dishes and any order for them. The dish cooked
-          <code>k</code>-th scores <code>k &middot; a&#7522;</code> (satisfaction may be
-          negative). Maximise the total.
-          <div class="formal">maximise  &sum;&#8342; k &middot; a&#8347;(&#8342;)   over subsets S and orderings &sigma;</div>
-        </div>
+<p><b>Question.</b> A chef has \(n\) dishes. Dish \(i\) has satisfaction \(a_i\), which can be
+negative. The chef picks any subset of dishes (possibly none) and cooks them in any order, one
+per time unit. If a dish is cooked \(k\)-th (counting from 1), it scores \(k \cdot a_i\). Maximise
+the total score. There are \(T\) test cases.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(T\); for each case \(n\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd>For each case, the maximum total score.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 500,\ \ -1000 \le a_i \le 1000\) (LeetCode 1402)</dd>
+<dt>Sample</dt><dd><code>[-2,-2,0,3,2]</code> → <code>17</code>; <code>[-2,0,-2,3]</code> → <code>7</code>; <code>[-2,3,-2,0,1,2]</code> → <code>26</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: choose a subset \(S\) and an order \(\sigma\) of it:</span>
+\[ \max_{S,\ \sigma} \; \sum_{k=1}^{|S|} k \cdot a_{\sigma(k)} \]</li>
+<li><span class="why">For a fixed subset, cook in ascending order. If two neighbours are out of order, \(u \gt v\) at positions \(k, k+1\), swapping them changes the score by</span>
+\[ \big(k v + (k{+}1) u\big) - \big(k u + (k{+}1) v\big) = u - v \gt 0 \]</li>
+<li><span class="why">So sort \(a\) ascending. The best subset keeps a suffix \(a_i, \dots, a_n\): never drop a dish while keeping a smaller one. Dropping the current front dish lowers every remaining multiplier by \(1\):</span>
+\[ F_{\text{new}} = F_{\text{old}} - T, \qquad T = \sum_{\text{kept}} a \ \ (\text{the front dish included}) \]</li>
+<li><span class="why">Simplest form: the decision depends only on the sign of \(T\):</span>
+\[ \text{while } T \lt 0:\ \ F \leftarrow F - T,\ \ T \leftarrow T - a_{\text{front}},\ \ \text{drop the front} \]</li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>For a fixed subset, ascending order is optimal &mdash; swapping an
-              out-of-order adjacent pair gains exactly their difference.</li>
-          <li>So the only remaining choice is <em>which</em> dishes to drop, and dropping is
-              always a prefix of the sorted array: never drop a dish while keeping a smaller
-              one.</li>
-          <li>Dropping the front shifts every surviving multiplier down by one, so the answer
-              changes by exactly <code>&minus;T</code>, where <code>T</code> is the current
-              total. The dropped value cancels out of that delta entirely.</li>
-          <li>Therefore the decision depends only on the <em>sign</em> of <code>T</code>:
-              pop while <code>T &lt; 0</code>, stop the moment <code>T &ge; 0</code>.</li>
-          <li>If <code>T</code> stays negative to the end, the identity drives the answer to
-              <code>0</code> &mdash; the empty subset, with no clamp written anywhere.</li>
-        </ol>
+<li>For a fixed subset, ascending order is best. Swapping an out-of-order neighbouring pair
+gains exactly their difference.</li>
+<li>So the only choice left is <em>which</em> dishes to drop, and the dropped ones are always a
+prefix of the sorted array. Never drop a dish while keeping a smaller one.</li>
+<li>Dropping the front lowers every remaining multiplier by one, so the score changes by exactly
+\(-T\), where \(T\) is the sum of the dishes currently kept.</li>
+<li>So the decision depends only on the <em>sign</em> of \(T\): drop while \(T \lt 0\), and stop
+as soon as \(T \ge 0\).</li>
+<li>If \(T\) stays negative to the end, the score reaches \(0\), the empty subset, without any
+special case in the code.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try every subset, sort
-            it, score it. Or a take/skip DP over
-            <code>(index, number already cooked)</code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(2&#8319; &middot; n)</span> for subsets;
-            <span class="cost">O(n&sup2;)</span> for the DP.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n</code> in the hundreds &rarr; <span class="cost">2&#8319;</span> is
-            unreachable at once; the <span class="cost">O(n&sup2;)</span> table survives but is
-            rebuilt per test case, and the problem is multi-test.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            The prefix-drop identity replaces the table entirely &mdash; sort, one scoring
-            pass, one popping pass: <span class="cost">O(n log n)</span>,
-            <span class="cost">O(1)</span> beyond the array.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every subset, sort it,
+score it. Or a take/skip DP over (index, number already cooked).</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(2^n \cdot n)\)</span> for subsets; <span class="cost">\(O(n^2)\)</span> for the DP.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 500\) makes \(2^n\) impossible. The \(O(n^2)\) table survives, but it is rebuilt for every test case.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+The \(-T\) rule replaces the table: sort, one scoring pass, one dropping pass.
+<span class="cost">\(O(n \log n)\)</span>, <span class="cost">\(O(1)\)</span> beyond the array.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -1294,7 +1513,7 @@ int main() {
   <text class="s-td" x="8" y="202">the dropped value never appears in the delta &mdash; only the sign of T does</text>
 </svg>
           <figcaption>Dropping the smallest dish demotes every other multiplier by one, so
-          the answer moves by exactly <code>&minus;T</code>.</figcaption>
+          the answer moves by exactly \(-T\).</figcaption>
         </figure>
       </div>
 
@@ -1357,6 +1576,33 @@ int main() {
     }
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    out = []
+    t = int(next(tok))
+    for _ in range(t):
+        n = int(next(tok))
+        a = [int(next(tok)) for _ in range(n)]
+
+        a.sort()
+
+        ans, total = 0, 0
+        for i in range(n):
+            ans += (i + 1) * a[i]           # no (long long) cast: Python ints are unbounded
+            total += a[i]
+
+        start = 0
+        while start &lt; n and total &lt; 0:
+            ans -= total
+            total -= a[start]
+            start += 1
+
+        out.append(ans)
+    print('\n'.join(map(str, out)))
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Keeping everything is not always
@@ -1370,56 +1616,63 @@ int main() {
     </article>
 
     <article class="entry" id="tasks-and-deadlines">
-      <div class="entry-head"><h3>Tasks and Deadlines</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Tasks and Deadlines</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> tasks, task <code>i</code> takes <code>a&#7522;</code> time and has
-          deadline <code>d&#7522;</code>. Run them one after another from time 0; a task finishing
-          at <code>f&#7522;</code> pays <code>d&#7522; &minus; f&#7522;</code>, negative included. Every task must
-          run. Maximise the total reward.
-          <div class="formal">maximise  &sum;(d&#7522; &minus; f&#7522;)  =  &sum;d&#7522;  &minus;  &sum;f&#7522;
-&sum;d&#7522; is fixed  &rArr;  minimise &sum; f&#7522;  =  &sum;&#8342; (n &minus; k + 1)&middot;a&#8342;</div>
-        </div>
+<p><b>Question.</b> You must process \(n\) tasks one after another, starting at time \(0\). Task
+\(i\) takes \(a_i\) time units and has deadline \(d_i\). If it finishes at time \(f_i\), you get
+reward \(d_i - f_i\), which may be negative. Every task must be processed. What is the maximum
+total reward?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ d_i\).</dd>
+<dt>Output</dt><dd>One integer: the maximum total reward.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i, d_i \le 10^6\)</dd>
+<dt>Sample</dt><dd><code>(6,10) (8,15) (5,12)</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly and split the sum:</span>
+\[ \max \sum_{i} (d_i - f_i) \;=\; \sum_i d_i \;-\; \min \sum_i f_i \]</li>
+<li><span class="why">\(\sum d_i\) does not depend on the order. So only \(\sum f_i\) matters. If the tasks run in order \(\sigma(1), \dots, \sigma(n)\), the \(k\)-th one finishes at \(a_{\sigma(1)} + \dots + a_{\sigma(k)}\), so</span>
+\[ \sum_i f_i = \sum_{k=1}^{n} (n - k + 1)\, a_{\sigma(k)} \]</li>
+<li><span class="why">The earliest task is counted the most times, so it should be the shortest. Swapping neighbours \(u, v\) shows it: \(u\) first costs \(2a_u + a_v\), \(v\) first costs \(a_u + 2a_v\).</span></li>
+<li><span class="why">Simplest form: sort by duration ascending (deadlines ignored):</span>
+\[ \text{ans} = \sum_i d_i - \sum_{k=1}^{n} \big( a_{(1)} + \dots + a_{(k)} \big) \]
+<span class="why">Sample: durations \(5, 6, 8\) finish at \(5, 11, 19\). So \(37 - 35 = 2\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>&sum;d&#7522;</code> does not depend on the order at all &mdash; the deadlines
-              are a constant. Only <code>&sum;f&#7522;</code> is optimised.</li>
-          <li><code>&sum;f&#7522;</code> is the sum of the duration prefix sums, so the task placed
-              <code>k</code>-th is charged <code>(n&minus;k+1)</code> times.</li>
-          <li>Swap argument: two adjacent tasks <code>u</code> then <code>v</code> contribute
-              <code>2a&#7524; + a&#7525;</code> in one order and <code>a&#7524; + 2a&#7525;</code> in the other, so putting
-              the shorter first is never worse. Shortest job first, deadlines ignored.</li>
-          <li>Sorting by deadline (EDF) is the wrong greedy here &mdash; it optimises lateness,
-              not the sum of completion times.</li>
-          <li>The reward is allowed to be negative; there is no filtering and no
-              rejection.</li>
-        </ol>
+<li>\(\sum d_i\) does not depend on the order. The deadlines are a constant, so only \(\sum f_i\)
+is optimised.</li>
+<li>\(\sum f_i\) is the sum of the running totals of durations, so the task placed \(k\)-th is
+counted \(n - k + 1\) times.</li>
+<li>Swap argument: neighbours \(u\) then \(v\) cost \(2a_u + a_v\); \(v\) then \(u\) cost
+\(a_u + 2a_v\). Putting the shorter first is never worse. Shortest job first; deadlines are ignored.</li>
+<li>Sorting by deadline is the wrong greedy here. That minimises lateness, not the sum of finishing times.</li>
+<li>Rewards may be negative. Nothing is filtered out or skipped.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try every processing
-            order and score the finishing times.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n! &middot; n)</span>.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; factorial, and even an
-            <span class="cost">O(n&sup2;)</span> pairwise-improvement loop is
-            <span class="cost">4&middot;10&#185;&#8304;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            The adjacent-swap comparison is a total order on durations alone &mdash; sort
-            ascending, prefix-sum, subtract: <span class="cost">O(n log n)</span>, answer in
-            <code>long long</code> (up to <span class="cost">~2&middot;10&#185;&#8310;</span>).</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every order and score it.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n! \cdot n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\): factorial. Even an \(O(n^2)\) improve-by-swapping loop is \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+The swap rule depends on durations only: sort ascending, add the running totals, subtract.
+<span class="cost">\(O(n \log n)\)</span>, answer in <code>long long</code> (up to about \(2\cdot 10^{16}\)).</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -1452,7 +1705,7 @@ int main() {
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">Deadlines are never stored: <code>d</code> starts life as
-        <code>&sum;d&#7522;</code> while reading input, then the same variable is decremented by each
+        \(\sum d_{i}\) while reading input, then the same variable is decremented by each
         finishing time and printed as the answer. <code>f[i] += f[i-1]</code> converts the
         sorted durations into finishing times in place &mdash; after that loop
         <code>f</code> is no longer durations, which is the line to read twice.</p>
@@ -1516,6 +1769,26 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    f = [0] * n
+    d = 0
+    for i in range(n):
+        a, b = int(next(tok)), int(next(tok))
+        f[i] = a
+        d += b
+    f.sort()
+
+    for i in range(n):
+        if i: f[i] += f[i - 1]              # if(i): 0 is False, like C++
+    for i in range(n):
+        d -= f[i]
+    print(d)
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>The deadline of a task is never
@@ -1529,27 +1802,45 @@ signed main()
     </article>
 
     <article class="entry" id="movie-festival">
-      <div class="entry-head"><h3>Movie Festival</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Movie Festival</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Watch the maximum number of non-overlapping movies (one may start exactly when another ends).<div class="formal">max |S|,  S ⊆ intervals pairwise disjoint</div></div>
+        <div class="ask">
+<p><b>Question.</b> A festival shows \(n\) movies. Movie \(i\) starts at \(a_i\) and ends at
+\(b_i\). What is the largest number of movies you can watch completely? You can start a movie at
+the exact moment another one ends.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ b_i\).</dd>
+<dt>Output</dt><dd>One integer: the maximum number of movies.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \lt b_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>(3,5) (4,9) (5,8)</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \max |S| \quad \text{subject to} \quad b_i \le a_j \ \text{ or } \ b_j \le a_i \ \ \text{for all } i \ne j \in S \]</li>
+<li><span class="why">Take first the movie that ends earliest. In any optimal plan, its first movie can be replaced by this one: it ends no later, so nothing after it breaks.</span></li>
+<li><span class="why">After that choice, the same problem repeats on the movies with \(a_j \ge\) the chosen end.</span></li>
+<li><span class="why">Simplest form: sort by end time, keep the end of the last movie watched:</span>
+\[ \text{if } a_i \ge \text{last}: \ \ \text{count}{+}{+},\ \ \text{last} \leftarrow b_i \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The first movie to take is the one that ends earliest: any optimal schedule can swap its first movie for it without losing anything.</li>
-          <li>After that choice, the problem repeats on movies starting at or after its end.</li>
-          <li>Sorted by end, that repetition is a single pass carrying <code>last</code>.</li>
-        </ol>
+<li>Take first the movie that ends earliest. Any optimal plan can swap its first movie for this one without losing anything.</li>
+<li>After that choice, the problem repeats on the movies that start at or after its end.</li>
+<li>With the movies sorted by end time, that repetition is one pass carrying <code>last</code>.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try every subset, keep the largest disjoint one.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ · n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Sort by end, greedy scan: <span class="cost">O(n log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every subset and keep the largest one with no overlaps.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Sort by end time, then one greedy scan: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1621,6 +1912,22 @@ signed main()
  
 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    v = [(int(next(tok)), int(next(tok))) for _ in range(n)]   # (fr, sc) = (start, end)
+    v.sort(key=lambda p: p[1])              # comparator a.sc &lt; b.sc
+    ans = 0
+    last = 0
+    for i in range(n):
+        if v[i][0] &gt;= last:
+            ans += 1
+            last = v[i][1]
+    print(ans)
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Sorting by start time (or by duration) is wrong: one long early movie blocks many short ones. The test is <code>&gt;=</code>, since back-to-back movies are allowed.</div>
       <div class="callout trigger"><strong>Recognize</strong>"maximum number of non-overlapping intervals" &rarr; sort by end, take greedily.</div>
@@ -1637,57 +1944,62 @@ signed main()
     closed form.</p>
 
     <article class="entry" id="reading-books">
-      <div class="entry-head"><h3>Reading Books</h3><span class="badge num">O(n)</span></div>
+      <div class="entry-head"><h3>Reading Books</h3><span class="badge num">\(O(n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Two readers must each read all <code>n</code> books; book <code>i</code> takes
-          <code>t&#7522;</code> and cannot be read by both at the same time. Reading is
-          uninterrupted, start to end. Minimise the time at which both are finished.
-          <div class="formal">minimise  T  subject to  each reader covers every book
-            and the two readings of any one book never overlap</div>
-        </div>
+<p><b>Question.</b> There are \(n\) books, and two people must each read all of them. Book \(i\)
+takes \(t_i\) time units. Each person reads a book from start to end without breaks, and both
+cannot read the same book at the same time. What is the minimum time until both have finished?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(t_1, \dots, t_n\).</dd>
+<dt>Output</dt><dd>One integer: the minimum total time.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le t_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>2 8 3</code> → <code>16</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(S = \sum_i t_i\) and \(M = \max_i t_i\). Two lower bounds hold for any schedule:</span>
+\[ T \ge S \ \ (\text{each person reads everything}), \qquad T \ge 2M \ \ (\text{the longest book is read twice, never at once}) \]</li>
+<li><span class="why">If \(2M \ge S\): person 1 reads the longest book first, then the rest. Person 2 reads the rest first, waits, then reads the longest book during \([M, 2M]\). Both finish by \(2M\), and no book is read twice at once.</span></li>
+<li><span class="why">If \(2M \le S\): put the longest book last. Person 1 reads \(1, 2, \dots, n\). Person 2 reads book \(n\) first, then \(1, \dots, n-1\). Book \(i \lt n\) is read during \([P, P + t_i]\) and \([M + P, M + P + t_i]\), which do not overlap because \(t_i \le M\). Both finish at \(S\).</span></li>
+<li><span class="why">Simplest form, both bounds are reached:</span>
+\[ T = \max\big(S,\ 2M\big) \]
+<span class="why">Sample: \(S = 13,\ M = 8\), so \(T = \max(13, 16) = 16\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Bound A &mdash; work: each reader spends <code>&sum;t</code>, so
-              <code>T &ge; &sum;t</code>.</li>
-          <li>Bound B &mdash; the longest book is read twice and the two readings cannot
-              overlap, so <code>T &ge; 2&middot;t_max</code>.</li>
-          <li>Case <code>2&middot;t_max &ge; &sum;t</code>: reader 1 takes the longest book
-              first, reader 2 takes it last; everything else fits in the slack around it
-              &rarr; <code>T = 2&middot;t_max</code>.</li>
-          <li>Case <code>2&middot;t_max &le; &sum;t</code>: reader 2 reads the same cyclic
-              order shifted by one book, so the two are never on the same book &rarr;
-              <code>T = &sum;t</code>.</li>
-          <li>Both bounds are achievable, so the answer is exactly
-              <code>max(&sum;t, 2&middot;t_max)</code> &mdash; no sort, no schedule, no
-              order.</li>
-        </ol>
+<li>Bound A, total work: each person spends \(S = \sum t\), so \(T \ge S\).</li>
+<li>Bound B: the longest book is read twice and the two readings cannot overlap, so \(T \ge 2M\).</li>
+<li>If \(2M \ge S\): person 1 reads the longest book first and person 2 reads it last. Everything
+else fits around it, so \(T = 2M\).</li>
+<li>If \(2M \le S\): person 2 starts with the longest book and then follows person 1's order.
+Every other book is shorter than that head start, so they never clash, and \(T = S\).</li>
+<li>Both bounds can be reached, so the answer is exactly \(\max(S, 2M)\). No sort and no schedule
+is needed in the code.</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE → WHY -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Search over the two
-            readers' orderings (and idle gaps) for the earliest joint finish.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O((n!)&sup2;)</span> orderings, each needing a feasibility
-            check for overlapping readings.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; there is no search at all at this size;
-            even sorting is more than the problem needs.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Two lower bounds, both constructively achievable &mdash; one unsorted pass keeping
-            <code>&sum;t</code> and <code>t_max</code>: <span class="cost">O(n)</span>,
-            <span class="cost">O(1)</span>, totals in <code>long long</code>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Search over both people's
+orders (and waiting gaps) for the earliest finish.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O((n!)^2)\)</span> pairs of orders, each needing an overlap check.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\): no search is possible at this size, and even sorting is more than needed.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Two lower bounds, both reachable: one pass keeping \(S\) and \(M\).
+<span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> space, totals in <code>long long</code>.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -1723,7 +2035,7 @@ signed main()
   <text class="s-td" x="8" y="192">B occupies [0,8) for P1 and [8,16) for P2 &mdash; never both at once</text>
 </svg>
           <figcaption>The longest book is read back to back by the two readers; everything
-          else hides in the slack. The finish is <code>2&middot;t_max</code> because that bound
+          else hides in the slack. The finish is \(2\cdot t_{\max}\) because that bound
           is the binding one here.</figcaption>
         </figure>
       </div>
@@ -1734,7 +2046,7 @@ signed main()
         <p class="impl-note">One read loop maintaining two scalars, then a single
         <code>max</code>. No array is stored and nothing is sorted &mdash; the input is
         consumed as it arrives. <code>m</code> is seeded at <code>0</code>, which is safe only
-        because <code>t&#7522; &ge; 1</code>.</p>
+        because \(t_{i} \ge 1\).</p>
         <div class="src-meta"><span class="path">arrays/Reading_Books.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -1783,16 +2095,29 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    s, m = 0, 0
+    for i in range(n):
+        x = int(next(tok))
+        s += x
+        m = max(m, x)
+    print(max(s, 2 * m))
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>The answer is a
       <code>max</code> of two bounds, not a sum or an average of them &mdash; and the
       <code>n = 1</code> case is not special: one book gives
       <code>max(t, 2t) = 2t</code>, correctly. <code>s</code> reaches
-      <code>2&middot;10&#185;&#8308;</code>, so both accumulators must be 64-bit.</div>
+      \(2\cdot 10^{14}\), so both accumulators must be 64-bit.</div>
       <div class="callout trigger"><strong>Recognize</strong>"two workers must each process
       every job, and no job can be worked by both simultaneously" &rarr;
-      <code>max(total work, 2 &times; largest job)</code>.</div>
+      \(\max (\text{total work}, 2 \times \text{largest job})\).</div>
     </article>
   </section>
 </main>

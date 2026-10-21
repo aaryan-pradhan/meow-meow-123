@@ -48,9 +48,9 @@
       <div class="rule"><span class="n">2</span>
         <p>"Print all &hellip; in alphabetical order" &rarr; sort, then <code>next_permutation</code>. It skips duplicates for free, so no <code>set</code>: Creating Strings.</p></div>
       <div class="rule"><span class="n">3</span>
-        <p>Output length is 2&#8319; or 2&#8319;&minus;1 &rarr; the answer is a recursion on the <em>output</em>, not a search: Gray Code, Tower of Hanoi. Build the list for n&minus;1, then glue.</p></div>
+        <p>Output length is \(2^{n}\) or \(2^{n}-1\) &rarr; the answer is a recursion on the <em>output</em>, not a search: Gray Code, Tower of Hanoi. Build the list for n&minus;1, then glue.</p></div>
       <div class="rule"><span class="n">4</span>
-        <p>"Print YES/NO, and an example if YES", n up to 10&#8313; or t up to 10&#8309; &rarr; there is a closed-form feasibility test. Find it first, construct second: Coin Piles, Raab Game I.</p></div>
+        <p>"Print YES/NO, and an example if YES", n up to \(10^{9}\) or t up to \(10^{5}\) &rarr; there is a closed-form feasibility test. Find it first, construct second: Coin Piles, Raab Game I.</p></div>
       <div class="rule"><span class="n">5</span>
         <p>Rearrange characters under a symmetry constraint &rarr; count characters, check the parity condition, emit greedily: Palindrome Reorder.</p></div>
     </div>
@@ -62,28 +62,46 @@
     <p class="family-note">The constraint is tiny on purpose. Enumerate every choice, score the leaf, keep the best or the count. The only design question is what to carry down the recursion and what to recompute at the bottom.</p>
 
     <article class="entry" id="apple-division">
-      <div class="entry-head"><h3>Apple Division</h3><span class="badge num">O(2&#8319;&middot;n)</span></div>
+      <div class="entry-head"><h3>Apple Division</h3><span class="badge num">\(O(2^{n}\cdot n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Split n weights into two groups with the smallest possible difference of sums.<div class="formal">min<sub>T &sube; {1&hellip;n}</sub> |S &minus; 2&middot;&sum;<sub>i&isin;T</sub> p&#7522;|,  where S = &sum; p&#7522;</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) apples with weights \(p_1, \dots, p_n\). Split them into two
+groups so that the difference between the two groups' total weights is as small as possible.
+Print that difference.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(p_1, \dots, p_n\).</dd>
+<dt>Output</dt><dd>One integer: the minimum difference.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 20,\ \ 1 \le p_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 2 7 4 1</code> → <code>1</code> (groups \(\{2,3,4\} = 9\) and \(\{1,7\} = 8\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(S = \sum_i p_i\). Choosing group 1 as a subset \(T\) fixes group 2 as the rest, which weighs \(S - \sum_T p\):</span>
+\[ \text{diff}(T) = \Big|\, \sum_{i \in T} p_i - \Big(S - \sum_{i \in T} p_i\Big) \Big| = \Big|\, S - 2 \sum_{i \in T} p_i \,\Big| \]</li>
+<li><span class="why">So the problem is a minimum over all subsets:</span>
+\[ \text{ans} = \min_{T \subseteq \{1, \dots, n\}} \Big|\, S - 2 \sum_{i \in T} p_i \,\Big| \]</li>
+<li><span class="why">There are only \(2^n \le 2^{20} \approx 10^6\) subsets, so try them all: for each apple, decide "in \(T\)" or "not in \(T\)".</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Choosing group 1 fixes group 2. So the search space is subsets, not ordered pairs &mdash; 2&#8319;, and each split is generated twice (T and its complement), which costs nothing.</li>
-          <li>n &le; 20 &rArr; 2&#178;&#8304; &asymp; 10&#8310; leaves. Free.</li>
-          <li>Sums reach 20 &middot; 10&#8313; = 2&middot;10&#185;&#8304; &rArr; <code>ll</code>, not <code>int</code>.</li>
-          <li>The bitmask is only a carrier. This same recursion works with two running sums passed down; the mask version just re-reads them at the leaf.</li>
-        </ol>
+<li>Choosing group 1 fixes group 2. So the search is over subsets, \(2^n\) of them. Each split is seen twice (\(T\) and its complement), which costs nothing.</li>
+<li>\(n \le 20\) gives \(2^{20} \approx 10^6\) leaves. Cheap.</li>
+<li>Sums reach \(20 \cdot 10^9 = 2\cdot 10^{10}\), so use <code>ll</code>, not <code>int</code>.</li>
+<li>The bitmask only carries the choice. The same recursion works with two running sums passed
+down; the mask version re-adds them at the leaf.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate all 2&#8319; subsets &mdash; which is what this <em>is</em>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2&#8319;&middot;n)</span> here, because the leaf re-sums the mask.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">nothing. <code>n &le; 20</code> &rarr; <span class="cost">2&#183;10&#8311;</span> operations.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Accept the extra factor n. Carrying two running sums would give <span class="cost">O(2&#8319;)</span>, and is the version to write if n were 30.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try all \(2^n\) subsets. Here that <em>is</em> the solution.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot n)\)</span> here, because each leaf re-adds the mask.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Nothing: \(n \le 20\) gives about \(2\cdot 10^7\) operations.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Accept the extra factor \(n\). Carrying two running sums would give <span class="cost">\(O(2^n)\)</span>, which is the version to write if \(n\) were \(30\).</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
@@ -158,39 +176,91 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+n = 0
+ans = 0
+v = []
+
+def rec(i, mask):
+    global ans                              # rec assigns ans, so declare it global
+    if i == n:
+        sum1, sum2 = 0, 0
+        for j in range(n):
+            if mask &amp; (1 &lt;&lt; j):             # bit ops are the same: &amp; | ^ &lt;&lt; &gt;&gt;
+                sum1 += v[j]
+            else:
+                sum2 += v[j]
+        ans = min(ans, abs(sum1 - sum2))
+        return
+    rec(i + 1, mask | (1 &lt;&lt; i))
+    rec(i + 1, mask)
+
+def solve():
+    global n, ans
+    n = int(next(tok))
+    for i in range(n):
+        x = int(next(tok))
+        v.append(x)                         # v is only mutated, not reassigned: no "global" needed
+    ans = INF
+    rec(0, 0)
+    print(ans)
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>1 &lt;&lt; j</code> is an <code>int</code> shift. It is safe here only because n &le; 20; at n &ge; 31 it is undefined behaviour and needs <code>1LL &lt;&lt; j</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"divide into two groups, minimise the difference", n &le; 20 &rarr; recurse take/skip over every element.</div>
     </article>
 
     <article class="entry" id="chessboard-and-queens">
-      <div class="entry-head"><h3>Chessboard and Queens</h3><span class="badge num">O(8! &middot; 8)</span></div>
+      <div class="entry-head"><h3>Chessboard and Queens</h3><span class="badge num">\(O(8! \cdot 8)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count placements of 8 non-attacking queens on an 8&times;8 board where some squares are forbidden.<div class="formal">#{c&#8320;&hellip;c&#8327; : c&#7522; free, c&#7522; &ne; c&#11388;, |c&#7522; &minus; c&#11388;| &ne; |i &minus; j|}</div></div>
+        <div class="ask">
+<p><b>Question.</b> Place eight queens on an \(8 \times 8\) chessboard so that no two attack each
+other (same row, column or diagonal). Some squares are reserved and cannot hold a queen, but
+reserved squares do not block attacks. How many valid placements are there?</p>
+<dl class="io">
+<dt>Input</dt><dd>Eight lines of eight characters: <code>.</code> free, <code>*</code> reserved.</dd>
+<dt>Output</dt><dd>One integer: the number of valid placements.</dd>
+<dt>Limits</dt><dd>The board is always \(8 \times 8\).</dd>
+<dt>Sample</dt><dd>the board in the file → <code>65</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Eight queens, eight rows, at most one per row, so exactly one per row. A placement is a list of columns \(c_0, \dots, c_7\), where \(c_i\) is the column of the queen in row \(i\).</span></li>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \#\big\{\, (c_0, \dots, c_7) : (i, c_i) \text{ free},\ \ c_i \ne c_j,\ \ |c_i - c_j| \ne |i - j| \ \ \forall i \ne j \,\big\} \]</li>
+<li><span class="why">Fill rows top to bottom. When placing row \(r\), only rows above it can clash, so check the column and the two upward diagonals.</span></li>
+<li><span class="why">Simplest form, a recursion over rows:</span>
+\[ f(8) = 1, \qquad f(r) = \sum_{\substack{c \,:\, (r, c) \text{ free} \\ \text{and safe}}} f(r + 1), \qquad \text{ans} = f(0) \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Exactly one queen per row. That is forced, not a choice: 8 queens, 8 rows, no two in a row. So the recursion is over rows, and only the column is picked.</li>
-          <li>Because rows are filled top-down, only squares <em>above</em> the current row can conflict. <code>check</code> looks up the column and the two upward diagonals and nothing else.</li>
-          <li>A reserved square blocks placement but not attacks. So it is a test on <code>v[row][col]</code> only &mdash; it never appears in <code>check</code>.</li>
-          <li>Marking reserved squares as <code>2</code> and queens as <code>1</code> keeps the two meanings in one grid, and <code>check</code> compares against <code>1</code>.</li>
-        </ol>
+<li>Exactly one queen per row is forced (8 queens, 8 rows, no two in a row). So the recursion goes over rows and only picks the column.</li>
+<li>Because rows are filled top-down, only squares <em>above</em> the current row can clash.
+<code>check</code> looks at the column and the two upward diagonals and nothing else.</li>
+<li>A reserved square blocks placement but not attacks. So it is tested only on <code>v[row][col]</code>; it never appears in <code>check</code>.</li>
+<li>Marking reserved squares as <code>2</code> and queens as <code>1</code> keeps both meanings in one grid, and <code>check</code> compares against <code>1</code>.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Choose 8 of the 64 squares, test each combination.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">C(64,8) &asymp; 4&#183;10&#8313;</span> combinations, each checked in 8&#178;.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">the 1 s limit, by three orders of magnitude.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One queen per row prunes it to at most 8&#8312; = <span class="cost">1.6&#183;10&#8311;</span> paths, and conflicts cut that to well under 8!.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Choose any 8 of the 64 squares and test each choice.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(\binom{64}{8} \approx 4.4\cdot 10^9\)</span> choices, each checked in \(8^2\) steps.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">The 1 s limit, by about three orders of magnitude.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One queen per row cuts it to at most \(8^8 \approx 1.7\cdot 10^7\) paths, and clash checks prune far below \(8! = 40320\).</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 300 150" role="img" aria-label="what check() scans above row 3"><g><rect class="s-box" x="20" y="14" width="30" height="30"/><rect class="s-box" x="50" y="14" width="30" height="30"/><rect class="s-fill" x="80" y="14" width="30" height="30"/><rect class="s-box" x="110" y="14" width="30" height="30"/><rect class="s-fill" x="140" y="14" width="30" height="30"/><rect class="s-box" x="170" y="14" width="30" height="30"/><rect class="s-fill" x="200" y="14" width="30" height="30"/><rect class="s-box" x="230" y="14" width="30" height="30"/></g><g><rect class="s-box" x="20" y="44" width="30" height="30"/><rect class="s-box" x="50" y="44" width="30" height="30"/><rect class="s-box" x="80" y="44" width="30" height="30"/><rect class="s-fill" x="110" y="44" width="30" height="30"/><rect class="s-fill" x="140" y="44" width="30" height="30"/><rect class="s-fill" x="170" y="44" width="30" height="30"/><rect class="s-box" x="200" y="44" width="30" height="30"/><rect class="s-box" x="230" y="44" width="30" height="30"/></g><g><rect class="s-box" x="20" y="74" width="30" height="30"/><rect class="s-box" x="50" y="74" width="30" height="30"/><rect class="s-box" x="80" y="74" width="30" height="30"/><rect class="s-box" x="110" y="74" width="30" height="30"/><rect class="s-good" x="140" y="74" width="30" height="30"/><rect class="s-box" x="170" y="74" width="30" height="30"/><rect class="s-box" x="200" y="74" width="30" height="30"/><rect class="s-box" x="230" y="74" width="30" height="30"/></g><text class="s-t" x="155" y="95" text-anchor="middle">Q</text><text class="s-ta" x="20" y="126">check(row=2, col=4): column 4 up, and both diagonals up. Rows below are empty.</text></svg>
+<svg viewBox="0 0 300 152" role="img" aria-label="what check() scans above row 3"><g><rect class="s-box" x="20" y="14" width="30" height="30"/><rect class="s-box" x="50" y="14" width="30" height="30"/><rect class="s-fill" x="80" y="14" width="30" height="30"/><rect class="s-box" x="110" y="14" width="30" height="30"/><rect class="s-fill" x="140" y="14" width="30" height="30"/><rect class="s-box" x="170" y="14" width="30" height="30"/><rect class="s-fill" x="200" y="14" width="30" height="30"/><rect class="s-box" x="230" y="14" width="30" height="30"/></g><g><rect class="s-box" x="20" y="44" width="30" height="30"/><rect class="s-box" x="50" y="44" width="30" height="30"/><rect class="s-box" x="80" y="44" width="30" height="30"/><rect class="s-fill" x="110" y="44" width="30" height="30"/><rect class="s-fill" x="140" y="44" width="30" height="30"/><rect class="s-fill" x="170" y="44" width="30" height="30"/><rect class="s-box" x="200" y="44" width="30" height="30"/><rect class="s-box" x="230" y="44" width="30" height="30"/></g><g><rect class="s-box" x="20" y="74" width="30" height="30"/><rect class="s-box" x="50" y="74" width="30" height="30"/><rect class="s-box" x="80" y="74" width="30" height="30"/><rect class="s-box" x="110" y="74" width="30" height="30"/><rect class="s-good" x="140" y="74" width="30" height="30"/><rect class="s-box" x="170" y="74" width="30" height="30"/><rect class="s-box" x="200" y="74" width="30" height="30"/><rect class="s-box" x="230" y="74" width="30" height="30"/></g><text class="s-t" x="155" y="95" text-anchor="middle">Q</text><text class="s-ta" x="20" y="126">check(row=2, col=4) looks only up:</text><text class="s-ta" x="20" y="142">its column and both diagonals.</text></svg>
           <figcaption>Placing at row 2, column 4. Shaded cells are the only ones scanned &mdash; one column and two diagonals, all strictly above.</figcaption>
         </figure>
       </div>
@@ -291,34 +361,96 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+v = [[0] * 8 for _ in range(8)]             # vector&lt;vector&lt;ll&gt;&gt;(8, vector&lt;ll&gt;(8, 0))
+                                            # NOT [[0]*8]*8: that makes 8 references to ONE row
+ans = 0
+
+def check(row, col):
+    for i in range(row):
+        if v[i][col] == 1:
+            return False
+    i, j = row - 1, col - 1                 # for with two variables -&gt; while loop
+    while i &gt;= 0 and j &gt;= 0:
+        if v[i][j] == 1:
+            return False
+        i -= 1; j -= 1
+    i, j = row - 1, col + 1
+    while i &gt;= 0 and j &lt; 8:
+        if v[i][j] == 1:
+            return False
+        i -= 1; j += 1
+    return True
+
+def rec(row):
+    # this function will return the number of ways to place queens from row to 7
+    if row == 8:
+        return 1
+    cnt = 0
+    for col in range(8):
+        if v[row][col] == 0 and check(row, col):
+            v[row][col] = 1
+            cnt += rec(row + 1)
+            v[row][col] = 0
+    return cnt
+
+def solve():
+    global ans
+    for i in range(8):
+        s = next(tok)
+        for j in range(8):
+            if s[j] == '*':                 # chars are 1-length strings: '*' == "*"
+                v[i][j] = 2
+    ans = rec(0)
+    print(ans)
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The downward diagonals are never checked, and must not be &mdash; nothing has been placed below <code>row</code> yet. Checking them costs time and changes no answer.</div>
       <div class="callout trigger"><strong>Recognize</strong>"place k non-attacking pieces / count arrangements" on a small board &rarr; recurse one row at a time, place-recurse-unplace.</div>
     </article>
 
     <article class="entry" id="creating-strings">
-      <div class="entry-head"><h3>Creating Strings</h3><span class="badge num">O(n!&middot;n)</span></div>
+      <div class="entry-head"><h3>Creating Strings</h3><span class="badge num">\(O(n!\cdot n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Print every <em>distinct</em> rearrangement of a string, in alphabetical order, preceded by the count.<div class="formal">sorted set of all permutations of s,  |set| = n! / &prod;<sub>c</sub> cnt[c]!</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given a string of length \(n\). Print every <em>different</em> string
+that can be made by rearranging its characters, in alphabetical order. Print the count first.</p>
+<dl class="io">
+<dt>Input</dt><dd>One string \(s\) of lowercase letters.</dd>
+<dt>Output</dt><dd>The count \(k\), then the \(k\) strings in alphabetical order.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 8\)</dd>
+<dt>Sample</dt><dd><code>aabac</code> → <code>20</code>, then <code>aaabc</code>, <code>aaacb</code>, …, <code>cbaaa</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">There are \(n!\) orderings of the positions. Swapping equal letters gives the same string, so each distinct string is counted \(\prod_c \text{cnt}_c!\) times:</span>
+\[ k = \frac{n!}{\prod_{c} \text{cnt}_c!} \]
+<span class="why">Sample: \(\frac{5!}{3!\, 1!\, 1!} = \frac{120}{6} = 20\).</span></li>
+<li><span class="why"><code>next_permutation</code> steps to the next larger distinct arrangement in alphabetical order, and returns false after the largest one.</span></li>
+<li><span class="why">Simplest form: sort \(s\) (the smallest arrangement), then step until it returns false. That visits each of the \(k\) strings once, already in order.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>next_permutation</code> walks permutations in lexicographic order and skips duplicates automatically. It returns <code>false</code> once the sequence is the last (descending) one.</li>
-          <li>Therefore the string must be <em>sorted first</em>, so the walk starts at the smallest arrangement and covers all of them.</li>
-          <li>A <code>do &hellip; while</code>, not a <code>while</code>: the sorted string itself is the first answer and must be emitted before any call.</li>
-          <li>The count is required <em>before</em> the strings, so they have to be buffered in a vector rather than printed as they are produced.</li>
-        </ol>
+<li><code>next_permutation</code> walks the arrangements in alphabetical order and skips duplicates automatically. It returns <code>false</code> once the string is the last (descending) one.</li>
+<li>So the string must be <em>sorted first</em>, so the walk starts at the smallest arrangement and covers all of them.</li>
+<li>Use <code>do … while</code>, not <code>while</code>: the sorted string itself is the first answer and must be recorded before any call.</li>
+<li>The count must be printed <em>before</em> the strings, so they are stored in a vector rather than printed as they are made.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Recurse over positions, insert every produced string into a <code>set&lt;string&gt;</code> to deduplicate.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n! &middot; n log(n!))</span> plus the memory of all n! strings, duplicates included.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">it survives <code>n &le; 8</code> (8! = 40320) &mdash; but it is strictly more code.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Use the stdlib walk: sorted order and deduplication both come free.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Recurse over positions and insert every result into a <code>set&lt;string&gt;</code> to remove duplicates.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n! \cdot n \log(n!))\)</span>, plus memory for all \(n!\) strings, duplicates included.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">It survives \(n \le 8\) (\(8! = 40320\)), but it is more code.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Use the standard library walk: sorted order and duplicate removal both come free.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
@@ -371,6 +503,19 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from itertools import permutations
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    s = next(tok)
+    # Python has no next_permutation. permutations() repeats duplicates for repeated letters,
+    # so dedupe with set() and sort: same list the do-while produces.
+    v = sorted(set(''.join(p) for p in permutations(s)))
+    print(len(v))
+    print('\n'.join(v))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Forgetting the <code>sort</code> silently loses every permutation smaller than the input. The loop still terminates, so the bug looks like a wrong count, not a crash.</div>
       <div class="callout trigger"><strong>Recognize</strong>"all distinct permutations, alphabetical" &rarr; <code>sort</code> + <code>do/while(next_permutation)</code>. Never hand-roll it.</div>
@@ -383,28 +528,47 @@ signed main()
     <p class="family-note">The output itself is defined by a recurrence. Solve for n&minus;1, then describe the n case as two copies of it with something glued between or in front. No search, no pruning &mdash; every step of the answer is forced.</p>
 
     <article class="entry" id="gray-code">
-      <div class="entry-head"><h3>Gray Code</h3><span class="badge num">O(n&middot;2&#8319;)</span></div>
+      <div class="entry-head"><h3>Gray Code</h3><span class="badge num">\(O(n\cdot 2^{n})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">List all 2&#8319; bit strings of length n so that consecutive strings differ in exactly one bit.<div class="formal">hamming(g&#7522;, g&#7522;&#8330;&#8321;) = 1  for all i</div></div>
+        <div class="ask">
+<p><b>Question.</b> A Gray code is a list of all \(2^n\) bit strings of length \(n\) in which any
+two neighbouring strings differ in exactly one bit. Print one Gray code for the given \(n\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>\(2^n\) lines, the bit strings in Gray order. Any valid list is accepted.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 16\)</dd>
+<dt>Sample</dt><dd>\(n = 2\) → <code>00 01 11 10</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: list \(g_0, \dots, g_{2^n - 1}\), every \(n\)-bit string once, with</span>
+\[ d(g_i, g_{i+1}) = 1 \quad \text{for all } 0 \le i \lt 2^n - 1, \]
+<span class="why">where \(d\) counts the positions where two strings differ.</span></li>
+<li><span class="why">Build \(G_n\) from \(G_{n-1}\): put \(0\) in front of each string, then put \(1\) in front of each string of the <em>reversed</em> list:</span>
+\[ G_1 = (0, 1), \qquad G_n = 0\,G_{n-1} \;\big\|\; 1\,\overline{G_{n-1}} \]
+<span class="why">where \(\overline{G}\) means \(G\) in reverse order and \(\|\) means "followed by".</span></li>
+<li><span class="why">Inside each half, the first bit is fixed, so neighbours still differ in one bit. At the join, both strings come from the <em>same</em> last string of \(G_{n-1}\), so they differ only in the first bit.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Take a valid list for n&minus;1. Prefix every entry with <code>0</code>; then prefix the <em>same list reversed</em> with <code>1</code>.</li>
-          <li>Inside each half the prefix is constant, so neighbours still differ in one bit &mdash; the n&minus;1 property carries over.</li>
-          <li>At the seam the two entries are the last of the first half and the last of the second half's source, i.e. the <em>same</em> (n&minus;1)-string. They differ only in the prefix. That is why the second half is reversed.</li>
-          <li>Base case <code>{"0", "1"}</code> is n = 1, so the loop starts at i = 2.</li>
-        </ol>
+<li>Take a valid list for \(n - 1\). Put <code>0</code> in front of every entry; then put <code>1</code> in front of the <em>same list reversed</em>.</li>
+<li>Inside each half the first bit is constant, so neighbours still differ in one bit. The \(n - 1\) property carries over.</li>
+<li>At the join, the two entries are the last string of the first half and the first string of the
+reversed half. Both come from the <em>same</em> \((n-1)\)-bit string, so they differ only in the first bit. That is why the second half is reversed.</li>
+<li>The base case <code>{"0", "1"}</code> is \(n = 1\), so the loop starts at \(i = 2\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Backtrack over the 2&#8319; codes, at each step trying every unused string at Hamming distance 1.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">exponential with backtracking, and needs a <code>visited</code> set of size 2&#8319;.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n &le; 16</code> &rarr; 65536 codes; the search is survivable but pointless.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">The reflect-and-prefix recurrence produces the list directly, with no search at all.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Backtrack over the \(2^n\) strings, at each step trying every unused string that differs in one bit.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">Exponential with backtracking, plus a <code>visited</code> set of size \(2^n\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 16\) gives \(65536\) strings; the search might survive but is pointless.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">The reflect-and-prefix rule builds the list directly in <span class="cost">\(O(n \cdot 2^n)\)</span>, with no search.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -468,39 +632,74 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    v = ["0", "1"]
+    for i in range(2, n + 1):
+        temp = []
+        for j in range(len(v)):
+            temp.append("0" + v[j])         # string + string concatenates, same as C++
+        for j in range(len(v) - 1, -1, -1):
+            temp.append("1" + v[j])
+        v = temp
+    print('\n'.join(v))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The reverse loop uses <code>ll j</code>, not <code>size_t</code>. With an unsigned index <code>j &gt;= 0</code> is always true and the loop never ends.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"list all 2&#8319; of something, neighbours differ by one step" &rarr; build n&minus;1, prefix 0, then prefix 1 to the reversal.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"list all \(2^{n}\) of something, neighbours differ by one step" &rarr; build n&minus;1, prefix 0, then prefix 1 to the reversal.</div>
     </article>
 
     <article class="entry" id="tower-of-hanoi">
-      <div class="entry-head"><h3>Tower of Hanoi</h3><span class="badge num">O(2&#8319;)</span></div>
+      <div class="entry-head"><h3>Tower of Hanoi</h3><span class="badge num">\(O(2^{n})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Print the shortest move sequence that transfers n disks from stack 1 to stack 3, never placing a larger disk on a smaller one.<div class="formal">k = 2&#8319; &minus; 1 moves, each printed as "from to"</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are three stacks and \(n\) disks of different sizes, all on stack 1, smallest
+on top. Move all disks to stack 3. Each move takes the top disk of one stack and puts it on another,
+and a larger disk may never be placed on a smaller one. Use the minimum number of moves and print them.</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The number of moves \(k\), then \(k\) lines <code>a b</code> (move the top disk of stack \(a\) to stack \(b\)).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 16\)</dd>
+<dt>Sample</dt><dd>\(n = 2\) → <code>3</code>, then <code>1 2</code>, <code>1 3</code>, <code>2 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">The largest disk can only move when the other \(n - 1\) disks are all on the third stack. So any solution has three parts:</span>
+\[ \text{move } n{-}1 \text{ from} \to \text{spare}, \quad \text{move disk } n \text{ from} \to \text{to}, \quad \text{move } n{-}1 \text{ spare} \to \text{to} \]</li>
+<li><span class="why">Count the moves, with \(T(n)\) the minimum for \(n\) disks:</span>
+\[ T(1) = 1, \qquad T(n) = 2\,T(n-1) + 1 \]</li>
+<li><span class="why">Add \(1\) to both sides: \(T(n) + 1 = 2\,(T(n-1) + 1)\). So \(T(n) + 1\) doubles each step, starting from \(2\):</span>
+\[ T(n) = 2^n - 1 \]</li>
+<li><span class="why">Simplest form: the recursion \(\text{hanoi}(n, a, b, c)\) = \(\text{hanoi}(n{-}1, a, c, b)\), print \(a \to c\), \(\text{hanoi}(n{-}1, b, a, c)\). Sample: \(T(2) = 3\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The bottom disk can only move once the other n&minus;1 are all on the spare stack. That single fact forces the whole recurrence.</li>
-          <li>So: move n&minus;1 from &rarr; aux (using to as spare), move disk n from &rarr; to, move n&minus;1 aux &rarr; to (using from as spare).</li>
-          <li>The roles of the three stacks rotate at each call. Getting the argument order right in the two recursive calls <em>is</em> the problem.</li>
-          <li>T(n) = 2T(n&minus;1) + 1 = 2&#8319; &minus; 1, and that is optimal, so no minimisation is needed &mdash; just print.</li>
-        </ol>
+<li>The bottom disk can only move once the other \(n - 1\) are all on the spare stack. That one fact forces the whole recursion.</li>
+<li>So: move \(n - 1\) from → spare (using "to" as the helper), move disk \(n\) from → to, move \(n - 1\) spare → to (using "from" as the helper).</li>
+<li>The roles of the three stacks change at each call. Getting the argument order right in the two recursive calls <em>is</em> the problem.</li>
+<li>\(T(n) = 2T(n-1) + 1 = 2^n - 1\), and that is optimal, so nothing needs minimising. Just print.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">BFS over board states to find the shortest path to the goal.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">3&#8319; states &rarr; <span class="cost">4&#183;10&#8311;</span> at n = 16, each with a stack-configuration key.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">memory, well before time.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">The optimum is known in closed form; emit it directly in <span class="cost">O(2&#8319;)</span>, which is the output size.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">BFS over board states to find the shortest path to the goal.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">\(3^n\) states, about <span class="cost">\(4.3\cdot 10^7\)</span> at \(n = 16\), each with a key for the whole board.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Memory, well before time.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">The optimum is known exactly; print it directly in <span class="cost">\(O(2^n)\)</span>, which is the size of the output.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
         <figure class="diagram">
-<svg viewBox="0 0 340 120" role="img" aria-label="the three phases of rec(n, from, aux, to)"><rect class="s-fill" x="20" y="30" width="92" height="40" rx="5"/><rect class="s-good" x="124" y="30" width="72" height="40" rx="5"/><rect class="s-fill" x="208" y="30" width="112" height="40" rx="5"/><text class="s-t" x="66" y="47" text-anchor="middle">n&minus;1:</text><text class="s-t" x="66" y="63" text-anchor="middle">from &#8594; aux</text><text class="s-t" x="160" y="55" text-anchor="middle">disk n</text><text class="s-t" x="264" y="47" text-anchor="middle">n&minus;1:</text><text class="s-t" x="264" y="63" text-anchor="middle">aux &#8594; to</text><text class="s-td" x="20" y="22">phase 1</text><text class="s-td" x="124" y="22">phase 2</text><text class="s-td" x="208" y="22">phase 3</text><text class="s-ta" x="20" y="100">spare in phase 1 is &quot;to&quot;; spare in phase 3 is &quot;from&quot;.</text></svg>
+<svg viewBox="0 0 340 124" role="img" aria-label="the three phases of rec(n, from, aux, to)"><rect class="s-fill" x="20" y="30" width="92" height="40" rx="5"/><rect class="s-good" x="124" y="30" width="72" height="40" rx="5"/><rect class="s-fill" x="208" y="30" width="112" height="40" rx="5"/><text class="s-t" x="66" y="47" text-anchor="middle">n&minus;1:</text><text class="s-t" x="66" y="63" text-anchor="middle">from &#8594; aux</text><text class="s-t" x="160" y="55" text-anchor="middle">disk n</text><text class="s-t" x="264" y="47" text-anchor="middle">n&minus;1:</text><text class="s-t" x="264" y="63" text-anchor="middle">aux &#8594; to</text><text class="s-td" x="20" y="22">phase 1</text><text class="s-td" x="124" y="22">phase 2</text><text class="s-td" x="208" y="22">phase 3</text><text class="s-ta" x="20" y="96">phase 1 uses &quot;to&quot; as the spare;</text><text class="s-ta" x="20" y="114">phase 3 uses &quot;from&quot; as the spare.</text></svg>
           <figcaption>The middle move is the only one that touches the largest disk. The two outer phases are the same problem one size smaller, with the stack roles permuted.</figcaption>
         </figure>
       </div>
@@ -567,6 +766,32 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+n = 0
+ans = []
+
+def rec(nod, from_, aux, to):               # "from" is a keyword, so from_
+    # this function will move nod disks from stack a to stack c using stack b as auxiliary
+    if nod == 1:
+        ans.append((from_, to))
+        return
+    else:
+        rec(nod - 1, from_, to, aux)
+        ans.append((from_, to))
+        rec(nod - 1, aux, from_, to)
+
+def solve():
+    global n
+    n = int(next(tok))
+    rec(n, 1, 2, 3)
+    out = [str(len(ans))]
+    for x in ans:
+        out.append(f"{x[0]} {x[1]}")        # f-string: {expr} is replaced by its value
+    print('\n'.join(out))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>In the recursive calls the <em>third</em> and <em>fourth</em> arguments swap: <code>rec(nod-1, from, to, aux)</code> then <code>rec(nod-1, aux, from, to)</code>. Passing <code>(from, aux, to)</code> unchanged compiles and prints illegal moves.</div>
       <div class="callout trigger"><strong>Recognize</strong>"minimum moves, and print them" with n &le; 20 and an obvious blocking rule &rarr; solve n&minus;1, move the blocker, solve n&minus;1 again.</div>
@@ -579,28 +804,47 @@ signed main()
     <p class="family-note">A feasibility question with a witness attached. The constraints rule out search entirely, so the work is finding the exact condition, then writing down one example that meets it. If the condition is right, the construction is usually three lines.</p>
 
     <article class="entry" id="coin-piles">
-      <div class="entry-head"><h3>Coin Piles</h3><span class="badge num">O(1)</span></div>
+      <div class="entry-head"><h3>Coin Piles</h3><span class="badge num">\(O(1)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Two piles of a and b coins. Each move removes (1,2) or (2,1). Can both piles reach zero?<div class="formal">&exist; x,y &ge; 0 :  x + 2y = a  and  2x + y = b</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are two coin piles with \(a\) and \(b\) coins. In one move you either
+remove 1 coin from the left pile and 2 from the right, or 2 from the left and 1 from the right.
+Can you empty both piles? Answer \(t\) test cases.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(t\), then \(t\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>For each test, <code>YES</code> or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le t \le 10^5,\ \ 0 \le a, b \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>(2,1)</code> → YES, <code>(2,2)</code> → NO, <code>(3,3)</code> → YES</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(x\) be the number of (1 left, 2 right) moves and \(y\) the number of (2 left, 1 right) moves. Emptying both piles means:</span>
+\[ x + 2y = a, \qquad 2x + y = b, \qquad x, y \ge 0 \text{ integers} \]</li>
+<li><span class="why">Solve the two equations:</span>
+\[ x = \frac{2b - a}{3}, \qquad y = \frac{2a - b}{3} \]</li>
+<li><span class="why">Integer: adding the equations gives \(3(x + y) = a + b\), so \(3 \mid (a + b)\), and then both numerators are multiples of \(3\). Non-negative: \(2b \ge a\) and \(2a \ge b\).</span></li>
+<li><span class="why">Simplest form:</span>
+\[ \text{YES} \iff (a + b) \bmod 3 = 0 \ \text{ and } \ 2 \min(a, b) \ge \max(a, b) \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Every move removes exactly 3 coins in total &rArr; <code>(a + b) % 3 == 0</code> is necessary.</li>
-          <li>Solving the system gives x = (2b &minus; a)/3 and y = (2a &minus; b)/3. Both must be &ge; 0, which is exactly <code>2&middot;min(a,b) &ge; max(a,b)</code>.</li>
-          <li>Given divisibility by 3, that inequality is also sufficient &mdash; the two conditions together are the full answer.</li>
-          <li>a = b = 0 passes both and is correct (zero moves).</li>
-        </ol>
+<li>Every move removes exactly \(3\) coins, so \((a + b) \bmod 3 = 0\) is necessary.</li>
+<li>Solving the system gives \(x = (2b - a)/3\) and \(y = (2a - b)/3\). Both must be \(\ge 0\), which is exactly \(2 \min(a, b) \ge \max(a, b)\).</li>
+<li>With divisibility by \(3\), that inequality is also enough. The two conditions together are the full answer.</li>
+<li>\(a = b = 0\) passes both and is correct (zero moves).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Search over the number of each move type, or BFS the state (a, b).</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(a)</span> per test at best, <span class="cost">O(a&middot;b)</span> for BFS.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>a,b &le; 10&#8313;</code> with <code>t &le; 10&#8309;</code> &rarr; <span class="cost">10&#185;&#8308;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Solve the 2&times;2 system once, on paper. Both conditions are <span class="cost">O(1)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every count of one move type, or BFS over states \((a, b)\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(a)\)</span> per test at best, <span class="cost">\(O(a \cdot b)\)</span> for BFS.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(a, b \le 10^9\) with \(t \le 10^5\) gives up to \(10^{14}\) steps.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Solve the \(2 \times 2\) system once, on paper. Both checks are <span class="cost">\(O(1)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
@@ -654,34 +898,68 @@ signed main()
         solve() ; 
     }
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    a, b = int(next(tok)), int(next(tok))
+    if (a + b) % 3 == 0 and min(a, b) * 2 &gt;= max(a, b):
+        print("YES")                        # py macro
+    else:
+        print("NO")                         # pn macro
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>The divisibility test alone accepts (3, 0): sum 3, but no legal move exists. The <code>2&middot;min &ge; max</code> half is not optional.</div>
-      <div class="callout trigger"><strong>Recognize</strong>t up to 10&#8309; with two integers up to 10&#8313; and a YES/NO answer &rarr; write the moves as a linear system and read off the conditions.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The divisibility test alone accepts (3, 0): sum 3, but no legal move exists. The \(2\cdot \min \ge \max\) half is not optional.</div>
+      <div class="callout trigger"><strong>Recognize</strong>t up to \(10^{5}\) with two integers up to \(10^{9}\) and a YES/NO answer &rarr; write the moves as a linear system and read off the conditions.</div>
     </article>
 
     <article class="entry" id="raab-game-i">
-      <div class="entry-head"><h3>Raab Game I</h3><span class="badge num">O(n)</span></div>
+      <div class="entry-head"><h3>Raab Game I</h3><span class="badge num">\(O(n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Both players hold cards 1&hellip;n and play them in some order. Given n, a, b, produce two orderings where player 1 wins exactly a rounds and player 2 exactly b.<div class="formal">#{i : p&#7522; &gt; q&#7522;} = a,  #{i : q&#7522; &gt; p&#7522;} = b,  ties elsewhere</div></div>
+        <div class="ask">
+<p><b>Question.</b> Two players each have cards \(1, 2, \dots, n\). In each round both put down one
+card; the higher card scores a point, equal cards score nothing. After all \(n\) rounds, player 1 has
+\(a\) points and player 2 has \(b\). Decide whether this is possible, and if so print one game:
+the order in which each player played their cards. Answer \(t\) test cases.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(t\), then \(t\) lines \(n\ a\ b\).</dd>
+<dt>Output</dt><dd><code>NO</code>, or <code>YES</code> followed by two lines: player 1's cards and player 2's cards, round by round.</dd>
+<dt>Limits</dt><dd>\(1 \le t \le 1000,\ \ 1 \le n \le 100,\ \ 0 \le a, b \le n\)</dd>
+<dt>Sample</dt><dd>\((4,1,2)\) → YES; \((2,0,1)\) → NO; \((3,0,0)\) → YES; \((2,1,1)\) → YES; \((4,4,1)\) → NO</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">With \(p_i, q_i\) the cards of round \(i\), state it exactly:</span>
+\[ \#\{ i : p_i \gt q_i \} = a, \qquad \#\{ i : q_i \gt p_i \} = b \]</li>
+<li><span class="why">Each round gives at most one point, so \(a + b \le n\).</span></li>
+<li><span class="why">Both players hold the same cards, so \(\sum_i p_i = \sum_i q_i\). If \(a \gt 0\) and \(b = 0\), player 1 is never lower and sometimes higher, so \(\sum p_i \gt \sum q_i\), a contradiction. The same holds with the roles swapped:</span>
+\[ (a = 0) \iff (b = 0) \]</li>
+<li><span class="why">Simplest form: otherwise build it. Let \(m = a + b\). Rounds \(i = 1..b\): \(p = i,\ q = a + i\) (player 2 wins). Rounds \(j = 1..a\): \(p = b + j,\ q = j\) (player 1 wins). Rounds with cards \(m+1..n\) are ties. Each side uses every card \(1..n\) exactly once.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>a + b &le; n, because each round produces at most one point.</li>
-          <li>If exactly one of a, b is zero it is impossible: some card of the winner must beat something, and the multiset is identical on both sides, so a total win-shutout forces all ties, i.e. a = b = 0.</li>
-          <li>Otherwise construct directly: leave n &minus; a &minus; b rounds as ties (same card both sides), and arrange the rest as a cyclic shift.</li>
-          <li>The construction pairs <code>i &harr; a+i</code> for the first b rounds (player 2 wins) and <code>b+i &harr; i</code> for the next a rounds (player 1 wins). Every card 1&hellip;n appears exactly once on each side.</li>
-        </ol>
+<li>\(a + b \le n\), because each round gives at most one point.</li>
+<li>If exactly one of \(a, b\) is zero, it is impossible. Both hands have the same total, so a
+player who never loses and sometimes wins would have a larger total. Hence one-sided wins force all ties: \(a = b = 0\).</li>
+<li>Otherwise build it directly: leave \(n - a - b\) rounds as ties (same card on both sides), and arrange the rest as a cyclic shift.</li>
+<li>The construction pairs \(i \leftrightarrow a + i\) for the first \(b\) rounds (player 2 wins) and
+\(b + j \leftrightarrow j\) for the next \(a\) rounds (player 1 wins). Every card \(1..n\) appears exactly once on each side.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try permutations of player 2's hand against player 1's identity ordering.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n!)</span>.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n &le; 100</code>, <code>t &le; 1000</code>. Instantly.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Prove the two impossibility rules, then emit one witness in <span class="cost">O(n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every order of player 2's hand against player 1 playing \(1, 2, \dots, n\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n!)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n \le 100\), \(t \le 1000\). Instantly.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Prove the two impossibility rules, then print one example in <span class="cost">\(O(n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -791,34 +1069,96 @@ signed main()
         solve() ;
     }
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    a, b = int(next(tok)), int(next(tok))
+    if a + b &gt; n:
+        print("NO")
+        return
+    if a == 0 and b &gt; 0:
+        print("NO")
+        return
+    if b == 0 and a &gt; 0:
+        print("NO")
+        return
+    v1, v2 = [], []
+    for i in range(1, n + 1):
+        if i &lt;= b:
+            v2.append(a + i)
+            v1.append(i)
+            # player 2 wins b times
+            # b - 1 + 1
+            # 1 , a + 1
+            # 2 , a + 2
+            # ..
+            # b , a + b
+        elif i &lt;= a + b:
+            v2.append(i - b)
+            v1.append(i)
+            # player 1 wins a times
+            # a + b - b - 1 + 1
+            # b + 1 , 1
+            # b + 2 , 2
+            # ..
+            # b + a , a
+        else:
+            v1.append(i)
+            v2.append(i)
+    print("YES")
+    print(' '.join(map(str, v1)))
+    print(' '.join(map(str, v2)))
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The "exactly one of a, b is zero" rule is two separate early returns, not one. Dropping either prints a YES with an unbuildable example.</div>
       <div class="callout trigger"><strong>Recognize</strong>"print YES and any valid example" with small n &rarr; find the impossibility conditions first; the witness is then a shift of the identity ordering.</div>
     </article>
 
     <article class="entry" id="palindrome-reorder">
-      <div class="entry-head"><h3>Palindrome Reorder</h3><span class="badge num">O(n + 26)</span></div>
+      <div class="entry-head"><h3>Palindrome Reorder</h3><span class="badge num">\(O(n + 26)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Rearrange the letters of a string into any palindrome, or report that none exists.<div class="formal">possible &hArr; #{c : cnt[c] odd} &le; 1</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given a string of capital letters. Reorder its letters so that it becomes
+a palindrome (reads the same forwards and backwards). Print any such palindrome, or
+<code>NO SOLUTION</code> if none exists.</p>
+<dl class="io">
+<dt>Input</dt><dd>One string of length \(n\), letters <code>A</code>–<code>Z</code>.</dd>
+<dt>Output</dt><dd>A palindrome using exactly these letters, or <code>NO SOLUTION</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd><code>AAAACACBA</code> → <code>AACABACAA</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">A palindrome has \(s_i = s_{n-1-i}\). So positions pair up \(i \leftrightarrow n-1-i\), except the middle one when \(n\) is odd.</span></li>
+<li><span class="why">Each pair uses two copies of one letter, so every letter count is even, except possibly the one letter in the middle:</span>
+\[ \text{possible} \iff \#\{\, c : \text{cnt}_c \text{ is odd} \,\} \le 1 \]</li>
+<li><span class="why">Simplest form: put the odd letter (if any) in the middle, then for each letter put \(\text{cnt}_c / 2\) copies on the left and the same on the right, mirrored.</span>
+<span class="why">Sample: counts \(A{:}6,\ B{:}1,\ C{:}2\); only \(B\) is odd, so \(B\) goes in the middle.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A palindrome pairs position i with n&minus;1&minus;i. Every character except a possible middle one appears an even number of times.</li>
-          <li>So the whole feasibility test is: at most one letter has an odd count.</li>
-          <li>Construction: put the odd letter (if any) in the middle, then for each letter push half its pairs to the front and half to the back. A <code>deque</code> makes that literal.</li>
-          <li>Only the 26 counts matter &mdash; the original order is irrelevant.</li>
-        </ol>
+<li>A palindrome pairs position \(i\) with \(n - 1 - i\). Every letter except a possible middle one appears an even number of times.</li>
+<li>So the whole test is: at most one letter has an odd count.</li>
+<li>Construction: put the odd letter (if any) in the middle, then for each letter push half its copies to the front and half to the back. A <code>deque</code> does exactly that.</li>
+<li>Only the 26 counts matter; the original order is irrelevant.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Generate permutations and test each for the palindrome property.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n!&middot;n)</span>.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n &le; 10&#8310;</code>. Hopeless past n = 10.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Count the 26 letters, check one parity condition, emit greedily in <span class="cost">O(n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every rearrangement and test each one.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n! \cdot n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n \le 10^6\). Hopeless past \(n = 10\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Count the 26 letters, check one parity condition, build it greedily in <span class="cost">\(O(n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
@@ -897,6 +1237,37 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    s = next(tok)
+    n = len(s)
+    v = [0] * 26
+    for i in range(n):
+        v[ord(s[i]) - ord('A')] += 1        # s[i] - 'A' -&gt; ord() turns a char into its code
+    odd, index = 0, -1
+    for i in range(26):
+        if v[i] % 2 == 1:
+            odd += 1
+            index = i
+    if odd &gt; 1:
+        print("NO SOLUTION")
+        return
+    dq = deque()                            # deque&lt;char&gt;
+    if index != -1:
+        dq.append(chr(ord('A') + index))    # 'A' + index -&gt; chr() turns a code back into a char
+    v[index] -= 1                           # trap: index == -1 -&gt; v[-1] is v[25] ('Z') in Python, not UB.
+                                            # Harmless here: v[25] stays even-or-odd consistent for the loop below
+    for i in range(26):
+        while v[i] &gt; 0:
+            dq.appendleft(chr(ord('A') + i))    # push_front
+            dq.append(chr(ord('A') + i))        # push_back
+            v[i] -= 2
+    print(''.join(dq))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>v[index]--</code> runs even when <code>index == -1</code> &mdash; on a string with no odd letter that writes to <code>v[-1]</code>. It happens to be harmless on this input (a <code>vector</code> index one before the data), but it is out-of-bounds and should be inside the <code>if</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"rearrange into a palindrome" &rarr; count characters, test odd-count &le; 1, build from both ends.</div>

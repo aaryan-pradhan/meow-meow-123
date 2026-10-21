@@ -18,7 +18,8 @@ window.LEDGER = (function () {
     trees:       { label: 'Trees',       dir: 'trees' },
     mathematics: { label: 'Mathematics', dir: 'mathematics' },
     linked_list: { label: 'Linked List', dir: 'linked_list' },
-    strings:     { label: 'Strings',     dir: 'strings' }
+    strings:     { label: 'Strings',     dir: 'strings' },
+    placement_oa:{ label: 'Placement OA', dir: 'placement%20oa%20prep' }
   };
 
   /* meta: {slug, topic, title, file, part}
@@ -101,8 +102,43 @@ window.LEDGER = (function () {
     });
   }
 
+  /* ---- [C++ | Python] tabs: one click flips every entry on the page ---- */
+  function setLang(lang) {
+    document.body.dataset.lang = lang;
+    Array.prototype.forEach.call(document.querySelectorAll('pre.source'), function (pre) {
+      pre.hidden = pre.classList.contains('py') !== (lang === 'py');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('pre.source.py'), function (py) {
+      var tag = py.parentNode.querySelector('.src-meta span:last-child');
+      if (tag) tag.textContent = lang === 'py' ? 'Python translation' : 'verbatim';
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.lang-tabs button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.lang === lang);
+    });
+    try { localStorage.setItem('ledger-lang', lang); } catch (e) {}
+  }
+
+  function wireLang() {
+    var pys = document.querySelectorAll('pre.source.py');
+    if (!pys.length) return;
+    Array.prototype.forEach.call(pys, function (py) {
+      var cpp = py.previousElementSibling, bar = document.createElement('div');
+      bar.className = 'lang-tabs';
+      bar.innerHTML = '<button type="button" data-lang="cpp">C++</button>' +
+                      '<button type="button" data-lang="py">Python</button>';
+      bar.addEventListener('click', function (e) {
+        if (e.target.dataset.lang) setLang(e.target.dataset.lang);
+      });
+      cpp.parentNode.insertBefore(bar, cpp);
+    });
+    var saved = 'cpp';
+    try { saved = localStorage.getItem('ledger-lang') || 'cpp'; } catch (e) {}
+    setLang(saved);
+  }
+
   function mount(base) {
     base = base || '';
+    wireLang();
     var cards = document.getElementById('cards');
     if (cards) renderCards(cards, base);
     var tbody = document.getElementById('master-body');
@@ -115,8 +151,31 @@ window.LEDGER = (function () {
     }
   }
 
+  /* KaTeX from cdnjs renders \\( \\) inline and \\[ \\] display math, including
+   * the master-table rows mount() just built. Offline, the raw LaTeX shows. */
+  function renderMath() {
+    var K = 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/';
+    var css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = K + 'katex.min.css';
+    document.head.appendChild(css);
+    function load(src, then) {
+      var s = document.createElement('script'); s.src = K + src; s.onload = then;
+      document.head.appendChild(s);
+    }
+    load('katex.min.js', function () {
+      load('contrib/auto-render.min.js', function () {
+        renderMathInElement(document.body, {
+          delimiters: [{ left: '\\[', right: '\\]', display: true },
+                       { left: '\\(', right: '\\)', display: false }],
+          throwOnError: false
+        });
+      });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     mount(document.body.dataset.base || '');
+    renderMath();
   });
 
   return { add: add, TOPICS: TOPICS, children: children, mount: mount };

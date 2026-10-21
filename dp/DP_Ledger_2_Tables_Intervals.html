@@ -49,7 +49,7 @@
       <div class="rule"><span class="n">2</span>
         <p>An action removes or cuts a contiguous piece and leaves smaller contiguous pieces &rarr; state is the range or the shape, smaller first: Removal Game, Rectangle Cutting, Mountain Range.</p></div>
       <div class="rule"><span class="n">3</span>
-        <p><code>n ≤ 2·10⁵</code> rules out comparing every pair of earlier states; sort and binary-search the one transition that matters: Increasing Subsequence, Projects.</p></div>
+        <p>\(n \le 2\cdot 10^{5}\) rules out comparing every pair of earlier states; sort and binary-search the one transition that matters: Increasing Subsequence, Projects.</p></div>
       <div class="rule"><span class="n">4</span>
         <p>When one number is not enough to rank partial answers, store the ranking key itself and compare lexicographically: the pair (rides, weight) in Elevator Rides, the prefix string in Minimal Grid Path.</p></div>
     </div>
@@ -59,28 +59,46 @@
     <div class="family-head"><h2>1 &middot; Two-prefix table</h2></div>
     <p class="family-note">State is a prefix of each of two sequences (or the two coordinates of a monotone grid path). Decide by looking at the last element on each side.</p>
     <article class="entry" id="edit-distance">
-      <div class="entry-head"><h3>Edit Distance</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Edit Distance</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Fewest single-character inserts, deletes and replaces turning <code>s</code> into <code>t</code>.<div class="formal">dp[i][j] = edit distance between s[0..i) and t[0..j)
-dp[i][0] = i,  dp[0][j] = j</div></div>
+        <div class="ask">
+<p><b>Question.</b> The edit distance between two strings is the fewest operations needed to turn
+one into the other, where one operation adds a character, removes a character, or replaces a
+character. Compute the edit distance between strings \(s\) and \(t\).</p>
+<dl class="io">
+<dt>Input</dt><dd>String \(s\) (length \(n\)), then string \(t\) (length \(m\)), letters <code>A</code>–<code>Z</code>.</dd>
+<dt>Output</dt><dd>One integer: the edit distance.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 5000\)</dd>
+<dt>Sample</dt><dd><code>LOVE</code>, <code>MOVIE</code> → <code>2</code> (replace L with M, add I)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i][j]\) be the edit distance between the first \(i\) characters of \(s\) and the first \(j\) of \(t\). Turning a prefix into the empty string, or back, costs its length:</span>
+\[ dp[i][0] = i, \qquad dp[0][j] = j \]</li>
+<li><span class="why">Look at the last characters \(s_i\) and \(t_j\). If they are equal, they cost nothing:</span>
+\[ s_i = t_j \;\Rightarrow\; dp[i][j] = dp[i-1][j-1] \]</li>
+<li><span class="why">Otherwise the last operation was add \(t_j\), remove \(s_i\), or replace \(s_i\) by \(t_j\):</span>
+\[ s_i \ne t_j \;\Rightarrow\; dp[i][j] = 1 + \min\big( \underbrace{dp[i][j-1]}_{\text{add}},\ \underbrace{dp[i-1][j]}_{\text{remove}},\ \underbrace{dp[i-1][j-1]}_{\text{replace}} \big) \]</li>
+<li><span class="why">Simplest form: \(\text{ans} = dp[n][m]\). Row \(i\) reads only rows \(i\) and \(i - 1\), so two rows of length \(m + 1\) are enough.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Look at the last characters. Equal &rArr; they cost nothing, drop both.</li>
-          <li>Unequal &rArr; the last operation was add (<code>j&minus;1</code>), remove (<code>i&minus;1</code>) or replace (both). Take the cheapest + 1.</li>
-          <li>Row <code>i</code> reads only rows <code>i</code> and <code>i&minus;1</code>.</li>
-        </ol>
+<li>Look at the last characters. If they are equal, they cost nothing: drop both.</li>
+<li>If not, the last operation was add (\(j - 1\)), remove (\(i - 1\)) or replace (both). Take the cheapest and add \(1\).</li>
+<li>Row \(i\) reads only rows \(i\) and \(i - 1\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Recurse on the three operations without memo.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(3<sup>n+m</sup>)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>|s|, |t| ≤ 5000</code> &rarr; hopeless; even a full table is 25·10⁶ <code>ll</code> = 200 MB.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Prefix pair state, two rolling rows: <span class="cost">O(n·m)</span> time, <span class="cost">O(m)</span> memory.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Recurse on the three operations without memoisation.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(3^{n+m})\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n, m = 5000\): hopeless. Even the full table is \(25\cdot 10^6\) <code>ll</code> values, about 200 MB.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">State = pair of prefixes, two rolling rows: <span class="cost">\(O(n \cdot m)\)</span> time, <span class="cost">\(O(m)\)</span> memory.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -182,32 +200,79 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+# def rec(i, j):
+#     ...
+
+def solve():
+    s, t = next(tok), next(tok)
+    n = len(s)
+    m = len(t)
+    dp = [[0] * (m + 1) for _ in range(2)]  # ll dp[2][m + 1]
+    for i in range(n + 1):
+        for j in range(m + 1):
+            if i == 0:
+                dp[i &amp; 1][j] = j
+                continue
+            if j == 0:
+                dp[i &amp; 1][j] = i
+                continue
+            if s[i - 1] == t[j - 1]:
+                dp[i &amp; 1][j] = dp[(i - 1) &amp; 1][j - 1]
+            else:
+                add = dp[i &amp; 1][j - 1] + 1
+                remove = dp[(i - 1) &amp; 1][j] + 1
+                replace = dp[(i - 1) &amp; 1][j - 1] + 1
+                dp[i &amp; 1][j] = min(add, remove, replace)    # min({a, b, c}) -&gt; min(a, b, c)
+    print(dp[n &amp; 1][m])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Reading the answer from <code>dp[0][m]</code> instead of <code>dp[n &amp; 1][m]</code> is wrong whenever <code>|s|</code> is odd.</div>
       <div class="callout trigger"><strong>Recognize</strong>"min edits / transform one string into another" &rarr; <code>dp[i][j]</code> over prefixes with three moves.</div>
     </article>
     <article class="entry" id="longest-common-subsequence">
-      <div class="entry-head"><h3>Longest Common Subsequence</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Longest Common Subsequence</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Length of the longest common subsequence of arrays <code>a</code>, <code>b</code>, and one such subsequence.<div class="formal">dp[i][j] = LCS of a[0..i) and b[0..j)</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given two arrays \(a\) (length \(n\)) and \(b\) (length \(m\)). A
+subsequence keeps elements in order but may skip some. Find the length of the longest
+subsequence that appears in both arrays, and print one such subsequence.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\); then \(a_1..a_n\); then \(b_1..b_m\).</dd>
+<dt>Output</dt><dd>The length, then one longest common subsequence.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000,\ \ 1 \le a_i, b_j \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 1 3 2 7 4 8 2</code> and <code>6 5 1 2 3 4</code> → <code>3</code>, <code>1 2 4</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i][j]\) be the LCS length of \(a_1..a_i\) and \(b_1..b_j\), with \(dp[0][j] = dp[i][0] = 0\).</span></li>
+<li><span class="why">If the last elements are equal, match them:</span>
+\[ a_i = b_j \;\Rightarrow\; dp[i][j] = 1 + dp[i-1][j-1] \]</li>
+<li><span class="why">If not, at least one of them is not used, so drop one:</span>
+\[ a_i \ne b_j \;\Rightarrow\; dp[i][j] = \max\big( dp[i-1][j],\ dp[i][j-1] \big) \]</li>
+<li><span class="why">Simplest form: the length is \(dp[n][m]\). To print one LCS, walk back from \((n, m)\) repeating the same choice: equal → take it and go to \((i-1, j-1)\); else move to the larger neighbour.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Equal last elements can always be matched to each other &mdash; take them.</li>
-          <li>Unequal &rArr; at least one of them is unused: drop <code>a</code>'s or <code>b</code>'s.</li>
-          <li>Reconstruction retraces the same decision from <code>(n, m)</code>, so the full table must be kept.</li>
-        </ol>
+<li>Equal last elements can always be matched with each other, so take them.</li>
+<li>If they differ, at least one of them is unused: drop \(a\)'s last or \(b\)'s last.</li>
+<li>Printing the sequence retraces the same choices from \((n, m)\), so the whole table must be kept.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate subsequences of <code>a</code>, test each against <code>b</code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ · m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, m ≤ 1000</code> &rarr; 2¹⁰⁰⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Prefix pair table, <span class="cost">10⁶</span> cells, walk back for the witness.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List the subsequences of \(a\) and test each against \(b\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000\) gives \(2^{1000}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Prefix-pair table, <span class="cost">\(10^6\)</span> cells, then walk back for the sequence.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -307,32 +372,84 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)                # Python's default depth is ~1000; print() recurses n + m deep
+tok = iter(sys.stdin.read().split())
+
+# def rec(i, j):
+#     ...
+
+out = []
+
+def print_(i, j, a, b, dp):                 # print is Python's builtin, so print_
+    if i == 0 or j == 0: return
+    if a[i - 1] == b[j - 1]:
+        print_(i - 1, j - 1, a, b, dp)
+        out.append(a[i - 1])
+    else:
+        if dp[i - 1][j] &gt; dp[i][j - 1]: print_(i - 1, j, a, b, dp)
+        else: print_(i, j - 1, a, b, dp)
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    a = [int(next(tok)) for _ in range(n)]
+    b = [int(next(tok)) for _ in range(m)]
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n + 1):
+        for j in range(m + 1):
+            if i == 0 or j == 0:
+                dp[i][j] = 0
+                continue
+            if a[i - 1] == b[j - 1]: dp[i][j] = 1 + dp[i - 1][j - 1]
+            else: dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    print(dp[n][m])
+    print_(n, m, a, b, dp)
+    print(' '.join(map(str, out)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Printing before the recursive call reverses the subsequence. The recursion depth is at most <code>n + m</code>, fine here.</div>
       <div class="callout trigger"><strong>Recognize</strong>"longest sequence appearing in order in both" &rarr; LCS table + backtrack.</div>
     </article>
     <article class="entry" id="minimal-grid-path">
-      <div class="entry-head"><h3>Minimal Grid Path</h3><span class="badge num">O(n³)</span></div>
+      <div class="entry-head"><h3>Minimal Grid Path</h3><span class="badge num">\(O(n^{3})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Right/down path through an <code>n × n</code> letter grid; output the lexicographically smallest string it spells.</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an \(n \times n\) grid with a letter in each square. Walk from the
+top-left square to the bottom-right square, moving only right or down. The letters you pass spell a
+string. Print the alphabetically smallest string you can get.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines of \(n\) letters <code>A</code>–<code>Z</code>.</dd>
+<dt>Output</dt><dd>The smallest string (length \(2n - 1\)).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 3000\)</dd>
+<dt>Sample</dt><dd><code>AACA / BABC / ABDA / AACA</code> → <code>AAABACA</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(S(i, j)\) be the smallest string spelled by a path from \((0, 0)\) to \((i, j)\). Every such path has the same length \(i + j + 1\).</span></li>
+<li><span class="why">The last step came from above or from the left. For strings of equal length, the smaller prefix gives the smaller whole string, so:</span>
+\[ S(i, j) = \min\big( S(i-1, j),\ S(i, j-1) \big) + g[i][j] \]</li>
+<li><span class="why">Simplest form (this code): store \(S\) per cell, \(O(n)\) per comparison, so \(O(n^3)\) total.</span></li>
+<li><span class="why">Faster: walk diagonal by diagonal (\(i + j = d\)). Keep only the cells whose prefix equals the current minimum. The next letter is the smallest letter among their right/down neighbours, and only neighbours with that letter stay. That is \(O(n^2)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Every path to <code>(i,j)</code> has the same length &rArr; lexicographic comparison of prefixes is fair.</li>
-          <li>The best string to <code>(i,j)</code> extends the smaller of the two best strings into it.</li>
-          <li>Storing whole strings makes each cell cost <code>O(n)</code>.</li>
-        </ol>
+<li>Every path to \((i, j)\) has the same length, so comparing prefixes alphabetically is fair.</li>
+<li>The best string to \((i, j)\) extends the smaller of the two best strings that lead into it.</li>
+<li>Storing whole strings makes each cell cost \(O(n)\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate every path string.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(C(2n, n) · n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 1000</code> &rarr; astronomically many paths.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Best prefix per cell (this code): <span class="cost">O(n³)</span>. The known upgrade keeps only the set of cells on the current anti-diagonal that achieve the minimum prefix: <span class="cost">O(n²)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List every path's string.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O\big(\binom{2n}{n} \cdot n\big)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 3000\): astronomically many paths.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Best prefix per cell (this code): <span class="cost">\(O(n^3)\)</span>. The diagonal frontier described above keeps only the cells that tie for the minimum: <span class="cost">\(O(n^2)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -432,8 +549,40 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+# def rec(i, j):
+#     ...
+
+def lexi(a, b):
+    if a == "": return b
+    if b == "": return a
+    if a &lt; b: return a                      # strings compare lexicographically, same as C++
+    return b
+
+def solve():
+    n = int(next(tok))
+    grid = [next(tok) for _ in range(n)]
+    dp = [[""] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if i == 0 and j == 0:
+                dp[i][j] = grid[0][0]
+                continue
+            ans = ""
+            if i &gt; 0 and j &gt; 0:
+                ans = lexi(dp[i - 1][j], dp[i][j - 1]) + grid[i][j]
+            elif i &gt; 0:
+                ans = lexi(ans, dp[i - 1][j] + grid[i][j])
+            else:
+                ans = lexi(ans, dp[i][j - 1] + grid[i][j])
+            dp[i][j] = ans
+    print(dp[n - 1][n - 1])
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Correct on the sample, but at <code>n = 1000</code> the table holds ~10⁶ strings averaging 1000 chars &mdash; ~1 GB. It will exceed CSES limits; the anti-diagonal frontier BFS is the fix.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Correct on the sample, but at <code>n = 1000</code> the table holds \(\approx 10^{6}\) strings averaging 1000 chars &mdash; ~1 GB. It will exceed CSES limits; the anti-diagonal frontier BFS is the fix.</div>
       <div class="callout trigger"><strong>Recognize</strong>"lexicographically smallest path string in a grid" &rarr; compare equal-length prefixes, diagonal by diagonal.</div>
     </article>
   </section>
@@ -442,28 +591,44 @@ signed main()
     <div class="family-head"><h2>2 &middot; Split into sub-ranges</h2></div>
     <p class="family-note">Every move leaves one or two smaller contiguous pieces. Solve by range length or by recursive split.</p>
     <article class="entry" id="rectangle-cutting">
-      <div class="entry-head"><h3>Rectangle Cutting</h3><span class="badge num">O(a·b·(a+b))</span></div>
+      <div class="entry-head"><h3>Rectangle Cutting</h3><span class="badge num">\(O(a\cdot b\cdot (a+b))\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Cut an <code>a × b</code> rectangle along grid lines into squares. Fewest cuts.<div class="formal">dp[i][i] = 0
-dp[i][j] = min over every horizontal and vertical cut of 1 + both halves</div></div>
+        <div class="ask">
+<p><b>Question.</b> You have an \(a \times b\) rectangle and want to cut it into squares. Each move
+takes one rectangle and cuts it into two rectangles, straight across, so that all side lengths stay
+integers. What is the minimum number of moves?</p>
+<dl class="io">
+<dt>Input</dt><dd>Two integers \(a,\ b\).</dd>
+<dt>Output</dt><dd>One integer: the minimum number of cuts.</dd>
+<dt>Limits</dt><dd>\(1 \le a, b \le 500\)</dd>
+<dt>Sample</dt><dd>\(3 \times 5\) → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i][j]\) be the fewest cuts for an \(i \times j\) rectangle. A square needs none: \(dp[i][i] = 0\).</span></li>
+<li><span class="why">The first cut is either horizontal at height \(k\) or vertical at width \(k\). Each makes two independent smaller rectangles:</span>
+\[ dp[i][j] = 1 + \min\Big( \min_{1 \le k \lt i} \big(dp[k][j] + dp[i-k][j]\big),\ \ \min_{1 \le k \lt j} \big(dp[i][k] + dp[i][j-k]\big) \Big) \]</li>
+<li><span class="why">Simplest form: both pieces are smaller, so fill \(i = 1..a\) and \(j = 1..b\) in increasing order. Answer \(dp[a][b]\).</span>
+<span class="why">Sample: \(3 \times 5 \to 3 \times 3 + 3 \times 2\); \(3 \times 2 \to 2 \times 2 + 1 \times 2\); \(1 \times 2 \to 1 \times 1 + 1 \times 1\). That is \(3\) cuts.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A cut splits one rectangle into two independent rectangles.</li>
-          <li>Squares are the only base case; there is no greedy rule for where to cut.</li>
-          <li>Both pieces are strictly smaller &rArr; fill by increasing <code>i</code>, then <code>j</code>.</li>
-        </ol>
+<li>A cut splits one rectangle into two independent rectangles.</li>
+<li>Squares are the only base case. There is no greedy rule for where to cut.</li>
+<li>Both pieces are strictly smaller, so fill by increasing \(i\), then \(j\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Plain recursion over every cut.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>a, b ≤ 500</code> &rarr; the same sub-rectangle appears exponentially often.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Memo on shape: 2.5·10⁵ shapes × ≤ 1000 cuts = <span class="cost">2.5·10⁸</span> simple ops.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Plain recursion over every cut.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(a, b = 500\): the same sub-rectangle appears exponentially often.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Store one answer per shape: \(2.5\cdot 10^5\) shapes \(\times \le 1000\) cuts \(=\) <span class="cost">\(2.5\cdot 10^8\)</span> simple operations.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -547,33 +712,73 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+# def rec(a, b):
+#     ...
+
+def solve():
+    a, b = int(next(tok)), int(next(tok))
+    dp = [[-1] * (b + 1) for _ in range(a + 1)]
+    for i in range(a + 1):
+        for j in range(b + 1):
+            if i == j:
+                dp[i][j] = 0
+                continue
+            ans = INF
+            for k in range(1, i): ans = min(ans, 1 + dp[k][j] + dp[i - k][j])
+            for k in range(1, j): ans = min(ans, 1 + dp[i][k] + dp[i][j - k])
+            dp[i][j] = ans
+    print(dp[a][b])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Both cut loops are required. 3 × 5 needs a vertical first cut; trying only one orientation returns a larger count.</div>
       <div class="callout trigger"><strong>Recognize</strong>"cut / split into pieces, each piece is a smaller copy of the problem" &rarr; DP over shape, try every split.</div>
     </article>
     <article class="entry" id="removal-game">
-      <div class="entry-head"><h3>Removal Game</h3><span class="badge num">O(n²)</span></div>
+      <div class="entry-head"><h3>Removal Game</h3><span class="badge num">\(O(n^{2})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Players alternately take the first or last element. Both optimal. Max score of the first player.<div class="formal">turn = (n − (r−l+1)) mod 2
-dp[l][r] = first player's final score from the remaining range [l, r]</div></div>
+        <div class="ask">
+<p><b>Question.</b> There is a list of \(n\) numbers. Two players take turns; on each turn a player
+removes either the first or the last number and adds it to their score. Both play to maximise their
+own score. What is the first player's score?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>One integer: the first player's final score.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 5000,\ \ -10^9 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>4 5 1 3</code> → <code>8</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">What remains is always a block \([l, r]\). Its length tells whose turn it is: \(n - (r - l + 1)\) numbers are gone, so it is player 1's turn iff that count is even.</span></li>
+<li><span class="why">Let \(dp[l][r]\) be player 1's final score from block \([l, r]\). The total is fixed, so player 2 maximising their own score means minimising player 1's:</span>
+\[ \text{P1's turn: } dp[l][r] = \max\big( x_l + dp[l+1][r],\ x_r + dp[l][r-1] \big) \]
+\[ \text{P2's turn: } dp[l][r] = \min\big( dp[l+1][r],\ dp[l][r-1] \big) \]</li>
+<li><span class="why">Simplest form: fill blocks from length \(1\) up to \(n\). Answer \(dp[1][n]\).</span>
+<span class="why">Sample: player 1 takes \(3\). Whichever end player 2 takes, \(5\) is then an end, and player 1 takes it: \(3 + 5 = 8\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>What is left is always a contiguous range <code>[l, r]</code>.</li>
-          <li>Whose turn it is follows from how many elements are gone: <code>n &minus; len</code>.</li>
-          <li>P2 playing optimally = P2 minimising P1's score, since the total is fixed.</li>
-        </ol>
+<li>What is left is always a contiguous block \([l, r]\).</li>
+<li>Whose turn it is follows from how many numbers are gone: \(n - \text{len}\).</li>
+<li>Player 2 playing optimally is the same as player 2 minimising player 1's score, because the total is fixed.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Game tree over both choices each move.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 5000</code> &rarr; 2⁵⁰⁰⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Range state, shorter ranges first: <span class="cost">n²/2 ≈ 1.25·10⁷</span> states.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Game tree over both choices every move.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 5000\) gives \(2^{5000}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">State = block, shorter blocks first: <span class="cost">\(n^2/2 \approx 1.25\cdot 10^7\)</span> states.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -691,32 +896,91 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+# def rec(l, r, turn):
+#     ...
+
+def solve():
+    n = int(next(tok))
+    x = [int(next(tok)) for _ in range(n)]
+    dp = [[0] * n for _ in range(n)]
+    for l in range(n - 1, -1, -1):
+        for r in range(n):
+            if l &gt; r:
+                dp[l][r] = 0
+                continue
+            if l == r:
+                turn = (n - (r - l + 1)) % 2
+                if turn == 0: dp[l][r] = x[l]
+                else: dp[l][r] = 0
+                continue
+            turn = (n - (r - l + 1)) % 2
+            if turn == 0:
+                ans = -INF
+                if r - 1 &gt;= 0:
+                    ans = max(ans, dp[l][r - 1] + x[r])
+                if l + 1 &lt; n:
+                    ans = max(ans, dp[l + 1][r] + x[l])
+                dp[l][r] = ans
+            else:
+                ans = INF
+                if r - 1 &gt;= 0:
+                    ans = min(ans, dp[l][r - 1])
+                if l + 1 &lt; n:
+                    ans = min(ans, dp[l + 1][r])
+                dp[l][r] = ans
+    print(dp[0][n - 1])
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>The P2 branch takes <code>min</code> and adds no element. Storing "current player's score" instead needs <code>sum[l..r] &minus; dp</code>; mixing the two conventions is the classic bug.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The P2 branch takes <code>min</code> and adds no element. Storing "current player's score" instead needs \(\text{sum}[l..r] - \text{dp}\); mixing the two conventions is the classic bug.</div>
       <div class="callout trigger"><strong>Recognize</strong>"two players take from either end, optimal play" &rarr; interval DP, max/min by turn parity.</div>
     </article>
     <article class="entry" id="mountain-range">
-      <div class="entry-head"><h3>Mountain Range</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Mountain Range</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Glide from a mountain to a strictly lower one, only over strictly lower mountains. Max mountains visited.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) mountains in a row with heights \(h_1, \dots, h_n\). You start on
+any mountain. You can glide from mountain \(a\) to mountain \(b\) if \(a\) is strictly taller than
+\(b\) and than every mountain between them. What is the largest number of mountains you can visit?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(h_1, \dots, h_n\).</dd>
+<dt>Output</dt><dd>One integer: the maximum number of mountains on one route.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le h_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>20 15 17 35 25 40 12 19 13 12</code> → <code>5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(f(l, r)\) be the longest route that stays inside \([l, r]\). Let \(m\) be the position of the tallest mountain in \([l, r]\) (the leftmost if tied).</span></li>
+<li><span class="why">No route can cross \(m\), because nothing glides over a mountain that tall. So routes live in \([l, m-1]\), in \([m+1, r]\), or start at \(m\).</span></li>
+<li><span class="why">From \(m\) you can reach the tallest mountain of either side, since everything in between is lower. That adds \(1\), unless the side's tallest equals \(h_m\) (then it cannot be glided to):</span>
+\[ \text{side}(S) = \begin{cases} 1 + f(S) &amp; \text{if } \max_S h \lt h_m \\ f(S) &amp; \text{if } \max_S h = h_m \end{cases}, \qquad \text{side}(\varnothing) = 1 \]</li>
+<li><span class="why">Simplest form:</span>
+\[ f(l, r) = \max\big( \text{side}([l, m-1]),\ \text{side}([m+1, r]) \big), \qquad \text{ans} = f(1, n) \]
+<span class="why">\(m\) is found with a max segment tree in \(O(\log n)\), and each position is the split point once.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>From anywhere in <code>[l, r]</code> you can never cross its tallest mountain <code>m</code>.</li>
-          <li>Starting at <code>m</code>, you can reach the tallest of either side &mdash; everything between is lower.</li>
-          <li>If that side's max equals <code>h[m]</code> you cannot glide to it; the side is solved on its own, without the <code>+1</code>.</li>
-        </ol>
+<li>From anywhere in \([l, r]\) you can never cross its tallest mountain \(m\).</li>
+<li>Starting at \(m\), you can reach the tallest mountain of either side, because everything between is lower.</li>
+<li>If that side's tallest equals \(h_m\), you cannot glide to it. That side is solved on its own, without the \(+1\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DP over every start with a scan of reachable targets.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n²)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 2·10⁵</code> &rarr; 4·10¹⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Recursive split at the range max, located by a max segment tree: <span class="cost">O(n log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DP over every start, scanning the reachable targets.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Split recursively at the block's maximum, found with a max segment tree: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -859,8 +1123,76 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)                # rec() can go n deep on a sorted input
+tok = iter(sys.stdin.read().split())
+
+class node:
+    def __init__(self):
+        self.mx = 0
+        self.idx = 0                        # C++ leaves idx uninitialised; Python needs a value
+
+def merge(a, b):
+    res = node()
+    res.mx = max(a.mx, b.mx)
+    if a.mx &gt; b.mx:
+        res.idx = a.idx
+    else:
+        res.idx = b.idx
+    return res
+
+def build(id, l, r):
+    # this builds the segment tree for maximum height in the range l to r both inclusive and stores it in t[id]
+    if l == r:
+        t[id].mx = h[l]
+        t[id].idx = l
+        return
+    mid = l + (r - l) // 2
+    build(2 * id, l, mid)
+    build(2 * id + 1, mid + 1, r)
+    t[id] = merge(t[2 * id], t[2 * id + 1])
+
+def query(id, l, r, lq, rq):
+    # this returns the maximum height in the range lq to rq both inclusive from the segment tree
+    if rq &lt; l or r &lt; lq: return node()      # this means the range is completely outside the query range
+    if lq &lt;= l and r &lt;= rq: return t[id]    # this means the range is completely inside the query range
+    mid = l + (r - l) // 2
+    left = query(2 * id, l, mid, lq, rq)
+    right = query(2 * id + 1, mid + 1, r, lq, rq)
+    return merge(left, right)
+
+def rec(l, r):
+    # this returns the maximum number of mountains that can be visited in the range l to r both inclusive
+    if l &gt; r: return 0
+    mx = query(1, 0, n - 1, l, r)
+    idx = mx.idx
+    maxi = mx.mx
+    left = query(1, 0, n - 1, l, idx - 1)
+    right = query(1, 0, n - 1, idx + 1, r)
+    lm = left.mx
+    rm = right.mx
+    ans = 1
+    if lm == maxi:
+        ans = max(ans, rec(l, idx - 1))
+    else:
+        ans = max(ans, 1 + rec(l, idx - 1))
+    if rm == maxi:
+        ans = max(ans, rec(idx + 1, r))
+    else:
+        ans = max(ans, 1 + rec(idx + 1, r))
+    return ans
+
+def solve():
+    global n, t, h
+    n = int(next(tok))
+    h = [int(next(tok)) for _ in range(n)]
+    t = [node() for _ in range(4 * n)]
+    build(1, 0, n - 1)
+    print(rec(0, n - 1))
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Recursion depth equals the Cartesian-tree depth: on sorted heights it reaches <code>n = 2·10⁵</code> frames. The tie branch (<code>lm == maxi</code>) is the one line that is easy to misread as <code>1 + …</code>.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Recursion depth equals the Cartesian-tree depth: on sorted heights it reaches \(n = 2\cdot 10^{5}\) frames. The tie branch (<code>lm == maxi</code>) is the one line that is easy to misread as <code>1 + …</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"move only to lower elements, blocked by taller ones" &rarr; split at the range maximum (Cartesian tree).</div>
     </article>
   </section>
@@ -869,27 +1201,45 @@ signed main()
     <div class="family-head"><h2>3 &middot; Sorted order + binary search</h2></div>
     <p class="family-note">A one-dimensional DP whose transition would scan all earlier elements; sorting makes the relevant predecessor findable in O(log n).</p>
     <article class="entry" id="increasing-subsequence">
-      <div class="entry-head"><h3>Increasing Subsequence</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Increasing Subsequence</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Length of the longest strictly increasing subsequence.</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers. Find the length of its longest
+increasing subsequence: the longest subsequence (order kept, elements may be skipped) in which every
+element is strictly larger than the one before.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>One integer: the length of the longest increasing subsequence.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>7 3 5 3 6 2 9 8</code> → <code>4</code> (for example \(3, 5, 6, 9\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">After reading some prefix, let \(\text{tails}[k]\) be the smallest last value of any increasing subsequence of length \(k + 1\). A smaller last value is always at least as good, since more later values can extend it.</span></li>
+<li><span class="why">\(\text{tails}\) is strictly increasing: \(\text{tails}[0] \lt \text{tails}[1] \lt \dots\)</span></li>
+<li><span class="why">A new value \(x\) extends the longest subsequence whose last value is \(\lt x\). So find the first position not below \(x\) and put \(x\) there:</span>
+\[ p = \min \{\, k : \text{tails}[k] \ge x \,\}, \qquad \text{tails}[p] \leftarrow x \ \ (\text{append if no such } k) \]</li>
+<li><span class="why">Simplest form: \(p\) is <code>lower_bound(x)</code>, and the answer is the final length of \(\text{tails}\).</span>
+<span class="why">Sample: tails goes \(7 \to 3 \to 3,5 \to 3,5 \to 3,5,6 \to 2,5,6 \to 2,5,6,9 \to 2,5,6,8\); length \(4\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>For each length, only the smallest possible ending value matters.</li>
-          <li><code>tails</code> is strictly increasing &rArr; binary search where <code>a[i]</code> fits.</li>
-          <li><code>lower_bound</code> (≥) keeps it strict: an equal value replaces, never extends.</li>
-        </ol>
+<li>For each length, only the smallest possible ending value matters.</li>
+<li><code>tails</code> is strictly increasing, so binary search finds where \(x\) fits.</li>
+<li><code>lower_bound</code> (first \(\ge x\)) keeps it strict: an equal value replaces, it never extends.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v"><code>dp[i] = 1 + max dp[j]</code> over <code>j &lt; i</code>, <code>a[j] &lt; a[i]</code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n²)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 2·10⁵</code> &rarr; 4·10¹⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Patience tails + binary search: <span class="cost">O(n log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">\(dp[i] = 1 + \max dp[j]\) over \(j \lt i\) with \(x_j \lt x_i\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v"><code>tails</code> plus binary search: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -978,32 +1328,75 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_left
+tok = iter(sys.stdin.read().split())
+
+# def rec(i, prev):
+#     ...
+
+def solve():
+    n = int(next(tok))
+    a = [int(next(tok)) for _ in range(n)]
+    dp = []
+    # dp [k] is smallest value that can be the last element of an increasing subsequence of length k + 1
+    for i in range(n):
+        j = bisect_left(dp, a[i])           # lower_bound -&gt; bisect_left, returns an INDEX not an iterator
+        # this returns the first element in dp which is greater than or equal to a[i]
+        # if there is no such element then it returns dp.end()
+        # if there is such an element that is greater than or equal to a[i] then we can replace that element with a[i] to get a better increasing subsequence
+        if j == len(dp):                    # it == dp.end()
+            dp.append(a[i])
+        else:
+            dp[j] = a[i]                    # *it = a[i]
+    print(len(dp))
+    # LIS IN NlogN time complexity
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>upper_bound</code> computes the longest <em>non-decreasing</em> subsequence. The sample has two 3s precisely to catch that.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"longest increasing subsequence, n ~ 10⁵" &rarr; tails array + lower_bound.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"longest increasing subsequence, n ~ \(10^{5}\)" &rarr; tails array + lower_bound.</div>
     </article>
     <article class="entry" id="projects">
-      <div class="entry-head"><h3>Projects</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Projects</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Projects <code>[s, e]</code> with reward <code>m</code>; days inclusive, at most one project per day. Max total reward.<div class="formal">sorted by start;  dp[i] = best from projects i..n−1</div></div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) projects. Project \(i\) runs from day \(a_i\) to day \(b_i\)
+(both included) and pays \(p_i\). You can work on at most one project per day. What is the maximum
+total money you can earn?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ b_i\ p_i\).</dd>
+<dt>Output</dt><dd>One integer: the maximum total reward.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \le b_i \le 10^9,\ \ 1 \le p_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>(2,4,4) (3,6,6) (6,8,2) (5,7,3)</code> → <code>7</code> (projects 1 and 4)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Sort the projects by start day. Let \(dp[i]\) be the best total using only projects \(i, \dots, n-1\), with \(dp[n] = 0\).</span></li>
+<li><span class="why">Skip project \(i\), or take it. Taking it rules out every later project that starts on or before day \(b_i\). The next usable one is:</span>
+\[ \text{nxt}(i) = \min \{\, j \gt i : a_j \gt b_i \,\} \]</li>
+<li><span class="why">So:</span>
+\[ dp[i] = \max\big( dp[i+1],\ \ p_i + dp[\text{nxt}(i)] \big) \]</li>
+<li><span class="why">Simplest form: starts are sorted, so \(\text{nxt}(i)\) is a binary search (<code>upper_bound</code> on \(b_i\)). Fill \(i = n-1\) down to \(0\); answer \(dp[0]\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Sort by start: taking project <code>i</code> jumps to the first project starting after <code>e<sub>i</sub></code>; everything in between overlaps it or is skipped.</li>
-          <li>Starts are sorted &rArr; that jump target is a binary search.</li>
-          <li>Days are inclusive: the next start must be <code>&gt; e</code>, not <code>≥ e</code>.</li>
-        </ol>
+<li>Sort by start. Taking project \(i\) jumps to the first project starting after \(b_i\); everything between overlaps it.</li>
+<li>Starts are sorted, so that jump target is a binary search.</li>
+<li>Days are inclusive: the next start must be \(\gt b_i\), not \(\ge b_i\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">For each project, scan all later ones for compatibility.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n²)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 2·10⁵</code> &rarr; 4·10¹⁰; days up to 10⁹ rule out a day-indexed table.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Sort + <code>next[i]</code> by binary search + 1-D DP: <span class="cost">O(n log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">For each project, scan all later ones for a compatible next project.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\); days up to \(10^9\) rule out a table indexed by day.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Sort, \(\text{nxt}(i)\) by binary search, 1-D DP: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1014,7 +1407,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>next[i]</code> is computed by a hand-rolled binary search over <code>[i+1, n&minus;1]</code> with default <code>n</code>. The DP then runs right to left; <code>dp[n] = 0</code> absorbs "no next project".</p>
+        <p class="impl-note"><code>next[i]</code> is computed by a hand-rolled binary search over \([i+1, n-1]\) with default <code>n</code>. The DP then runs right to left; <code>dp[n] = 0</code> absorbs "no next project".</p>
         <div class="src-meta"><span class="path">dp/Projects.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -1121,6 +1514,47 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+# def rec(i):
+#     ...
+
+def solve():
+    n = int(next(tok))
+    p = [None] * n                          # vector&lt;pair&lt;pll,ll&gt;&gt; -&gt; ((s, e), m)
+    for i in range(n):
+        s, e, m = int(next(tok)), int(next(tok)), int(next(tok))
+        p[i] = ((s, e), m)
+    # comparator: s ascending, ties by e ascending -&gt; key (s, e)
+    p.sort(key=lambda a: (a[0][0], a[0][1]))
+    next_ = [n] * (n + 1)                   # "next" is a builtin, so next_
+    for i in range(n, -1, -1):
+        if i == n:
+            next_[i] = n
+            continue
+        (s, e), m = p[i]                    # unpack the nested tuple in one line
+        lo, hi, ans = i + 1, n - 1, n
+        while lo &lt;= hi:
+            mid = lo + (hi - lo) // 2
+            (ms, me), mm = p[mid]
+            if ms &gt; e:
+                ans = mid
+                hi = mid - 1
+            else:
+                lo = mid + 1
+        next_[i] = ans
+    dp = [0] * (n + 1)
+    for i in range(n, -1, -1):
+        if i == n:
+            dp[i] = 0
+            continue
+        ans = dp[i + 1]
+        ans = max(ans, p[i][1] + dp[next_[i]])
+        dp[i] = ans
+    print(dp[0])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>ms &gt; e</code> is strict because day <code>e</code> is still occupied. With <code>&gt;=</code>, <code>[2,4]</code> and <code>[4,6]</code> would wrongly both be taken.</div>
       <div class="callout trigger"><strong>Recognize</strong>"weighted interval scheduling" &rarr; sort, binary-search the next compatible interval, take/skip DP.</div>
@@ -1131,27 +1565,45 @@ signed main()
     <div class="family-head"><h2>4 &middot; Bitmask subsets</h2></div>
     <p class="family-note">n ≤ 20: the state is the set of items already placed.</p>
     <article class="entry" id="elevator-rides">
-      <div class="entry-head"><h3>Elevator Rides</h3><span class="badge num">O(2ⁿ·n)</span></div>
+      <div class="entry-head"><h3>Elevator Rides</h3><span class="badge num">\(O(2^{n}\cdot n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask"><code>n</code> people with weights, elevator capacity <code>x</code>. Fewest rides to carry everyone.<div class="formal">dp[mask] = lexicographic min (rides, weight in the open ride)</div></div>
+        <div class="ask">
+<p><b>Question.</b> \(n\) people want to go up in one elevator. Person \(i\) weighs \(w_i\), and the
+elevator carries at most total weight \(x\) per ride. What is the minimum number of rides?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(w_1, \dots, w_n\).</dd>
+<dt>Output</dt><dd>One integer: the minimum number of rides.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 20,\ \ 1 \le x \le 10^9,\ \ 1 \le w_i \le x\)</dd>
+<dt>Sample</dt><dd>\(x = 10\), weights <code>4 8 6 1</code> → <code>2</code> (\(\{4, 6\}\) and \(\{8, 1\}\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State = the set \(M\) of people already sent up. For it, store the best pair (rides used, weight in the last ride), compared first by rides, then by weight. A lighter last ride is never worse.</span>
+\[ dp[\varnothing] = (1, 0) \]</li>
+<li><span class="why">Choose the person \(i \in M\) who boarded last. With \((r, w) = dp[M \setminus \{i\}]\):</span>
+\[ \text{add}(r, w, i) = \begin{cases} (r,\ w + w_i) &amp; \text{if } w + w_i \le x \\ (r + 1,\ w_i) &amp; \text{otherwise} \end{cases} \]</li>
+<li><span class="why">Simplest form:</span>
+\[ dp[M] = \min_{i \in M} \text{add}\big(dp[M \setminus \{i\}],\ i\big), \qquad \text{ans} = \text{rides of } dp[\{1..n\}] \]
+<span class="why">There are \(2^n \le 2^{20}\) sets and \(n\) choices each, about \(2\cdot 10^7\) steps.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>n ≤ 20</code> &rArr; 2²⁰ ≈ 10⁶ subsets; the state is "who has already ridden".</li>
-          <li>For a fixed ride count, a lighter open ride is never worse &rArr; compare pairs lexicographically.</li>
-          <li>Add person <code>i</code> last: fits &rarr; same rides, heavier; else &rarr; one more ride holding just <code>w<sub>i</sub></code>.</li>
-        </ol>
+<li>\(n \le 20\) gives \(2^{20} \approx 10^6\) subsets. The state is "who has already ridden".</li>
+<li>For the same number of rides, a lighter last ride is never worse, so compare the pairs (rides, weight) in that order.</li>
+<li>Add person \(i\) last. If they fit: same rides, heavier last ride. If not: one more ride holding just \(w_i\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try every order of people, fill rides greedily.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n! · n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n = 20</code> &rarr; 20! ≈ 2.4·10¹⁸.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Order only matters through the set used so far: <span class="cost">2ⁿ · n ≈ 2·10⁷</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every order of people and fill rides greedily.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n! \cdot n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 20\): \(20! \approx 2.4\cdot 10^{18}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">The order only matters through the set used so far: <span class="cost">\(2^n \cdot n \approx 2\cdot 10^7\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1274,6 +1726,36 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+# def rec(mask):
+#     ...
+
+def solve():
+    n, x = int(next(tok)), int(next(tok))
+    w = [int(next(tok)) for _ in range(n)]
+    dp = [(n + 1, 0)] * (1 &lt;&lt; n)            # vector&lt;pll&gt;(1 &lt;&lt; n, {n+1, 0}); tuples are immutable, so [..]*k is safe
+    # dp[mask] = {rides , weight} where rides is the minimum number of rides needed to take all people in mask and weight is the weight of the last ride ( the last ride is the ride where we take the least wieght so that we can take more people in the last ride later)
+    for mask in range(1 &lt;&lt; n):
+        if mask == 0:
+            dp[mask] = (1, 0)
+            continue
+        ans = (n + 1, 0)
+        for i in range(n):
+            if mask &amp; (1 &lt;&lt; i):
+                prev = dp[mask ^ (1 &lt;&lt; i)]
+                rides, weight = prev
+                if weight + w[i] &lt;= x:
+                    cand = (rides, weight + w[i])
+                else:
+                    cand = (rides + 1, w[i])
+                if cand[0] &lt; ans[0] or (cand[0] == ans[0] and cand[1] &lt; ans[1]):
+                    ans = cand                  # this whole if is just: ans = min(ans, cand)
+        dp[mask] = ans
+    print(dp[(1 &lt;&lt; n) - 1][0])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Minimising rides alone (ignoring the open ride's weight) loses the information needed for the next person and gives wrong answers.</div>
       <div class="callout trigger"><strong>Recognize</strong>"n ≤ 20, partition people/items into capacity-bounded groups" &rarr; bitmask DP with (groups, last load).</div>

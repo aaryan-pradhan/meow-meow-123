@@ -62,7 +62,7 @@
         <p>Identical input, different aggregate, different sweep. Restaurant
         Customers and Union of Painted Bricks both read <span class="rule-code">n</span>
         pairs <span class="rule-code">(l, r)</span>. &ldquo;How many at once&rdquo;
-        &rarr; split each pair into <span class="rule-code">+1</span>/<span class="rule-code">&minus;1</span>
+        &rarr; split each pair into \(+1/-1\)
         events and sweep a counter. &ldquo;How much is covered in total&rdquo; &rarr;
         sort by <span class="rule-code">l</span> and merge into one open block. Decide
         which one from the <em>question</em>; the data cannot tell you.</p></div>
@@ -78,7 +78,7 @@
       <div class="rule"><span class="n num">03</span>
         <p>The comparator's tie-break <em>is</em> the problem's inequality &mdash; it is
         never cosmetic. Room Allocation sorts <span class="rule-code">+1</span> before
-        <span class="rule-code">&minus;1</span> at equal time because a departure on day
+        \(-1\) at equal time because a departure on day
         <span class="rule-code">t</span> does <em>not</em> free the room for an arrival
         on day <span class="rule-code">t</span>. Nested Ranges Check sorts
         <span class="rule-code">r</span> descending on equal <span class="rule-code">l</span>
@@ -135,59 +135,64 @@
 
 <!-- ============ ENTRY ============ -->
     <article class="entry" id="restaurant-customers">
-      <div class="entry-head"><h3>Restaurant Customers</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Restaurant Customers</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> customers, customer <code>i</code> present for the whole closed
-          interval <code>[a&#7522;, b&#7522;]</code>. What is the largest number present at
-          one instant?
-          <div class="formal">answer  =  max&#8348;  |{ i : a&#7522; &le; t &le; b&#7522; }|</div>
-        </div>
+<p><b>Question.</b> You know the arrival time \(a_i\) and leaving time \(b_i\) of each of \(n\)
+customers. What is the largest number of customers in the restaurant at the same time?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ b_i\).</dd>
+<dt>Output</dt><dd>One integer: the maximum number of customers present at once.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \lt b_i \le 10^9\); all \(2n\) times are different.</dd>
+<dt>Sample</dt><dd><code>(5,8) (2,4) (3,9)</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \max_{t} \; \#\{\, i : a_i \le t \le b_i \,\} \]</li>
+<li><span class="why">The count only changes at an arrival or a departure. So only the \(2n\) event times need checking.</span></li>
+<li><span class="why">Turn each customer into two events, \(+1\) at \(a_i\) and \(-1\) at \(b_i\). Sort all events by time. The count just after event \(e\) is a prefix sum:</span>
+\[ c_e = \sum_{e' \le e} \delta_{e'}, \qquad \delta \in \{+1, -1\} \]</li>
+<li><span class="why">Simplest form:</span>
+\[ \text{ans} = \max_{e} \; c_e \]
+<span class="why">Sample: events \(2{+}, 3{+}, 4{-}, 5{+}, 8{-}, 9{-}\) give counts \(1, 2, 1, 2, 1, 0\), so the answer is \(2\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <!-- 2 ....................................... KEY OBSERVATIONS -->
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The count only changes at an endpoint, so the maximum is attained at some
-              <code>a&#7522;</code>. Only the <code>2n</code> endpoints matter, not the
-              <code>10&#8313;</code> instants between them.</li>
-          <li><em>Who</em> is inside never matters, only <em>how many</em> &mdash; so an
-              interval can be shredded into two independent signed events,
-              <code>a&#7522; &rarr; +1</code> and <code>b&#7522; &rarr; &minus;1</code>, and the
-              pairing forgotten.</li>
-          <li>Sorted by time, the count at any instant is just the prefix sum of those
-              deltas. One pass, one accumulator.</li>
-          <li>Every <code>+1</code> is matched by a <code>&minus;1</code>, so the running
-              total ends at <code>0</code>. The answer has to be captured during the
-              sweep, never read off the end.</li>
-          <li>CSES guarantees all <code>2n</code> times are distinct, so no
-              arrival-vs-departure tie ever arises &mdash; which is the only reason the
-              default <code>pair</code> ordering is safe here (see the Gotcha).</li>
-        </ol>
+<li>The count only changes at an endpoint, so the maximum is reached at some arrival \(a_i\). Only
+the \(2n\) endpoints matter, not the \(10^9\) moments between them.</li>
+<li><em>Who</em> is inside never matters, only <em>how many</em>. So each interval can be split into
+two independent events, \(a_i \to +1\) and \(b_i \to -1\), and the pairing forgotten.</li>
+<li>Sorted by time, the count at any moment is the prefix sum of those \(\pm 1\) values. One pass, one running total.</li>
+<li>Every \(+1\) has a matching \(-1\), so the running total ends at \(0\). The answer must be
+recorded during the sweep, not read at the end.</li>
+<li>CSES guarantees all \(2n\) times are different, so an arrival and a departure never tie. That
+is the only reason the default <code>pair</code> ordering is safe here (see the Gotcha).</li>
+</ol>
       </div>
 
       <!-- 3 ..................................... BRUTE FORCE -->
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">For each of the
-            <code>2n</code> candidate instants, scan all <code>n</code> intervals and
-            count the ones covering it.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&sup2;)</span> time, <span class="cost">O(n)</span> space.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>
-            interval checks. A per-instant array is worse still:
-            <code>t &le; 10&#8313;</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Replace the intervals by <code>2n</code> signed events and sort them.
-            The scan becomes one prefix sum &mdash; <span class="cost">O(n log n)</span>
-            time (the sort), <span class="cost">O(n)</span> space.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">For each of the \(2n\) event
+times, scan all \(n\) intervals and count those covering it.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> time, <span class="cost">\(O(n)\)</span> space.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(2n \cdot n = 8\cdot 10^{10}\) checks. An array over all moments is
+worse still, since \(t \le 10^9\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Replace the intervals by \(2n\) signed events and sort them. The count becomes one prefix sum:
+<span class="cost">\(O(n \log n)\)</span> time (the sort), <span class="cost">\(O(n)\)</span> space.</span></div>
+</div>
       </div>
 
       <!-- 4 ................................................ DIAGRAM -->
@@ -230,16 +235,14 @@
   <text class="s-td" x="8" y="155">events</text>
 
   <!-- running total -->
+  <rect class="s-good" x="168" y="172" width="32" height="22" rx="3"/>
+  <rect class="s-good" x="264" y="172" width="32" height="22" rx="3"/>
   <g class="s-t">
     <text x="130" y="188">1</text><text x="178" y="188">2</text>
     <text x="226" y="188">1</text><text x="274" y="188">2</text>
     <text x="418" y="188">1</text><text x="466" y="188">0</text>
   </g>
   <text class="s-td" x="8" y="188">running</text>
-  <rect class="s-good" x="168" y="172" width="32" height="22" rx="3"/>
-  <text class="s-t" x="178" y="188">2</text>
-  <rect class="s-good" x="264" y="172" width="32" height="22" rx="3"/>
-  <text class="s-t" x="274" y="188">2</text>
 
   <text class="s-ta" x="8" y="216">best = 2, latched at t = 3 and t = 5 &#8212; the final running total is 0</text>
 </svg>
@@ -254,7 +257,7 @@
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">Events are <code>pair&lt;long long, int&gt;</code>, so the
         plain <code>sort</code> sorts by time and then by delta with no comparator.
-        The line to read carefully is that one: <code>&minus;1 &lt; +1</code>, so at an
+        The line to read carefully is that one: \(-1 \lt +1\), so at an
         equal timestamp a departure would be processed <em>before</em> an arrival. That
         is the opposite of what Room Allocation needs, and it is only harmless here
         because the statement guarantees distinct times. <code>best</code> is updated
@@ -304,12 +307,30 @@ int main() {
     cout &lt;&lt; best &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    events = []                             # vector&lt;pair&lt;ll,int&gt;&gt;; reserve() not needed
+    for i in range(n):
+        a, b = int(next(tok)), int(next(tok))
+        events.append((a, 1))
+        events.append((b, -1))
+    events.sort()                           # tuples sort like pairs: by [0], then [1]
+    running, best = 0, 0
+    for time, delta in events:              # for (auto&amp; [time, delta] : events)
+        running += delta
+        best = max(best, running)
+    print(best)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>The running total is
       <code>0</code> at the last event &mdash; capture <code>best</code> inside the loop
       or the answer is always zero. And the default <code>pair</code> sort orders
-      <code>&minus;1</code> before <code>+1</code> on a tie, i.e. it assumes a customer
+      \(-1\) before \(+1\) on a tie, i.e. it assumes a customer
       who leaves at <code>t</code> frees the table for one arriving at <code>t</code>.
       That holds here only because all times are distinct; do not copy this comparator
       into a problem that allows ties.</div>
@@ -320,57 +341,62 @@ int main() {
 
 <!-- ============ ENTRY ============ -->
     <article class="entry" id="union-of-painted-bricks">
-      <div class="entry-head"><h3>Union of Painted Bricks</h3><span class="badge num">O(N log N)</span></div>
+      <div class="entry-head"><h3>Union of Painted Bricks</h3><span class="badge num">\(O(N \log N)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>N</code> days, day <code>i</code> paints every brick in
-          <code>[L&#7522;, R&#7522;]</code>; repainting changes nothing. How many distinct
-          bricks end up painted?
-          <div class="formal">answer  =  | &#8899;&#7522; [L&#7522;, R&#7522;] &#8745; &#8484; |</div>
-        </div>
+<p><b>Question.</b> On each of \(N\) days, every brick numbered from \(L_i\) to \(R_i\) (inclusive)
+is painted. Painting a brick again changes nothing. How many different bricks are painted in the end?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\), then \(N\) pairs \(L_i\ R_i\).</dd>
+<dt>Output</dt><dd>One integer: the number of painted bricks.</dd>
+<dt>Limits</dt><dd>Brick numbers up to about \(10^9\) (from the file).</dd>
+<dt>Sample</dt><dd><code>(2,5) (10,10) (4,5) (3,7) (12,14)</code> → <code>10</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: count the whole numbers in the union of the intervals:</span>
+\[ \text{ans} = \Big|\, \bigcup_{i=1}^{N} \{L_i, L_i + 1, \dots, R_i\} \,\Big| \]</li>
+<li><span class="why">The union is a set of separate blocks. Sort the intervals by \(L\). Keep the current open block \([c_L, c_R]\).</span></li>
+<li><span class="why">For the next interval \([l, r]\):</span>
+\[ l \le c_R \;\Rightarrow\; c_R \leftarrow \max(c_R, r), \qquad l \gt c_R \;\Rightarrow\; \text{close the block, start } [l, r] \]</li>
+<li><span class="why">Simplest form: add up the closed blocks (both ends count):</span>
+\[ \text{ans} = \sum_{\text{blocks}} (c_R - c_L + 1) \]
+<span class="why">Sample: blocks \([2,7], [10,10], [12,14]\) give \(6 + 1 + 3 = 10\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Brick numbers reach <code>~10&#8313;</code> &mdash; the answer must be computed
-              from the <code>N</code> intervals alone, never from a per-brick array.</li>
-          <li>The union of intervals is a set of disjoint maximal blocks, and sorting by
-              <code>L</code> discovers them strictly left to right.</li>
-          <li>With the list sorted by <code>L</code>, a new segment either starts inside
-              the open block (<code>l &le; curR</code>) &mdash; extend
-              <code>curR = max(curR, r)</code> &mdash; or starts past it, which proves the
-              open block is final.</li>
-          <li>Endpoints are inclusive brick indices, so a finished block contributes
-              <code>curR &minus; curL + 1</code>, not <code>curR &minus; curL</code>.</li>
-          <li>The last block has no successor to trigger its flush. It is flushed once
-              more after the loop &mdash; that trailing line is not a duplicate.</li>
-          <li><code>N &middot; 10&#8313;</code> reaches <code>~10&#185;&#8308;</code>:
-              <code>long long</code> for the total.</li>
-        </ol>
+<li>Brick numbers reach about \(10^9\), so the answer must come from the \(N\) intervals alone,
+never from an array with one cell per brick.</li>
+<li>The union of intervals is a set of separate maximal blocks, and sorting by \(L\) finds them
+from left to right.</li>
+<li>With the list sorted by \(L\), a new interval either starts inside the open block
+(\(l \le c_R\)), so extend \(c_R = \max(c_R, r)\), or starts after it, which proves the open block is finished.</li>
+<li>Both ends are included, so a finished block adds \(c_R - c_L + 1\), not \(c_R - c_L\).</li>
+<li>The last block has nothing after it to close it, so it is added once more after the loop.
+That line is not a duplicate.</li>
+<li>\(N \cdot 10^9\) can reach about \(10^{14}\), so the total needs <code>long long</code>.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">A
-            <code>bool painted[]</code> over the bricks, set to true across each
-            interval; or pairwise overlap tests between all segments.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(&sum; length)</span> time and
-            <span class="cost">O(max coord)</span> space for the array;
-            <span class="cost">O(N&sup2;)</span> for the pairwise version.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>R &le; 10&#8313;</code> &rarr; a <span class="cost">10&#8313;</span>-entry array
-            (~1&nbsp;GB as <code>bool</code>) that a single interval can also take
-            <span class="cost">10&#8313;</span> steps to fill.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Work in interval space, not brick space: sort by <code>L</code> and merge
-            in one pass &mdash; <span class="cost">O(N log N)</span> time,
-            <span class="cost">O(N)</span> space, independent of coordinate size.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">A
+<code>bool painted[]</code> over all bricks, set across each interval; or test every pair of intervals for overlap.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(\sum (R_i - L_i))\)</span> time and <span class="cost">\(O(\max R)\)</span> space for the array;
+<span class="cost">\(O(N^2)\)</span> for the pairwise version.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(R \le 10^9\) means a \(10^9\)-cell array (about 1 GB as <code>bool</code>), and a single interval can take \(10^9\) steps to fill.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Work with intervals, not bricks: sort by \(L\) and merge in one pass.
+<span class="cost">\(O(N \log N)\)</span> time, <span class="cost">\(O(N)\)</span> space, whatever the brick numbers are.</span></div>
+</div>
       </div>
 
       <div class="sec">
@@ -473,14 +499,35 @@ int main() {
     cout &lt;&lt; total &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    seg = [(int(next(tok)), int(next(tok))) for _ in range(n)]
+    seg.sort()
+    total = 0
+    curL, curR = seg[0]                     # .first, .second unpacked at once
+    for i in range(1, n):
+        l, r = seg[i]
+        if l &lt;= curR:
+            curR = max(curR, r)
+        else:
+            total += curR - curL + 1
+            curL = l
+            curR = r
+    total += curR - curL + 1
+    print(total)
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>Two easy losses. The flush after
       the loop is mandatory &mdash; drop it and the final block vanishes from the total.
-      And the contribution is <code>curR &minus; curL + 1</code>: these are inclusive
+      And the contribution is \(\text{curR} - \text{curL} + 1\): these are inclusive
       brick indices, not real-line coordinates, so every block is one brick short without
       the <code>+1</code>. <code>long long</code> throughout; the total reaches
-      <code>~10&#185;&#8308;</code>.</div>
+      \(\approx 10^{14}\).</div>
       <div class="callout trigger"><strong>Recognize</strong>&ldquo;how many distinct
       positions are covered by these ranges, coordinates too large to mark&rdquo; &rarr;
       sort by left endpoint, merge into one open block, sum inclusive lengths.</div>
@@ -488,61 +535,61 @@ int main() {
 
 <!-- ============ ENTRY ============ -->
     <article class="entry" id="nested-ranges-check">
-      <div class="entry-head"><h3>Nested Ranges Check</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Nested Ranges Check</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> distinct ranges. For each one, print whether it contains some
-          other range, and whether some other range contains it. Two 0/1 lines, in input
-          order.
-          <div class="formal">[a,b] contains [c,d]  &hArr;  a &le; c  and  d &le; b
-contains&#7522; = [ &exist;j&ne;i : a&#7522; &le; a&#11423;  and  b&#11423; &le; b&#7522; ]</div>
-        </div>
+<p><b>Question.</b> You are given \(n\) different ranges \([x_i, y_i]\). Range \([a, b]\)
+<em>contains</em> range \([c, d]\) if \(a \le c\) and \(d \le b\). For each range, decide
+(1) whether it contains some other range, and (2) whether some other range contains it.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(x_i\ y_i\).</dd>
+<dt>Output</dt><dd>Line 1: for each range, <code>1</code> if it contains another, else <code>0</code>. Line 2: <code>1</code> if another contains it, else <code>0</code>. Input order.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \lt y_i \le 10^9\); no range appears twice.</dd>
+<dt>Sample</dt><dd><code>[1,6] [2,4] [4,8] [3,6]</code> → <code>1 0 0 0</code> / <code>0 1 0 1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State both questions exactly:</span>
+\[ \text{contains}_i = \big[\, \exists j \ne i : l_i \le l_j \text{ and } r_j \le r_i \,\big], \qquad \text{inside}_i = \big[\, \exists j \ne i : l_j \le l_i \text{ and } r_i \le r_j \,\big] \]</li>
+<li><span class="why">Sort by \(l\) ascending, and for equal \(l\) by \(r\) descending. Then every range before \(i\) has \(l_j \le l_i\), and every range after has \(l_j \ge l_i\). One of the two inequalities is now free.</span></li>
+<li><span class="why">Only the \(r\) test is left, and a running max or min answers "does one exist":</span>
+\[ \text{inside}_i = \big[\, r_i \le \max_{j \text{ before } i} r_j \,\big], \qquad \text{contains}_i = \big[\, r_i \ge \min_{j \text{ after } i} r_j \,\big] \]</li>
+<li><span class="why">Simplest form: one forward pass keeping <code>maxr</code>, one backward pass keeping <code>minr</code>, both on the same sorted order.</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Containment is two inequalities. Sorting by <code>l</code> ascending makes
-              the first one free for every earlier element, so only
-              <code>r</code> is left to test.</li>
-          <li>Forward pass: range <code>i</code> is contained by something earlier iff
-              <code>r&#7522; &le;</code> the largest <code>r</code> seen so far. One scalar
-              replaces the whole prefix.</li>
-          <li>Backward pass is the mirror image: scanning right to left, every later
-              range already has <code>l &ge; l&#7522;</code>, so <code>i</code> contains
-              something iff <code>r&#7522; &ge;</code> the smallest <code>r</code> seen so
-              far.</li>
-          <li>Equal <code>l</code> is the one case where &ldquo;earlier in the array&rdquo;
-              stops meaning &ldquo;starts no later&rdquo;. Break ties by <code>r</code>
-              <strong>descending</strong>: the wider range is then placed first, so it is
-              already in <code>maxr</code> when the narrower one is tested, and the
-              narrower one is already in <code>minr</code> when the backward pass reaches
-              the wider one. One sort key serves both passes.</li>
-          <li>Ranges are guaranteed distinct, so no range is ever its own witness &mdash;
-              no <code>i &ne; j</code> guard is needed anywhere.</li>
-          <li>A scalar answers &ldquo;does one exist&rdquo;. It cannot answer &ldquo;how
-              many&rdquo; &mdash; see rule 07 and the excluded box.</li>
-        </ol>
+<li>Containment is two inequalities. Sorting by \(l\) ascending makes the first one automatic for
+every earlier range, so only \(r\) is left to test.</li>
+<li>Forward pass: range \(i\) is inside an earlier one iff \(r_i \le\) the largest \(r\) seen so far.
+One number replaces the whole prefix.</li>
+<li>The backward pass is the mirror image. Scanning right to left, every later range already has
+\(l \ge l_i\), so \(i\) contains something iff \(r_i \ge\) the smallest \(r\) seen so far.</li>
+<li>Equal \(l\) is the one case where "earlier in the array" stops meaning "starts no later". Break
+ties by \(r\) <strong>descending</strong>. The wider range then comes first, so it is already in
+<code>maxr</code> when the narrower one is tested, and the narrower one is already in <code>minr</code>
+when the backward pass reaches the wider one. One sort order serves both passes.</li>
+<li>Ranges are guaranteed different, so a range never counts as its own witness. No \(i \ne j\) check is needed.</li>
+<li>A running max or min answers "does one exist". It cannot answer "how many". See rule 07 and the excluded box.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Test every ordered
-            pair <code>(i, j)</code> against both inequalities.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&sup2;)</span> time, <span class="cost">O(n)</span> space.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>
-            pairs against a 1&nbsp;s limit.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Sort by <code>(l</code>&nbsp;asc, <code>r</code>&nbsp;desc<code>)</code> so
-            one inequality is free, and collapse the other into a running extremum &mdash;
-            two linear passes, <span class="cost">O(n log n)</span> total from the
-            sort.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Test every ordered pair \((i, j)\) against both inequalities.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> time, <span class="cost">\(O(n)\)</span> space.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\) pairs against a 1 s limit.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Sort by (\(l\) ascending, \(r\) descending) so one inequality is free, and turn the other into a
+running max or min. Two linear passes: <span class="cost">\(O(n \log n)\)</span> total, from the sort.</span></div>
+</div>
       </div>
 
       <div class="sec">
@@ -596,7 +643,7 @@ contains&#7522; = [ &exist;j&ne;i : a&#7522; &le; a&#11423;  and  b&#11423; &le;
         reverse order to which they are computed, <code>ans2</code> first, because the
         statement asks for &ldquo;contains&rdquo; on line one. <code>minr</code> is seeded
         from the <code>INF</code> macro, a <code>double</code> <code>1e18</code>, which is
-        safe only because <code>r &le; 10&#8313;</code>.</p>
+        safe only because \(r \le 10^{9}\).</p>
         <div class="src-meta"><span class="path">arrays/Nested_Ranges_Check.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -676,6 +723,37 @@ signed main()
 }
     
   </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18                                # 1e18 would be a float in Python; 10**18 is an int
+
+def solve():
+    n = int(next(tok))
+    v = []                                  # vector&lt;pair&lt;pll, ll&gt;&gt; -&gt; ((l, r), idx)
+    for i in range(n):
+        l, r = int(next(tok)), int(next(tok))
+        v.append(((l, r), i))
+    # comparator: l ascending, then r DESCENDING -&gt; key (l, -r)
+    v.sort(key=lambda a: (a[0][0], -a[0][1]))
+    maxr = -1
+    ans1 = [0] * n
+    for i in range(n):
+        curr = v[i][0][1]                   # .fr.sc
+        curridx = v[i][1]                   # .sc
+        if curr &lt;= maxr: ans1[curridx] = 1
+        maxr = max(maxr, curr)
+    ans2 = [0] * n
+    minr = INF
+    for i in range(n - 1, -1, -1):          # for (i = n-1; i &gt;= 0; i--): stop is -1, step -1
+        curr = v[i][0][1]
+        curridx = v[i][1]
+        if curr &gt;= minr: ans2[curridx] = 1
+        minr = min(minr, curr)
+    print(' '.join(map(str, ans2)))
+    print(' '.join(map(str, ans1)))
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>The comparator's second line is
@@ -706,62 +784,65 @@ signed main()
 
 <!-- ============ ENTRY ============ -->
     <article class="entry" id="room-allocation">
-      <div class="entry-head"><h3>Room Allocation</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Room Allocation</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          <code>n</code> customers, customer <code>i</code> occupying days
-          <code>[a&#7522;, b&#7522;]</code>. Two customers may share a room only if the first
-          one's departure is <em>strictly earlier</em> than the second one's arrival. Print
-          the minimum number of rooms and one valid room per customer.
-          <div class="formal">k  =  max&#8348; |{ i : a&#7522; &le; t &le; b&#7522; }|
-share(i, j)  &hArr;  b&#7522; &lt; a&#11423;   (strict &#8212; not &le;)</div>
-        </div>
+<p><b>Question.</b> A hotel gets \(n\) customers. Customer \(i\) stays from day \(a_i\) to day
+\(b_i\) (inclusive) and needs one room. Two customers can use the same room only if the first one
+leaves <em>strictly before</em> the second one arrives. What is the minimum number of rooms, and
+which room does each customer get?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ b_i\).</dd>
+<dt>Output</dt><dd>The minimum number of rooms \(k\); then the room number (\(1..k\)) of each customer, in input order. Any valid assignment is accepted.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \le b_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>[1,2] [2,4] [4,4]</code> → <code>2</code> / <code>1 2 1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Sharing rule, exactly:</span>
+\[ i \text{ then } j \text{ can share a room} \iff b_i \lt a_j \]
+<span class="why">So two customers clash exactly when their closed intervals \([a_i, b_i]\) and \([a_j, b_j]\) overlap, touching ends included.</span></li>
+<li><span class="why">On any day \(t\), everyone present needs a different room. That gives a lower bound:</span>
+\[ k \ge \max_{t} \; \#\{\, i : a_i \le t \le b_i \,\} \]</li>
+<li><span class="why">The bound is reached. Process events in time order, with arrivals before departures on the same day. An arriving customer takes any free room. A leaving customer returns theirs.</span></li>
+<li><span class="why">Simplest form: \(k\) is the peak of the \(\pm 1\) sweep (as in Restaurant Customers, with ties broken \(+1\) first), and the free rooms are kept on a stack.</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>&ldquo;Departure strictly earlier than arrival&rdquo; means the closed
-              intervals must not touch: a room freed on day <code>t</code> is available
-              from day <code>t+1</code>, not day <code>t</code>.</li>
-          <li>So two customers conflict exactly when their day-intervals overlap, and the
-              answer is the maximum concurrency <code>k</code> &mdash; the same
-              <code>&plusmn;1</code> sweep as Restaurant Customers.</li>
-          <li><code>k</code> is a lower bound (that many customers are present at once)
-              and it is achievable, because processing events in time order never needs a
-              room beyond the running peak.</li>
-          <li><em>Which</em> free room a customer gets is irrelevant. The free rooms need
-              no ordering at all &mdash; a stack is enough; no heap, no priority queue.</li>
-          <li>Sorting <code>+1</code> before <code>&minus;1</code> at an equal timestamp
-              encodes the strictness with no extra code: at day <code>t</code> the
-              arrivals grab rooms before that day's departures return any.</li>
-          <li>The pool is pre-filled with all <code>k</code> rooms, and <code>k</code>
-              came from this very sweep &mdash; so <code>rooms.back()</code> can never be
-              called on an empty vector.</li>
-        </ol>
+<li>"Leaves strictly before the other arrives" means the closed intervals must not even touch. A
+room freed on day \(t\) is usable from day \(t + 1\), not day \(t\).</li>
+<li>So two customers clash exactly when their day intervals overlap, and the answer is the
+maximum number present at once, \(k\). It is the same \(\pm 1\) sweep as Restaurant Customers.</li>
+<li>\(k\) is a lower bound (that many people are present at once) and it can be reached, because
+handling events in time order never needs more rooms than the running peak.</li>
+<li><em>Which</em> free room a customer gets does not matter. The free rooms need no order at all:
+a stack is enough, no heap or priority queue.</li>
+<li>Sorting \(+1\) before \(-1\) at the same day handles the strictness with no extra code. On day
+\(t\), the arrivals take rooms before that day's departures give any back.</li>
+<li>The pool starts with all \(k\) rooms, and \(k\) came from this same sweep. So
+<code>rooms.back()</code> is never called on an empty vector.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Process customers
-            in arrival order; for each, scan every room opened so far for one whose last
-            departure is earlier than this arrival, else open a new room.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&middot;k)</span>, i.e. <span class="cost">O(n&sup2;)</span>
-            when the intervals nest.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> and <code>k</code> up to
-            <code>n</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span> room
-            scans.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            One sorted event list, swept twice: once to get <code>k</code>, once to
-            assign. The room scan becomes an <span class="cost">O(1)</span>
-            <code>pop_back</code>/<code>push_back</code> on a free-room stack &mdash;
-            <span class="cost">O(n log n)</span> overall, all of it the sort.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Take customers by arrival; for
+each, scan every room opened so far for one whose last guest left before this arrival, else open a new room.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n \cdot k)\)</span>, which is <span class="cost">\(O(n^2)\)</span> when the intervals nest.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) with \(k\) up to \(n\) gives \(4\cdot 10^{10}\) room checks.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+One sorted event list, swept twice: once to find \(k\), once to assign rooms. The room scan
+becomes an <span class="cost">\(O(1)\)</span> <code>pop_back</code>/<code>push_back</code> on a
+stack of free rooms. <span class="cost">\(O(n \log n)\)</span> overall, all from the sort.</span></div>
+</div>
       </div>
 
       <div class="sec">
@@ -790,7 +871,7 @@ share(i, j)  &hArr;  b&#7522; &lt; a&#11423;   (strict &#8212; not &le;)</div>
   <text class="s-t" x="300" y="108">cust 2</text>
 
   <!-- the strict rule -->
-  <rect class="s-warn" x="128" y="130" width="250" height="40" rx="4"/>
+  <rect class="s-warn" x="128" y="130" width="276" height="40" rx="4"/>
   <text class="s-tm" x="136" y="146">day 2: cust 1 leaves, cust 2 arrives.</text>
   <text class="s-tm" x="136" y="162">+1 sorts first &#8594; room 1 is NOT free yet.</text>
   <path class="s-hi" d="M180 186 V130"/>
@@ -798,7 +879,7 @@ share(i, j)  &hArr;  b&#7522; &lt; a&#11423;   (strict &#8212; not &le;)</div>
   <!-- event / pool table -->
   <text class="s-td" x="8" y="230">event</text>
   <text class="s-td" x="8" y="252">action</text>
-  <text class="s-td" x="8" y="274">free pool after</text>
+  <text class="s-td" x="8" y="274">pool after</text>
   <g class="s-tm">
     <text x="80"  y="230">d1 +1(c1)</text><text x="80"  y="252">take 1</text><text x="80"  y="274">[2]</text>
     <text x="176" y="230">d2 +1(c2)</text><text x="176" y="252">take 2</text><text x="176" y="274">[ ]</text>
@@ -819,8 +900,8 @@ share(i, j)  &hArr;  b&#7522; &lt; a&#11423;   (strict &#8212; not &le;)</div>
         <p class="impl-note">Events are <code>array&lt;ll,3&gt;</code> of
         <code>{time, &plusmn;1, customer index}</code>, and the comparator's second line,
         <code>return a[1] &gt; b[1]</code>, is the entire strictness rule: <code>+1</code>
-        sorts ahead of <code>&minus;1</code>. The same sorted vector is then swept twice.
-        <code>rooms</code> is filled <code>k, k&minus;1, &hellip;, 1</code> precisely so
+        sorts ahead of \(-1\). The same sorted vector is then swept twice.
+        <code>rooms</code> is filled \(k, k-1, \dots , 1\) precisely so
         that <code>back()</code> is room 1 &mdash; it is a stack, not a heap, and
         <code>pop_back</code>/<code>push_back</code> are the whole allocator. Nothing
         keys on departure order, because nothing needs to.</p>
@@ -915,15 +996,49 @@ signed main()
 }
     
   </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    v = []                                  # vector&lt;array&lt;ll,3&gt;&gt; -&gt; list of tuples
+    for i in range(n):
+        a, b = int(next(tok)), int(next(tok))
+        v.append((a, 1, i))
+        v.append((b, -1, i))
+    # comparator: time ascending, then type DESCENDING (arrival +1 before leave -1)
+    v.sort(key=lambda a: (a[0], -a[1]))
+    c, k = 0, 0
+    for x in v:
+        c += x[1]
+        k = max(k, c)
+    print(k)
+    ans = [0] * n
+    rooms = [0] * k
+    for i in range(k):
+        rooms[i] = k - i
+    for x in v:
+        type_, idx = x[1], x[2]             # "type" is a builtin, so type_
+        if type_ == 1:
+            # it is the arrival
+            ans[idx] = rooms[-1]            # rooms.back()
+            # remove the room from the available rooms
+            rooms.pop()                     # pop_back()
+        else:
+            # it is the departure
+            rooms.append(ans[idx])
+    print(' '.join(map(str, ans)))
+
+solve()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong>The sharing rule is
-      <em>strict</em>: <code>b&#7522; &lt; a&#11423;</code>. A room whose guest departs on day
+      <em>strict</em>: \(b_i \lt a_j\). A room whose guest departs on day
       <code>t</code> is free for a guest arriving on day <code>t+1</code>, <b>not</b> day
       <code>t</code> &mdash; so at an equal timestamp the arrival must be processed first,
       which is what <code>return a[1] &gt; b[1]</code> buys. Flip that line (or fall back
       on a default <code>pair</code>/<code>array</code> sort, which puts
-      <code>&minus;1</code> first) and <code>k</code> comes out too small, the pool
+      \(-1\) first) and <code>k</code> comes out too small, the pool
       underflows, and the assignment is rejected. Note this is the <em>opposite</em>
       tie-break to Restaurant Customers'.</div>
       <div class="callout trigger"><strong>Recognize</strong>&ldquo;minimum number of
@@ -946,59 +1061,62 @@ signed main()
 
 <!-- ============ ENTRY ============ -->
     <article class="entry" id="tower-of-cubes">
-      <div class="entry-head"><h3>Tower of Cubes</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Tower of Cubes</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          Cubes <code>c&#8321; &hellip; c&#8345;</code> arrive in this fixed order. Each is
-          placed on top of an existing tower whose current top is <em>strictly</em> larger,
-          or starts a new tower. Minimise the number of towers.
-          <div class="formal">place c on tower T  &hArr;  top(T) &gt; c ,  then top(T) := c
-minimise |{towers}|</div>
-        </div>
+<p><b>Question.</b> You get \(n\) cubes in a fixed order, with sizes \(c_1, \dots, c_n\). Each cube
+must either go on top of an existing tower whose top cube is <em>strictly larger</em>, or start a
+new tower. What is the minimum number of towers?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>One integer: the minimum number of towers.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le c_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 8 2 1 5</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Only the top of each tower matters. Keep the multiset \(T\) of tops. Cube \(c\) may go on a tower with top \(t\) iff:</span>
+\[ t \gt c, \qquad \text{after which that top becomes } c \]</li>
+<li><span class="why">Among the tops that fit, choose the smallest. Any later cube that fits under it also fits under the bigger tops, so this keeps the most options open:</span>
+\[ t^{*} = \min \{\, t \in T : t \gt c \,\} \]</li>
+<li><span class="why">Update the multiset:</span>
+\[ t^{*} \text{ exists} \;\Rightarrow\; T \leftarrow T - \{t^{*}\} + \{c\}, \qquad \text{otherwise} \;\Rightarrow\; T \leftarrow T + \{c\} \]</li>
+<li><span class="why">Simplest form: \(t^{*}\) is <code>upper_bound(c)</code>, and the answer is \(|T|\) at the end.</span>
+<span class="why">Sample: tops go \(\{3\}, \{3, 8\}, \{2, 8\}, \{1, 8\}, \{1, 5\}\), so \(2\) towers.</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A tower's history is irrelevant; only its current top can accept anything.
-              The whole state is the multiset of tops.</li>
-          <li>Two towers can genuinely have the same top &mdash; so
-              <code>multiset</code>, not <code>set</code>.</li>
-          <li>Among all tops <code>&gt; c</code>, place on the <em>smallest</em>: it is the
-              one least useful to any future cube, and every cube that fits under it also
-              fits under the larger ones. Tightest fit first is the greedy hinge.</li>
-          <li>&ldquo;Smallest top strictly greater than <code>c</code>&rdquo; is exactly
-              <code>upper_bound(c)</code>. <code>lower_bound</code> would return a top
-              equal to <code>c</code>, which cannot accept it.</li>
-          <li>Every cube inserts one value and erases at most one, so the multiset's size
-              grows by one exactly when no tower fits &mdash; the final
-              <code>size()</code> <em>is</em> the tower count. Nothing needs
-              counting.</li>
-        </ol>
+<li>A tower's history does not matter; only its current top can accept a cube. The whole state is the multiset of tops.</li>
+<li>Two towers can have the same top, so use <code>multiset</code>, not <code>set</code>.</li>
+<li>Among all tops \(\gt c\), place the cube on the <em>smallest</em>. Every later cube that fits
+under it also fits under the larger tops, so it is the least useful one to keep. Tightest fit first is the key step.</li>
+<li>"Smallest top strictly greater than \(c\)" is exactly <code>upper_bound(c)</code>.
+<code>lower_bound</code> could return a top equal to \(c\), which cannot take it.</li>
+<li>Each cube inserts one value and erases at most one, so the multiset grows by one exactly when
+no tower fits. Its final <code>size()</code> <em>is</em> the number of towers.</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Keep the tops in a
-            vector; for each cube scan every tower for the tightest fit and overwrite
-            it.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n &middot; towers)</span> &rarr;
-            <span class="cost">O(n&sup2;)</span> when the input is increasing and every
-            cube starts its own tower.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>
-            scans; a sorted vector does not help, since the insert still shifts
-            <span class="cost">O(n)</span> elements.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            A <code>multiset</code>: <code>upper_bound</code>, <code>erase</code> and
-            <code>insert</code> are each <span class="cost">O(log n)</span> and the
-            container re-sorts itself &mdash; <span class="cost">O(n log n)</span>
-            total.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Keep the tops in a vector; for
+each cube scan all towers for the tightest fit.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n \cdot \text{towers})\)</span>, which is <span class="cost">\(O(n^2)\)</span>
+when the input is increasing and every cube starts its own tower.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) checks. A sorted vector does not help, since
+each insert still shifts \(O(n)\) elements.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+A <code>multiset</code>: <code>upper_bound</code>, <code>erase</code> and <code>insert</code> are
+each <span class="cost">\(O(\log n)\)</span>, so <span class="cost">\(O(n \log n)\)</span> total.</span></div>
+</div>
       </div>
 
       <div class="sec">
@@ -1008,37 +1126,37 @@ minimise |{towers}|</div>
   <text class="s-td" x="8" y="14">cubes 3 8 2 1 5, processed left to right</text>
 
   <g class="s-td">
-    <text x="60"  y="40">c = 3</text><text x="160" y="40">c = 8</text>
-    <text x="260" y="40">c = 2</text><text x="360" y="40">c = 1</text>
-    <text x="460" y="40">c = 5</text>
+    <text x="100"  y="40">c = 3</text><text x="200" y="40">c = 8</text>
+    <text x="300" y="40">c = 2</text><text x="400" y="40">c = 1</text>
+    <text x="500" y="40">c = 5</text>
   </g>
 
   <g class="s-tm">
     <text x="8" y="66">upper_bound</text>
-    <text x="60"  y="66">end</text><text x="160" y="66">end</text>
-    <text x="260" y="66">3</text>  <text x="360" y="66">2</text>
-    <text x="460" y="66">8</text>
+    <text x="100"  y="66">end</text><text x="200" y="66">end</text>
+    <text x="300" y="66">3</text>  <text x="400" y="66">2</text>
+    <text x="500" y="66">8</text>
   </g>
 
   <g class="s-tm">
     <text x="8" y="90">action</text>
-    <text x="60"  y="90">new</text><text x="160" y="90">new</text>
-    <text x="260" y="90">3&#8594;2</text><text x="360" y="90">2&#8594;1</text>
-    <text x="460" y="90">8&#8594;5</text>
+    <text x="100"  y="90">new</text><text x="200" y="90">new</text>
+    <text x="300" y="90">3&#8594;2</text><text x="400" y="90">2&#8594;1</text>
+    <text x="500" y="90">8&#8594;5</text>
   </g>
 
   <!-- multiset states -->
   <text class="s-td" x="8" y="126">tops</text>
-  <rect class="s-box" x="48"  y="108" width="60" height="24" rx="4"/>
-  <text class="s-t" x="58"  y="125">{3}</text>
-  <rect class="s-box" x="148" y="108" width="60" height="24" rx="4"/>
-  <text class="s-t" x="152" y="125">{3,8}</text>
-  <rect class="s-box" x="248" y="108" width="60" height="24" rx="4"/>
-  <text class="s-t" x="252" y="125">{2,8}</text>
-  <rect class="s-box" x="348" y="108" width="60" height="24" rx="4"/>
-  <text class="s-t" x="352" y="125">{1,8}</text>
-  <rect class="s-good" x="448" y="108" width="60" height="24" rx="4"/>
-  <text class="s-t" x="452" y="125">{1,5}</text>
+  <rect class="s-box" x="88"  y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="98"  y="125">{3}</text>
+  <rect class="s-box" x="188" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="192" y="125">{3,8}</text>
+  <rect class="s-box" x="288" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="292" y="125">{2,8}</text>
+  <rect class="s-box" x="388" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="392" y="125">{1,8}</text>
+  <rect class="s-good" x="488" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="492" y="125">{1,5}</text>
 
   <text class="s-ta" x="8" y="160">size grows only on &#8220;new&#8221; (c = 3, c = 8) &#8212; answer = |tops| = 2</text>
   <text class="s-td" x="8" y="184">c = 5 takes the 8-tower, not a new one: 8 is the only top strictly above 5.</text>
@@ -1100,6 +1218,24 @@ int main() {
     cout &lt;&lt; tops.size() &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_right, insort
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    tops = []                               # multiset&lt;int&gt; -&gt; a list kept sorted
+    for i in range(n):
+        c = int(next(tok))
+        j = bisect_right(tops, c)           # upper_bound(c): index of first element &gt; c
+        # this takes O ( log n ) time
+        if j != len(tops):                  # it != tops.end()
+            tops.pop(j)                     # erase(it)
+            # ponytail: list.pop(j) is O(n), not O(log n); fine to read, slow at n = 2e5
+        insort(tops, c)                     # insert(c), keeps the list sorted (also O(n))
+    print(len(tops))
+
+main()</code></pre>
       </div>
 
       <div class="callout gotcha"><strong>Gotcha</strong><code>upper_bound</code>, not
@@ -1116,59 +1252,62 @@ int main() {
 
 <!-- ============ ENTRY ============ -->
     <article class="entry" id="traffic-lights">
-      <div class="entry-head"><h3>Traffic Lights</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Traffic Lights</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
         <div class="ask">
-          A street spans <code>[0, x]</code>. <code>n</code> lights are added one at a
-          time at distinct positions. After each addition, print the length of the longest
-          stretch with no light.
-          <div class="formal">after each insert:  max over consecutive cut points
-                   p&#11423;&#8330;&#8321; &minus; p&#11423;   of the current set &#8746; {0, x}</div>
-        </div>
+<p><b>Question.</b> A street runs from position \(0\) to position \(x\). Traffic lights are added
+one at a time, at \(n\) different positions \(p_1, \dots, p_n\). After each addition, print the
+length of the longest part of the street with no traffic light.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(x,\ n\), then \(p_1, \dots, p_n\).</dd>
+<dt>Output</dt><dd>\(n\) integers: the longest gap after each addition.</dd>
+<dt>Limits</dt><dd>\(1 \le x \le 10^9,\ \ 1 \le n \le 2\cdot 10^5,\ \ 0 \lt p_i \lt x\), all different.</dd>
+<dt>Sample</dt><dd>\(x = 8\), lights <code>3 6 2</code> → <code>5 3 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(C = \{0, x\} \cup \{\text{lights so far}\}\), sorted as \(q_0 \lt q_1 \lt \dots \lt q_m\). The answer is the largest gap:</span>
+\[ \text{ans} = \max_{k} \big( q_{k+1} - q_k \big) \]</li>
+<li><span class="why">A new light \(p\) falls inside exactly one gap \((lo, hi)\), where \(lo\) and \(hi\) are its neighbours in \(C\). That gap is replaced by two:</span>
+\[ hi - lo \;\longrightarrow\; (p - lo) \;+\; (hi - p) \]</li>
+<li><span class="why">So keep two structures: the set \(C\) to find \(lo, hi\), and a multiset \(G\) of gap lengths.</span></li>
+<li><span class="why">Simplest form, for each new light:</span>
+\[ G \leftarrow G - \{hi - lo\} + \{p - lo,\ hi - p\}, \qquad \text{ans} = \max G \]
+<span class="why">Sample: gaps \(\{8\} \to \{3, 5\} \to \{3, 3, 2\} \to \{2, 1, 3, 2\}\), maxima \(5, 3, 3\).</span></li>
+</ol></div>
+</div>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The lights cut the street into gaps between consecutive cut points. Adding
-              one light destroys exactly one gap and creates exactly two.</li>
-          <li>The destroyed gap is the one bracketing <code>p</code>: from its
-              predecessor <code>lo</code> to its successor <code>hi</code> among the
-              current cut points. That is one <code>upper_bound</code> plus one
-              decrement.</li>
-          <li>Treating <code>0</code> and <code>x</code> as cut points from the start
-              means every inserted light has both a predecessor and a successor &mdash;
-              no first-light or last-light case.</li>
-          <li>The maximum gap never grows, but it cannot be kept as a single scalar:
-              when the gap that <em>was</em> the maximum is split, the answer becomes the
-              next largest, which only the full collection knows.</li>
-          <li>Gap <em>lengths</em> repeat even though positions cannot &mdash; so
-              <code>multiset</code>, and the current maximum is
-              <code>*gaps.rbegin()</code> in <code>O(1)</code>.</li>
-        </ol>
+<li>The lights cut the street into gaps between neighbouring cut points. Adding one light destroys exactly one gap and creates exactly two.</li>
+<li>The destroyed gap is the one around \(p\): from its predecessor \(lo\) to its successor \(hi\)
+among the current cut points. That is one <code>upper_bound</code> and one step back.</li>
+<li>Treating \(0\) and \(x\) as cut points from the start means every new light has both a
+predecessor and a successor. There is no first-light or last-light special case.</li>
+<li>The maximum gap never grows, but it cannot be kept as a single number. When the largest gap
+is split, the answer becomes the next largest, which only the full collection knows.</li>
+<li>Gap <em>lengths</em> can repeat even though positions cannot, so use a <code>multiset</code>. The
+current maximum is <code>*gaps.rbegin()</code>, found in \(O(1)\).</li>
+</ol>
       </div>
 
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Keep the positions
-            in a vector; after each insertion re-sort (or rescan) and take the largest
-            adjacent difference.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v">
-            <span class="cost">O(n&sup2;)</span> for the rescan,
-            <span class="cost">O(n&sup2; log n)</span> if re-sorting.</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">
-            <code>n &le; 2&middot;10&#8309;</code> &rarr; <span class="cost">4&middot;10&#185;&#8304;</span>
-            differences recomputed, almost all of them unchanged.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">
-            Two ordered containers with separate jobs: a <code>set</code> of positions for
-            <span class="cost">O(log n)</span> predecessor/successor, and a
-            <code>multiset</code> of lengths for <span class="cost">O(1)</span> max &mdash;
-            <span class="cost">O(n log n)</span> total, <code>O(1)</code> work per query
-            beyond the update.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Keep the positions in a vector;
+after each addition, re-sort (or rescan) and take the largest neighbouring difference.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> for the rescan, <span class="cost">\(O(n^2 \log n)\)</span> if re-sorting.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) differences recomputed, almost all unchanged.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Two ordered containers with separate jobs: a <code>set</code> of positions for
+<span class="cost">\(O(\log n)\)</span> neighbour lookup, and a <code>multiset</code> of lengths for
+<span class="cost">\(O(1)\)</span> max. <span class="cost">\(O(n \log n)\)</span> total.</span></div>
+</div>
       </div>
 
       <div class="sec">
@@ -1278,10 +1417,36 @@ int main() {
 
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_right, bisect_left, insort
+tok = iter(sys.stdin.read().split())
+
+def main():
+    x, n = int(next(tok)), int(next(tok))
+    positions = [0, x]                      # set&lt;ll&gt; -&gt; sorted list (Python has no ordered set)
+    gaps = [x]                              # multiset&lt;ll&gt; -&gt; sorted list
+    out = []
+    for i in range(n):
+        p = int(next(tok))
+        j = bisect_right(positions, p)
+        # this is the first element &gt; p, so the previous element is the largest &lt;= p
+        hi = positions[j]                   # *it
+        if j != 0:                          # it != positions.begin()
+            j -= 1                          # it--
+        lo = positions[j]
+        gaps.pop(bisect_left(gaps, hi - lo))    # gaps.erase(gaps.find(hi - lo)): remove ONE copy
+        # ponytail: sorted-list insert/erase is O(n), C++ multiset is O(log n)
+        insort(gaps, p - lo)
+        insort(gaps, hi - p)
+        insort(positions, p)
+        out.append(gaps[-1])                # *gaps.rbegin() = largest
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
       </div>
 
-      <div class="callout gotcha"><strong>Gotcha</strong><code>gaps.erase(gaps.find(hi &minus; lo))</code>
-      removes one instance; <code>gaps.erase(hi &minus; lo)</code> removes <em>every</em>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>gaps.erase(gaps.find(hi - lo))</code>
+      removes one instance; <code>gaps.erase(hi - lo)</code> removes <em>every</em>
       gap of that length and quietly destroys the answer &mdash; two gaps sharing a length
       is the normal case, not a corner case. Also seed <code>positions</code> with
       <code>{0, x}</code> and <code>gaps</code> with <code>{x}</code> up front; without the
@@ -1295,27 +1460,46 @@ int main() {
     </article>
 
     <article class="entry" id="concert-tickets">
-      <div class="entry-head"><h3>Concert Tickets</h3><span class="badge num">O((n+m) log n)</span></div>
+      <div class="entry-head"><h3>Concert Tickets</h3><span class="badge num">\(O((n+m) \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Customers arrive in order, each paying at most <code>t</code>. Sell each the most expensive remaining ticket ≤ <code>t</code>, or &minus;1.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) concert tickets with prices \(h_1, \dots, h_n\). Then \(m\)
+customers arrive one after another. Customer \(j\) will pay at most \(t_j\), and gets the most
+expensive remaining ticket whose price does not exceed \(t_j\). That ticket is then gone. Print what
+each customer pays, or \(-1\) if they get nothing.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\); then \(h_1, \dots, h_n\); then \(t_1, \dots, t_m\).</dd>
+<dt>Output</dt><dd>\(m\) lines: the price paid, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 2\cdot 10^5,\ \ 1 \le h_i, t_j \le 10^9\)</dd>
+<dt>Sample</dt><dd>prices <code>5 3 7 8 5</code>, customers <code>4 8 3</code> → <code>3 8 -1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(H\) be the multiset of unsold prices. Customer \(j\) gets:</span>
+\[ \text{pay}_j = \max \{\, h \in H : h \le t_j \,\}, \qquad \text{or } -1 \text{ if no such } h \]</li>
+<li><span class="why">Then exactly one copy of that price is removed:</span>
+\[ H \leftarrow H - \{\text{pay}_j\} \]</li>
+<li><span class="why">Simplest form: "largest \(\le t\)" is the element just before the first one \(\gt t\):</span>
+\[ \text{pay}_j = \text{prev}\big(\text{upper\_bound}(t_j)\big) \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>"Largest value ≤ t" is a predecessor query: <code>upper_bound(t)</code>, step back once.</li>
-          <li>Tickets with equal prices are distinct tickets &rArr; <code>multiset</code>.</li>
-          <li>Selling removes exactly one copy &rArr; erase by iterator, not by value.</li>
-        </ol>
+<li>"Largest value \(\le t\)" is a predecessor query: <code>upper_bound(t)</code>, then one step back.</li>
+<li>Tickets with equal prices are still different tickets, so use a <code>multiset</code>.</li>
+<li>Selling removes exactly one copy, so erase by iterator, not by value.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Scan all unsold tickets for each customer.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n, m ≤ 2·10⁵</code> &rarr; 4·10¹⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Balanced BST (<code>multiset</code>) with predecessor + erase: <span class="cost">O((n+m) log n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Scan all unsold tickets for each customer.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Balanced search tree (<code>multiset</code>) with predecessor lookup and erase: <span class="cost">\(O((n+m) \log n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1393,6 +1577,27 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_right
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    h = sorted(int(next(tok)) for _ in range(n))   # multiset&lt;ll&gt;: n inserts == one sort
+    out = []
+    for i in range(m):
+        x = int(next(tok))
+        j = bisect_right(h, x)
+        # what does this do is that it finds the first element in the multiset that is greater than x. If there is no such element, it returns h.end(). If there is such an element, it returns an iterator to that element.
+        if j == 0:                          # it == h.begin()
+            out.append(-1)
+        else:
+            j -= 1                          # it--
+            out.append(h[j])
+            h.pop(j)                        # ponytail: O(n) erase; C++ multiset is O(log n)
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>h.erase(*it)</code> (by value) deletes <em>every</em> ticket at that price. Erase the iterator.</div>
       <div class="callout trigger"><strong>Recognize</strong>"assign each query the largest remaining item ≤ its limit, items consumed" &rarr; multiset predecessor + erase.</div>

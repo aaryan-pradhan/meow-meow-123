@@ -43,27 +43,45 @@
     <p class="family-note">Compare each character with the one before it. The current run either grows or restarts at 1.</p>
 
     <article class="entry" id="dna-repetition">
-      <div class="entry-head"><h3>DNA Repetition</h3><span class="badge num">O(n)</span></div>
+      <div class="entry-head"><h3>DNA Repetition</h3><span class="badge num">\(O(n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Find the length of the longest block of one repeated character.<div class="formal">max (r &minus; l + 1)  such that  s[l] = s[l+1] = &hellip; = s[r]</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given a DNA sequence: a string of the characters <code>A</code>,
+<code>C</code>, <code>G</code>, <code>T</code>. Find the length of the longest block in which every
+character is the same.</p>
+<dl class="io">
+<dt>Input</dt><dd>One string \(s\) of length \(n\).</dd>
+<dt>Output</dt><dd>One integer: the longest repetition.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd><code>ATTCGGGA</code> → <code>3</code> (<code>GGG</code>)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \max \{\, r - l + 1 \;:\; s_l = s_{l+1} = \dots = s_r \,\} \]</li>
+<li><span class="why">Let \(c_i\) be the length of the block of equal characters ending at position \(i\). It either grows by one or restarts:</span>
+\[ c_0 = 1, \qquad c_i = \begin{cases} c_{i-1} + 1 &amp; \text{if } s_i = s_{i-1} \\ 1 &amp; \text{otherwise} \end{cases} \]</li>
+<li><span class="why">Simplest form, one pass:</span>
+\[ \text{ans} = \max_{0 \le i \lt n} c_i \]</li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li><code>s[i] == s[i&minus;1]</code> means the run extends. Otherwise s[i] starts a new run of length 1.</li>
-          <li>Update the best after every character, so there is no final flush.</li>
-          <li>Starting both counters at 1 handles n = 1 with an empty loop.</li>
-        </ol>
+<li>If \(s_i = s_{i-1}\), the block grows. Otherwise \(s_i\) starts a new block of length \(1\).</li>
+<li>Update the best after every character, so nothing needs to be done after the loop.</li>
+<li>Starting both counters at \(1\) handles \(n = 1\) with an empty loop.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">From every l, extend while the character matches.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n&sup2;)</span> on "AAAA&hellip;".</span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n &le; 10&#8310;</code> &rarr; <span class="cost">10&#185;&#178;</span>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One pass with a running count: <span class="cost">O(n)</span>, <span class="cost">O(1)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">From every \(l\), extend while the character matches.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span> on <code>AAAA…</code>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^6\) gives about \(10^{12}\) steps.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One pass with a running count: <span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> space.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -107,6 +125,21 @@ int main() {
     cout &lt;&lt; maxCount &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())         # every whitespace-separated token, like cin
+
+def main():
+    s = next(tok)                            # cin &gt;&gt; s
+
+    count, maxCount = 1, 1
+    for i in range(1, len(s)):              # for (size_t i = 1; i &lt; s.size(); i++)
+        if s[i] == s[i - 1]: count += 1     # no ++ in Python
+        else: count = 1
+        maxCount = max(maxCount, count)
+
+    print(maxCount)
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>On a mismatch, reset to <code>1</code>, not 0. The mismatching character is already a run of length 1.</div>
       <div class="callout trigger"><strong>Recognize</strong>"longest block of equal adjacent elements" &rarr; running count, reset to 1 on change.</div>

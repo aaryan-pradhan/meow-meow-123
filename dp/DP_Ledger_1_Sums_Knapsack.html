@@ -52,7 +52,7 @@
       <div class="rule"><span class="n">4</span>
         <p>If row <code>i</code> only reads row <code>i±1</code>, keep two rows indexed by <code>i &amp; 1</code> (Coin Combinations II, Book Shop, Array Description). For Book Shop it is the difference between 1.6 MB and 800 MB.</p></div>
       <div class="rule"><span class="n">5</span>
-        <p>A constraint on neighbours (grid traps, <code>|a[i]−a[i−1]| ≤ 1</code>) becomes a 0 or a filtered candidate list, never a special case: Grid Paths I, Array Description.</p></div>
+        <p>A constraint on neighbours (grid traps, \(|a[i]-a[i-1]| \le 1\)) becomes a 0 or a filtered candidate list, never a special case: Grid Paths I, Array Description.</p></div>
     </div>
   </section>
 
@@ -60,28 +60,45 @@
     <div class="family-head"><h2>1 &middot; Last move over a sum</h2></div>
     <p class="family-note">The state is the total so far. Split on the final step; the menu of steps is fixed (dice, coins) or derived from the state (digits). No item index.</p>
     <article class="entry" id="dice-combinations">
-      <div class="entry-head"><h3>Dice Combinations</h3><span class="badge num">O(6n)</span></div>
+      <div class="entry-head"><h3>Dice Combinations</h3><span class="badge num">\(O(6n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count ordered sequences of die rolls (each 1..6) that sum to <code>n</code>, mod 10⁹+7.<div class="formal">dp[i] = #sequences summing to i
-dp[0] = 1,  dp[i] = Σ dp[i−k],  1 ≤ k ≤ min(6, i)</div></div>
+        <div class="ask">
+<p><b>Question.</b> Count the number of ways to get a total of \(n\) by throwing a die one or more
+times. Each throw gives a number from \(1\) to \(6\). Order matters, so \(1+2\) and \(2+1\) are
+different. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The number of ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd>\(n = 3\) → <code>4</code> (\(1{+}1{+}1,\ 1{+}2,\ 2{+}1,\ 3\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i]\) be the number of throw sequences with total \(i\).</span></li>
+<li><span class="why">Split on the <em>last</em> throw \(k\). Before it comes any sequence with total \(i - k\). Different \(k\) give different sequences, so the counts add:</span>
+\[ dp[i] = \sum_{k=1}^{\min(6,\, i)} dp[i - k] \]</li>
+<li><span class="why">The empty sequence has total \(0\), so \(dp[0] = 1\). This makes a single throw \(k\) count as \(dp[0] = 1\) with no special case.</span></li>
+<li><span class="why">Simplest form: fill \(dp[1], \dots, dp[n]\) left to right, each from at most \(6\) earlier values, all \(\bmod\ 10^9 + 7\).</span>
+<span class="why">Sample: \(dp = (1, 1, 2, 4)\) for \(i = 0..3\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Order matters, so split on the <em>last</em> roll <code>k</code>: what precedes it is any sequence summing to <code>i&minus;k</code>.</li>
-          <li><code>dp[0] = 1</code> &mdash; the empty sequence. It makes <code>dp[k]</code> count the lone roll <code>k</code> with no special case.</li>
-          <li>Each state reads at most 6 earlier states &rarr; one forward pass.</li>
-        </ol>
+<li>Order matters, so split on the <em>last</em> throw \(k\). What comes before it is any sequence with total \(i - k\).</li>
+<li>\(dp[0] = 1\) is the empty sequence. It makes \(dp[k]\) count the single throw \(k\) without a special case.</li>
+<li>Each value reads at most 6 earlier values, so one forward pass is enough.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate every roll sequence recursively.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(6ⁿ/…) — exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁶</code> &rarr; the count itself is ~2<sup>n</sup>; enumeration never finishes.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Sequences sharing a sum are interchangeable prefixes &rarr; one number per sum, <span class="cost">O(6n)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List every throw sequence recursively.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span>: the number of sequences itself grows like \(2^n\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^6\): listing them never finishes.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Sequences with the same total behave the same from then on, so keep one number per total: <span class="cost">\(O(6n)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -132,32 +149,65 @@ int main() {
     cout &lt;&lt; dp[n] &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b): s = a % MOD + b % MOD; return s % MOD
+
+def main():
+    n = int(next(tok))
+    dp = [0] * (n + 1)
+    dp[0] = 1
+    for i in range(1, n + 1):
+        for k in range(1, 7):               # k = 1..6 -&gt; range(1, 7)
+            if i - k &gt;= 0: dp[i] = madd(dp[i], dp[i - k])
+    print(dp[n])
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>dp[0] = 0</code> zeroes the whole table. The base is the empty sequence, which is one way.</div>
-      <div class="callout trigger"><strong>Recognize</strong>"number of ordered ways to reach a total with a fixed menu of step sizes" &rarr; <code>dp[sum] = &sum; dp[sum &minus; step]</code>.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"number of ordered ways to reach a total with a fixed menu of step sizes" &rarr; \(\text{dp}[\text{sum}] = \sum \text{dp}[\text{sum} - \text{step}]\).</div>
     </article>
     <article class="entry" id="coin-combinations-i">
-      <div class="entry-head"><h3>Coin Combinations I</h3><span class="badge num">O(n·x)</span></div>
+      <div class="entry-head"><h3>Coin Combinations I</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count <em>ordered</em> sequences of reusable coins summing to <code>x</code>, mod 10⁹+7.<div class="formal">dp[0] = 1,  dp[s] = Σ over c ≤ s of dp[s−c]</div></div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coin values \(c_1, \dots, c_n\), each usable any number of
+times. Count the <em>ordered</em> ways to make the sum \(x\) (so \(2{+}2{+}5\), \(2{+}5{+}2\) and
+\(5{+}2{+}2\) are three different ways). Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>The number of ordered ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x \le 10^6,\ \ 1 \le c_i \le 10^6\)</dd>
+<dt>Sample</dt><dd>coins <code>2 3 5</code>, \(x = 9\) → <code>8</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[s]\) be the number of ordered sequences of coins with sum \(s\).</span></li>
+<li><span class="why">Split on the last coin \(c\). Before it comes any sequence with sum \(s - c\):</span>
+\[ dp[0] = 1, \qquad dp[s] = \sum_{\substack{j = 1 \\ c_j \le s}}^{n} dp[s - c_j] \]</li>
+<li><span class="why">Simplest form: loop over sums \(s = 1..x\) on the <em>outside</em> and coins on the inside, so every coin can be the last coin of every sum.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Ordered &rArr; it is Dice Combinations with an arbitrary face set: split on the last coin.</li>
-          <li>Sum loop <em>outside</em>, coin loop inside. Every coin is legal as the last step of every sum, so <code>2+3</code> and <code>3+2</code> both land.</li>
-          <li>Base <code>dp[0] = 1</code>, not 0.</li>
-        </ol>
+<li>Order matters, so this is Dice Combinations with any set of faces: split on the last coin.</li>
+<li>Sum loop <em>outside</em>, coin loop inside. Every coin is allowed as the last step of every sum, so \(2{+}3\) and \(3{+}2\) are both counted.</li>
+<li>The base is \(dp[0] = 1\), not \(0\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate sequences recursively.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>x ≤ 10⁶</code>, <code>n ≤ 100</code> &rarr; answer overflows long before enumeration ends.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One count per sum, <span class="cost">O(n·x) ≈ 10⁸</span> simple adds &mdash; passes.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List sequences recursively.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(x = 10^6\), \(n = 100\): the answer is astronomically large, so listing never ends.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One count per sum: <span class="cost">\(O(n \cdot x) \approx 10^8\)</span> simple additions, which passes.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -211,33 +261,69 @@ int main() {
     cout &lt;&lt; dp[x] &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    s = a + b
+    return s - MOD if s &gt;= MOD else s
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+    coins = [int(next(tok)) for _ in range(n)]
+    dp = [0] * (x + 1)
+    dp[0] = 1
+    for sum_ in range(1, x + 1):
+        for c in coins:                     # for (int c : coins)
+            if sum_ - c &gt;= 0: dp[sum_] = madd(dp[sum_], dp[sum_ - c])
+    print(dp[x])
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Swap the loops (coins outside) and you silently get Coin Combinations II &mdash; the unordered count. Loop order <em>is</em> the specification.</div>
       <div class="callout trigger"><strong>Recognize</strong>"distinct ordered ways" / "2+3 and 3+2 are different" &rarr; sums outside, choices inside.</div>
     </article>
     <article class="entry" id="minimizing-coins">
-      <div class="entry-head"><h3>Minimizing Coins</h3><span class="badge num">O(n·x)</span></div>
+      <div class="entry-head"><h3>Minimizing Coins</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Coins of <code>n</code> values, each reusable. Fewest coins summing to <code>x</code>, or &minus;1.<div class="formal">dp[s] = min #coins for sum s
-dp[0] = 0,  dp[s] = min over c ≤ s of dp[s−c] + 1</div></div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coin values \(c_1, \dots, c_n\), each usable any number of times.
+Make the sum \(x\) using as few coins as possible. Print that number, or \(-1\) if \(x\) cannot be made.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>The minimum number of coins, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x \le 10^6,\ \ 1 \le c_i \le 10^6\)</dd>
+<dt>Sample</dt><dd>coins <code>1 5 7</code>, \(x = 11\) → <code>3</code> (\(5 + 5 + 1\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[s]\) be the fewest coins with sum \(s\), or \(\infty\) if \(s\) cannot be made.</span></li>
+<li><span class="why">The last coin is some \(c_j \le s\). The rest must be an optimal way to make \(s - c_j\):</span>
+\[ dp[0] = 0, \qquad dp[s] = 1 + \min_{c_j \le s} dp[s - c_j] \]</li>
+<li><span class="why">Coins can be reused, so which coins were used before never matters. The state is only the sum.</span></li>
+<li><span class="why">Simplest form: fill \(dp[1..x]\) in order; answer \(dp[x]\), printing \(-1\) if it is still \(\infty\).</span>
+<span class="why">Sample: \(dp[11] = 1 + \min(dp[10], dp[6], dp[4]) = 1 + \min(2, 2, 4) = 3\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Unbounded reuse &rArr; no coin is ever "used up", so the coin index carries no information. Drop it: state is just the sum.</li>
-          <li>The last coin is some <code>c</code>; the rest is an optimal solution for <code>s&minus;c</code>.</li>
-          <li>Unreachable sums must stay unreachable &mdash; <code>INF + 1</code> must never win a <code>min</code>.</li>
-        </ol>
+<li>Coins can be reused, so no coin is ever "used up" and the coin index carries no information. Drop it: the state is just the sum.</li>
+<li>The last coin is some \(c\); the rest is an optimal solution for \(s - c\).</li>
+<li>Sums that cannot be made must stay that way: <code>INF + 1</code> must never win a <code>min</code>.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Memoised <code>rec(i, left)</code>: take coin i (stay) or skip it (advance).</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·x) states, recursion depth x</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>x ≤ 10⁶</code> &rarr; 10⁶-deep recursion overflows the stack; the <code>i</code> dimension is 10⁸ states of pure waste.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Collapse to <code>dp[s]</code>, loop all coins per sum, bottom-up: <span class="cost">O(n·x)</span> time, <span class="cost">O(x)</span> space.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Memoised <code>rec(i, left)</code>: take coin \(i\) (stay) or skip it (move on).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot x)\)</span> states, recursion depth up to \(x\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(x = 10^6\): a recursion \(10^6\) deep overflows the stack, and the \(i\) dimension adds \(10^8\) wasted states.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Keep only \(dp[s]\), try all coins per sum, bottom-up: <span class="cost">\(O(n \cdot x)\)</span> time, <span class="cost">\(O(x)\)</span> space.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -290,32 +376,64 @@ int main() {
     cout &lt;&lt; (dp[x] == INF ? -1 : dp[x]) &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 1000000000
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+    coins = [int(next(tok)) for _ in range(n)]
+    dp = [INF] * (x + 1)
+    dp[0] = 0
+    for left in range(1, x + 1):
+        for c in coins:
+            if c &lt;= left and dp[left - c] != INF:
+                dp[left] = min(dp[left], dp[left - c] + 1)
+    print(-1 if dp[x] == INF else dp[x])
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Base is <code>dp[0] = 0</code>, not 1 &mdash; this is a <em>min-count</em>, not a way-count. Same loop shape as Coin Combinations I, opposite identity.</div>
       <div class="callout trigger"><strong>Recognize</strong>"fewest items, any number of each, to hit an exact total" &rarr; 1-D <code>dp[sum]</code>, min over item sizes, INF sentinel.</div>
     </article>
     <article class="entry" id="removing-digits">
-      <div class="entry-head"><h3>Removing Digits</h3><span class="badge num">O(n log n)</span></div>
+      <div class="entry-head"><h3>Removing Digits</h3><span class="badge num">\(O(n \log n)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">From <code>n</code>, repeatedly subtract one of its nonzero digits. Fewest steps to reach 0.<div class="formal">dp[0] = 0,  dp[i] = 1 + min over nonzero digits d of i of dp[i−d]</div></div>
+        <div class="ask">
+<p><b>Question.</b> You are given an integer \(n\). In one step you may subtract one of its digits
+from it. What is the minimum number of steps to reach \(0\)?</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The minimum number of steps.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd>\(27\) → <code>5</code> (\(27 \to 20 \to 18 \to 10 \to 9 \to 0\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i]\) be the fewest steps from \(i\) to \(0\). From \(i\) you can move to \(i - d\) for any nonzero digit \(d\) of \(i\):</span>
+\[ dp[0] = 0, \qquad dp[i] = 1 + \min_{\substack{d \in \text{digits}(i) \\ d \ne 0}} dp[i - d] \]</li>
+<li><span class="why">Every step makes the number smaller, so \(dp[i]\) only needs smaller values. Fill \(i = 1..n\) in order.</span></li>
+<li><span class="why">Simplest form: each \(i\) has at most \(7\) digits, so the whole table costs \(O(7n)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>It is Minimizing Coins where the coin set depends on the current sum: the digits of <code>i</code>.</li>
-          <li>Every move strictly decreases <code>i</code> &rArr; bottom-up from 0 is a valid order.</li>
-          <li>A nonzero digit <code>d ≤ i</code> always, so <code>dp[i&minus;d]</code> is in range.</li>
-        </ol>
+<li>It is Minimizing Coins where the coins depend on the current value: the digits of \(i\).</li>
+<li>Every step strictly decreases \(i\), so filling from \(0\) upwards is a valid order.</li>
+<li>A nonzero digit \(d\) of \(i\) always satisfies \(d \le i\), so \(dp[i - d]\) is in range.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">BFS/recursion over all digit choices from <code>n</code>.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential without memo</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁶</code> &rarr; the same value is reached along huge numbers of paths.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Memoise on the value: <span class="cost">O(n · digits)</span>, ≤ 7 digits per state.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Recursion over all digit choices from \(n\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span> without memoisation.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^6\): the same value is reached along a huge number of paths.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Store one answer per value: <span class="cost">\(O(n \cdot \text{digits})\)</span>, at most 7 digits each.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -379,6 +497,26 @@ signed main()
 
     solve() ;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n = int(next(tok))
+    dp = [INF] * (n + 1)
+    for i in range(n + 1):
+        if i == 0: dp[i] = 0
+        else:
+            temp = i
+            while temp &gt; 0:
+                digit = temp % 10
+                if digit != 0:
+                    dp[i] = min(dp[i], dp[i - digit] + 1)
+                temp //= 10                 # temp /= 10 on ints -&gt; //=
+    print(dp[n])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The move set comes from <code>i</code>, not <code>n</code>: <code>temp = i</code>. Precomputing the digits of <code>n</code> once gives a different (wrong) problem.</div>
       <div class="callout trigger"><strong>Recognize</strong>"min operations to reduce a number, allowed moves derived from the number itself" &rarr; <code>dp[value]</code> over moves.</div>
@@ -389,28 +527,45 @@ signed main()
     <div class="family-head"><h2>2 &middot; Take / skip items</h2></div>
     <p class="family-note">The state is (item index, budget). Each item is taken or skipped; whether "take" stays on the row or advances decides unbounded vs 0/1.</p>
     <article class="entry" id="coin-combinations-ii">
-      <div class="entry-head"><h3>Coin Combinations II</h3><span class="badge num">O(n·x)</span></div>
+      <div class="entry-head"><h3>Coin Combinations II</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count <em>unordered</em> multisets of reusable coins summing to <code>x</code>, mod 10⁹+7.<div class="formal">dp[i][s] = #multisets from coins i..n−1 summing to s
-dp[i][0] = 1,  dp[n][s>0] = 0</div></div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coin values \(c_1, \dots, c_n\), each usable any number of times.
+Count the ways to make the sum \(x\) where order does <em>not</em> matter (\(2{+}2{+}5\), \(2{+}5{+}2\)
+and \(5{+}2{+}2\) are the same way). Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>The number of unordered ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x \le 10^6,\ \ 1 \le c_i \le 10^6\)</dd>
+<dt>Sample</dt><dd>coins <code>2 3 5</code>, \(x = 9\) → <code>3</code> (\(2{+}2{+}5,\ 3{+}3{+}3,\ 2{+}2{+}2{+}3\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">To count each multiset once, decide the coins in a fixed order: first how many of coin \(i\), then move to coin \(i + 1\). Let \(dp[i][s]\) be the number of ways to make \(s\) using only coins \(i, \dots, n-1\).</span></li>
+<li><span class="why">Either take one more coin \(i\) (stay on coin \(i\), since it can be taken again) or move on to coin \(i + 1\):</span>
+\[ dp[i][s] = \underbrace{dp[i][s - c_i]}_{\text{take one more } c_i} + \underbrace{dp[i+1][s]}_{\text{done with } c_i} \]</li>
+<li><span class="why">Base cases: with no coins left, only sum \(0\) can be made:</span>
+\[ dp[n][0] = 1, \qquad dp[n][s] = 0 \ \ (s \gt 0), \qquad \text{ans} = dp[0][x] \]</li>
+<li><span class="why">Simplest form: row \(i\) reads only rows \(i\) and \(i + 1\), so two rows of length \(x + 1\) are enough.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Unordered &rArr; fix a canonical order: decide coin <code>i</code> fully, then move on. Each multiset is built exactly once.</li>
-          <li>Take coin <code>i</code> &rarr; stay on row <code>i</code> (it may be taken again). Skip &rarr; row <code>i+1</code>.</li>
-          <li>Row <code>i</code> reads only rows <code>i</code> and <code>i+1</code> &rArr; two rows suffice.</li>
-        </ol>
+<li>Order does not matter, so fix one canonical order: decide coin \(i\) completely, then move on. Each multiset is then built exactly once.</li>
+<li>Taking coin \(i\) stays on row \(i\) (it may be taken again). Skipping moves to row \(i + 1\).</li>
+<li>Row \(i\) reads only rows \(i\) and \(i + 1\), so two rows are enough.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Sum-outside loop as in Coin Combinations I.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·x) — wrong answer</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">Counts <code>2+3</code> and <code>3+2</code> separately: sample gives 8, not 3.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Item index as the outer dimension, rolling parity rows: <span class="cost">O(n·x)</span> time, <span class="cost">O(x)</span> memory.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Reuse Coin Combinations I (sum loop outside).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot x)\)</span>, but the <em>wrong answer</em>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">It counts \(2{+}3\) and \(3{+}2\) separately: the sample gives \(8\), not \(3\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Put the coin index on the outside, with two rolling rows: <span class="cost">\(O(n \cdot x)\)</span> time, <span class="cost">\(O(x)\)</span> memory.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -475,32 +630,75 @@ signed main() {
     cout &lt;&lt; dp[0][x] &lt;&lt; '\n';
     return 0;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    s = a + b
+    return s - MOD if s &gt;= MOD else s
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+    coins = [int(next(tok)) for _ in range(n)]
+    dp = [[-1] * (x + 1) for _ in range(2)]     # 2 rolling rows, indexed by i &amp; 1
+    for i in range(n, -1, -1):              # for (i = n; i &gt;= 0; i--)
+        for left in range(x + 1):
+            if left == 0: dp[i &amp; 1][left] = 1
+            elif i == n: dp[i &amp; 1][left] = 0
+            else:
+                ans = 0
+                if left - coins[i] &gt;= 0:
+                    ans = madd(ans, dp[i &amp; 1][left - coins[i]])
+                ans = madd(ans, dp[(i + 1) &amp; 1][left])
+                dp[i % 2][left] = ans
+    print(dp[0][x])
+
+main()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Reading the take term from row <code>i+1</code> turns it into 0/1 knapsack (each coin once). The left-to-right fill direction of <code>left</code> is what makes the same-row read legal.</div>
       <div class="callout trigger"><strong>Recognize</strong>"distinct ways, order doesn't matter, unlimited supply" &rarr; items outside, take-stays-on-row.</div>
     </article>
     <article class="entry" id="book-shop">
-      <div class="entry-head"><h3>Book Shop</h3><span class="badge num">O(n·x)</span></div>
+      <div class="entry-head"><h3>Book Shop</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Each book has price <code>h</code> and pages <code>s</code>; buy each at most once. Max pages with total price ≤ <code>x</code>.<div class="formal">maximise Σ sᵢ over subsets with Σ hᵢ ≤ x</div></div>
+        <div class="ask">
+<p><b>Question.</b> A shop sells \(n\) books. Book \(i\) costs \(h_i\) and has \(s_i\) pages. You can
+spend at most \(x\) in total and buy each book at most once. What is the maximum number of pages you can buy?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\); then \(h_1, \dots, h_n\); then \(s_1, \dots, s_n\).</dd>
+<dt>Output</dt><dd>One integer: the maximum total pages.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000,\ \ 1 \le x \le 10^5,\ \ 1 \le h_i, s_i \le 1000\)</dd>
+<dt>Sample</dt><dd>\(x = 10\), prices <code>4 8 5 3</code>, pages <code>5 12 8 1</code> → <code>13</code> (books 1 and 3)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \max_{T \subseteq \{1..n\}} \sum_{i \in T} s_i \quad \text{subject to} \quad \sum_{i \in T} h_i \le x \]</li>
+<li><span class="why">Let \(dp[i][b]\) be the most pages from books \(i, \dots, n-1\) with budget \(b\) left. Each book is skip or buy, and both move on to the next book:</span>
+\[ dp[i][b] = \max\Big( dp[i+1][b],\ \ dp[i+1][b - h_i] + s_i \ \ \big(\text{if } h_i \le b\big) \Big) \]</li>
+<li><span class="why">Base case: with no books left you get \(0\) pages, whatever money is left: \(dp[n][b] = 0\) for every \(b\).</span></li>
+<li><span class="why">Simplest form: \(\text{ans} = dp[0][x]\), computed with two rolling rows of length \(x + 1\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Each item once &rArr; both branches go to row <code>i+1</code>.</li>
-          <li>Budget "≤ x" instead of "= x" &rArr; base row is 0 for every leftover budget, not just for 0.</li>
-          <li>Only rows <code>i</code> and <code>i+1</code> are live &rArr; two rows by parity.</li>
-        </ol>
+<li>Each book can be bought once, so both choices (buy, skip) move to row \(i + 1\).</li>
+<li>The budget is "\(\le x\)", not "\(= x\)", so the base row is \(0\) for every leftover budget, not only for \(0\).</li>
+<li>Only rows \(i\) and \(i + 1\) are in use, so keep two rows and switch by parity.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try all 2ⁿ subsets.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ · n)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 1000</code> &rarr; 2¹⁰⁰⁰ subsets.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">State = (next book, budget left): 10³ · 10⁵ = <span class="cost">10⁸</span> cells, rolling rows keep memory at <span class="cost">O(x)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try all \(2^n\) subsets.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000\) gives \(2^{1000}\) subsets.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">State = (next book, budget left): \(10^3 \cdot 10^5 =\) <span class="cost">\(10^8\)</span> cells; rolling rows keep memory at <span class="cost">\(O(x)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -568,32 +766,72 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n, x = int(next(tok)), int(next(tok))
+    h = [int(next(tok)) for _ in range(n)]
+    s = [int(next(tok)) for _ in range(n)]
+    dp = [[-1] * (x + 1) for _ in range(2)]
+    for i in range(n, -1, -1):
+        for left in range(x + 1):
+            if i == n:
+                if left &gt;= 0: dp[i % 2][left] = 0
+                else: dp[i % 2][left] = -INF
+            else:
+                ans = dp[(i + 1) % 2][left]
+                if left - h[i] &gt;= 0: ans = max(ans, dp[(i + 1) % 2][left - h[i]] + s[i])
+                dp[i % 2][left] = ans
+    print(dp[0][x])
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong><code>vector&lt;vector&lt;ll&gt;&gt;</code> of size 1001 × 10⁵ would be 800 MB; the parity trick is not an optimisation here, it is required.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>vector&lt;vector&lt;ll&gt;&gt;</code> of size 1001 × \(10^{5}\) would be 800 MB; the parity trick is not an optimisation here, it is required.</div>
       <div class="callout trigger"><strong>Recognize</strong>"each item at most once, capacity ≤ C, maximise value" &rarr; 0/1 knapsack, both branches to i+1.</div>
     </article>
     <article class="entry" id="money-sums">
-      <div class="entry-head"><h3>Money Sums</h3><span class="badge num">O(n·Σx)</span></div>
+      <div class="entry-head"><h3>Money Sums</h3><span class="badge num">\(O(n \cdot \sum x)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">List every distinct positive sum formed by a subset of <code>n</code> coins.<div class="formal">{ Σ S : ∅ ≠ S ⊆ coins }</div></div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coins with values \(x_1, \dots, x_n\) (each coin used at most once).
+Find every sum you can make using one or more of the coins. Print how many there are, then the sums
+in increasing order.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>The count \(k\), then the \(k\) sums in increasing order.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x_i \le 1000\)</dd>
+<dt>Sample</dt><dd><code>4 2 5 2</code> → <code>9</code>, then <code>2 4 5 6 7 8 9 11 13</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \Big\{\, \sum_{i \in T} x_i \;:\; \varnothing \ne T \subseteq \{1, \dots, n\} \,\Big\} \]</li>
+<li><span class="why">Let \(R_i(s)\) be true if some subset of coins \(i, \dots, n-1\) sums to \(s\). Each coin is skipped or used:</span>
+\[ R_n(s) = [s = 0], \qquad R_i(s) = R_{i+1}(s) \ \lor\ R_{i+1}(s - x_i) \]</li>
+<li><span class="why">Every sum is at most \(n \cdot \max x_i = 100 \cdot 1000 = 10^5\), so a table of width \(10^5 + 1\) covers everything.</span></li>
+<li><span class="why">Simplest form: print every \(s \ge 1\) with \(R_0(s)\) true.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Knapsack with a boolean value: "is sum <code>s</code> reachable from coins i..n&minus;1".</li>
-          <li>The sum can never exceed <code>n · max x = 100 · 1000</code>, so a fixed <code>10⁵</code> column bound is exact.</li>
-          <li>Duplicate coin values need no special handling: the set of reachable sums absorbs repeats.</li>
-        </ol>
+<li>This is knapsack with a yes/no value: "can sum \(s\) be made from coins \(i..n-1\)?"</li>
+<li>A sum can never exceed \(n \cdot \max x = 100 \cdot 1000\), so a fixed bound of \(10^5\) columns is exact.</li>
+<li>Repeated coin values need no special handling: the set of reachable sums absorbs repeats.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate all subsets, insert sums into a set.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 100</code> &rarr; 2¹⁰⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Distinct sums ≤ 10⁵ &rarr; <code>(n+1) × 10⁵</code> booleans, <span class="cost">10⁷</span> work.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List all subsets and put their sums in a set.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 100\) gives \(2^{100}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Distinct sums are \(\le 10^5\), so use \((n + 1) \times 10^5\) booleans: <span class="cost">\(10^7\)</span> work.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -604,7 +842,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>vector&lt;bool&gt;</code> keeps the 10⁷ cells at ~1.2 MB. Column 0 is <code>true</code> in every row (the empty subset), and the output loop starts at <code>s = 1</code> to exclude it.</p>
+        <p class="impl-note"><code>vector&lt;bool&gt;</code> keeps the \(10^{7}\) cells at ~1.2 MB. Column 0 is <code>true</code> in every row (the empty subset), and the output loop starts at <code>s = 1</code> to exclude it.</p>
         <div class="src-meta"><span class="path">dp/Money_Sums.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -684,32 +922,81 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def rec(i, s):
+    # # this retuns true if we can make a sum of s from the the coin i to the last coin
+    # if s == 0: return True
+    # if i == n: return False
+    # if dp[i][s] != -1: return dp[i][s]
+    # ans = rec(i + 1, s)
+    # if s &gt;= coins[i]: ans = ans or rec(i + 1, s - coins[i])
+    # dp[i][s] = ans; return ans       (no "return a = b" in Python: assign, then return)
+    pass                                    # an empty body needs "pass"
+
+def solve():
+    n = int(next(tok))
+    x = [int(next(tok)) for _ in range(n)]
+    dp = [[False] * 100001 for _ in range(n + 1)]
+    for i in range(n, -1, -1):
+        for s in range(100001):
+            if s == 0: dp[i][s] = True
+            elif i == n: dp[i][s] = False
+            else:
+                ans = dp[i + 1][s]
+                if s &gt;= x[i]: ans = ans or dp[i + 1][s - x[i]]
+                dp[i][s] = ans
+    ans = []
+    for s in range(1, 100001):
+        if dp[0][s]: ans.append(s)
+    print(len(ans))
+    print(' '.join(map(str, ans)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>The dead <code>bool rec</code> stub above <code>solve</code> falls off the end without returning &mdash; harmless only because it is never called.</div>
       <div class="callout trigger"><strong>Recognize</strong>"all achievable totals" with small value × count &rarr; boolean subset-sum over a bounded range.</div>
     </article>
     <article class="entry" id="two-sets-ii">
-      <div class="entry-head"><h3>Two Sets II</h3><span class="badge num">O(n³)</span></div>
+      <div class="entry-head"><h3>Two Sets II</h3><span class="badge num">\(O(n^{3})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count ways to split <code>{1..n}</code> into two sets of equal sum, mod 10⁹+7.<div class="formal">T = n(n+1)/2;  count unordered {A, B} with ΣA = ΣB = T/2</div></div>
+        <div class="ask">
+<p><b>Question.</b> Count the ways to split the numbers \(1, 2, \dots, n\) into two sets with equal
+sums. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The number of ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 500\)</dd>
+<dt>Sample</dt><dd>\(n = 7\) → <code>4</code> (for example \(\{1,3,4,6\}\) and \(\{2,5,7\}\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">The total is \(T = 1 + 2 + \dots + n = \frac{n(n+1)}{2}\). Each set must sum to \(T/2\), so if \(T\) is odd the answer is \(0\).</span></li>
+<li><span class="why">A split is fixed by choosing one set \(A\). Count subsets with sum \(T/2\), using \(dp[i][s]\) = number of subsets of \(\{1..i\}\) with sum \(s\):</span>
+\[ dp[0][0] = 1, \qquad dp[i][s] = dp[i-1][s] + dp[i-1][s - i] \]</li>
+<li><span class="why">Each split \(\{A, B\}\) is counted twice, once as \(A\) and once as \(B\). So divide by \(2\). Modulo a prime, dividing by \(2\) means multiplying by the inverse of \(2\):</span>
+\[ \text{ans} = dp[n][T/2] \cdot 2^{-1} \bmod p, \qquad 2^{-1} \equiv \frac{p+1}{2} = 500000004 \pmod{p} \]</li>
+<li><span class="why">Simplest form: \(T/2 \le 62625\), so the table is about \(500 \times 62625 \approx 3\cdot 10^7\) cells.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Odd <code>T</code> &rArr; 0 immediately.</li>
-          <li>A split is fixed by choosing <code>A</code>: count subsets with sum <code>T/2</code>.</li>
-          <li>Each split is counted twice (<code>A</code> and its complement) &rArr; divide by 2, which mod p means multiply by 2⁻¹.</li>
-        </ol>
+<li>If \(T\) is odd, the answer is \(0\) immediately.</li>
+<li>A split is fixed by choosing \(A\), so count subsets with sum \(T/2\).</li>
+<li>Each split is counted twice (\(A\) and its complement), so divide by \(2\). Modulo \(p\) that means multiplying by \(2^{-1}\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate subsets of 1..n.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(2ⁿ)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 500</code> &rarr; 2⁵⁰⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Subset-sum count over <code>T/2 ≤ 62 625</code>: <span class="cost">n · T/2 ≈ 3·10⁷</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List all subsets of \(1..n\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 500\) gives \(2^{500}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Subset-sum counting up to \(T/2 \le 62625\): <span class="cost">\(n \cdot T/2 \approx 3\cdot 10^7\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -720,7 +1007,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">Forward table: row <code>i</code> uses numbers 1..i and reads row <code>i&minus;1</code>. The inner loop variable <code>sum</code> shadows the outer total, harmlessly since the total is no longer used.</p>
+        <p class="impl-note">Forward table: row <code>i</code> uses numbers 1..i and reads row \(i-1\). The inner loop variable <code>sum</code> shadows the outer total, harmlessly since the total is no longer used.</p>
         <div class="src-meta"><span class="path">dp/Two_Sets_II.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -832,8 +1119,57 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a + b) % MOD
+
+def mmul(a, b):
+    return (a * b) % MOD
+
+def mpow(a, b):
+    res = 1
+    while b:
+        if b &amp; 1: res = mmul(res, a)
+        a = mmul(a, a)
+        b &gt;&gt;= 1
+    return res                              # built-in shortcut: pow(a, b, MOD)
+
+def minv(a):
+    return mpow(a, MOD - 2)
+
+def mdiv(a, b):
+    return mmul(a, minv(b))
+
+# def rec(i, sum):
+#     ...
+
+def solve():
+    n = int(next(tok))
+    sum_ = n * (n + 1) // 2
+    if sum_ % 2 != 0:
+        print(0)
+        return
+    ts = sum_ // 2
+    dp = [[0] * (ts + 1) for _ in range(n + 1)]
+    for i in range(n + 1):
+        for sum_ in range(ts + 1):          # C++ shadows the outer sum; Python just reuses the name
+            if sum_ == 0: dp[i][sum_] = 1
+            elif i == 0: dp[i][sum_] = 0
+            else:
+                take, nottake = 0, 0
+                if sum_ - i &gt;= 0: take = dp[i - 1][sum_ - i]
+                nottake = dp[i - 1][sum_]
+                dp[i][sum_] = madd(take, nottake)
+    ans = mdiv(dp[n][ts], 2)
+    print(ans)
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong><code>dp[n][ts] / 2</code> with integer division is wrong once the count is reduced mod p. Either use the inverse (as here) or count <code>dp[n&minus;1][ts]</code> &mdash; pinning <code>n</code> to the other side halves it exactly.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>dp[n][ts] / 2</code> with integer division is wrong once the count is reduced mod p. Either use the inverse (as here) or count \(\text{dp}[n-1][\text{ts}]\) &mdash; pinning <code>n</code> to the other side halves it exactly.</div>
       <div class="callout trigger"><strong>Recognize</strong>"split into two equal halves, count ways" &rarr; subset-sum count to T/2, then halve for symmetry.</div>
     </article>
   </section>
@@ -842,27 +1178,44 @@ signed main()
     <div class="family-head"><h2>3 &middot; Neighbour-constrained fill</h2></div>
     <p class="family-note">Count fillings of a line or grid where each cell only depends on an adjacent cell. The state is the position plus whatever the neighbour pins down.</p>
     <article class="entry" id="grid-paths-i">
-      <div class="entry-head"><h3>Grid Paths I</h3><span class="badge num">O(n²)</span></div>
+      <div class="entry-head"><h3>Grid Paths I</h3><span class="badge num">\(O(n^{2})\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Count right/down paths from the top-left to the bottom-right of an <code>n × n</code> grid avoiding traps, mod 10⁹+7.</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an \(n \times n\) grid in which some squares are traps. Count the
+paths from the top-left square to the bottom-right square that move only right or down and never
+step on a trap. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines of \(n\) characters: <code>.</code> empty, <code>*</code> trap.</dd>
+<dt>Output</dt><dd>The number of paths \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(4 \times 4\) grid in the file → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i][j]\) be the number of paths from cell \((i, j)\) to the bottom-right cell.</span></li>
+<li><span class="why">A path from \((i, j)\) starts by going down or right. These are different paths, so the counts add. A trap has no paths:</span>
+\[ dp[i][j] = \begin{cases} 0 &amp; \text{if } (i, j) \text{ is a trap} \\ dp[i+1][j] + dp[i][j+1] &amp; \text{otherwise} \end{cases} \]</li>
+<li><span class="why">Base case: \(dp[n-1][n-1] = 1\) if it is not a trap. Cells outside the grid count as \(0\).</span></li>
+<li><span class="why">Simplest form: fill rows bottom to top and columns right to left, so both neighbours are ready. Answer \(dp[0][0]\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>A path from <code>(i,j)</code> starts with either down or right &mdash; disjoint cases, so counts add.</li>
-          <li>A trap has 0 paths; that single rule also covers trapped start and end cells.</li>
-          <li>Filling bottom-up, right-to-left guarantees both neighbours are ready.</li>
-        </ol>
+<li>A path from \((i, j)\) starts with either down or right. The two cases do not overlap, so the counts add.</li>
+<li>A trap has \(0\) paths. That one rule also covers a trapped start or end cell.</li>
+<li>Filling bottom-up, right to left, makes sure both neighbours are already computed.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">DFS every monotone path.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(C(2n, n))</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 1000</code> &rarr; C(2000, 1000) ≈ 10⁶⁰⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One count per cell: <span class="cost">O(n²) = 10⁶</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">DFS over every right/down path.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O\big(\binom{2n}{n}\big)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000\): \(\binom{2000}{1000} \approx 10^{600}\) paths.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One count per cell: <span class="cost">\(O(n^2) = 10^6\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -934,32 +1287,77 @@ signed main()
 
     solve() ;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a + b) % MOD
+
+def solve():
+    n = int(next(tok))
+    res = [''] * n
+    for i in range(n):
+        x = next(tok)
+        res[i] = x
+    dp = [[0] * n for _ in range(n)]
+    for i in range(n - 1, -1, -1):
+        for j in range(n - 1, -1, -1):
+            if res[i][j] == '*': dp[i][j] = 0
+            elif i == n - 1 and j == n - 1: dp[i][j] = 1
+            else:
+                down, right = 0, 0
+                if i + 1 &lt; n: down = dp[i + 1][j]
+                if j + 1 &lt; n: right = dp[i][j + 1]
+                dp[i][j] = madd(down, right)
+    print(dp[0][0])
+
+solve()</code></pre>
       </div>
-      <div class="callout gotcha"><strong>Gotcha</strong>Swap the first two branches and a trap on <code>(n&minus;1, n&minus;1)</code> would still report 1.</div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Swap the first two branches and a trap on \((n-1, n-1)\) would still report 1.</div>
       <div class="callout trigger"><strong>Recognize</strong>"count monotone lattice paths with blocked cells" &rarr; <code>dp[cell] = dp[down] + dp[right]</code>, trap = 0.</div>
     </article>
     <article class="entry" id="array-description">
-      <div class="entry-head"><h3>Array Description</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Array Description</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Fill the zeros of <code>a</code> with values in <code>1..m</code> so adjacent values differ by at most 1. Count fillings, mod 10⁹+7.<div class="formal">dp[i][p] = #ways to fill i..n−1 given a[i−1] = p</div></div>
+        <div class="ask">
+<p><b>Question.</b> An array has \(n\) values, each between \(1\) and \(m\), and any two neighbouring
+values differ by at most \(1\). You are given the array with some values unknown (written as \(0\)).
+Count the arrays that match. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(x_1, \dots, x_n\) (\(0\) = unknown).</dd>
+<dt>Output</dt><dd>The number of matching arrays \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 100,\ \ 0 \le x_i \le m\)</dd>
+<dt>Sample</dt><dd>\(m = 5\), <code>2 0 2</code> → <code>3</code> (\([2,1,2], [2,2,2], [2,3,2]\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Value \(v\) is <em>allowed</em> at position \(i\) if \(1 \le v \le m\) and either \(x_i = 0\) or \(x_i = v\).</span></li>
+<li><span class="why">Let \(dp[i][p]\) be the number of ways to fill positions \(i, \dots, n-1\) when position \(i - 1\) holds \(p\). Only the previous value matters for the future:</span>
+\[ dp[i][p] = \sum_{\substack{v \text{ allowed at } i \\ |v - p| \le 1}} dp[i+1][v], \qquad dp[n][p] = 1 \]</li>
+<li><span class="why">Position \(0\) has no previous value, so:</span>
+\[ \text{ans} = \sum_{v \text{ allowed at } 0} dp[1][v] \]</li>
+<li><span class="why">Simplest form: each state tries at most \(3\) values \(p - 1, p, p + 1\), so about \(3 n m \approx 3\cdot 10^7\) steps with two rolling rows.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The only thing position <code>i</code> needs from the past is the previous value &mdash; <code>m ≤ 100</code> options.</li>
-          <li>A fixed <code>a[i]</code> is a zero-work case: one candidate, valid or not.</li>
-          <li>A free <code>a[i]</code> tries <code>p&minus;1, p, p+1</code> inside <code>[1, m]</code>.</li>
-        </ol>
+<li>Position \(i\) needs only the previous value from the past, and there are \(m \le 100\) options for it.</li>
+<li>A known \(x_i\) gives one candidate, valid or not, so almost no work.</li>
+<li>An unknown \(x_i\) tries \(p - 1, p, p + 1\), kept inside \([1, m]\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Try every value for every zero.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(mᵏ) for k zeros</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 100</code> &rarr; 100¹⁰⁰⁰⁰⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">State (position, previous value): <span class="cost">3 · n · m ≈ 3·10⁷</span>, two rolling rows.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Try every value for every unknown.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(m^k)\)</span> for \(k\) unknowns.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 100\): up to \(100^{100000}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">State = (position, previous value): <span class="cost">\(3 \cdot n \cdot m \approx 3\cdot 10^7\)</span>, two rolling rows.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -1081,6 +1479,63 @@ signed main()
 
     solve() ;
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a + b) % MOD
+
+def mmul(a, b):
+    return (a * b) % MOD
+
+def msub(a, b):
+    return (a - b + MOD) % MOD
+
+def mpow(a, b):
+    res = 1
+    while b &gt; 0:
+        if b &amp; 1: res = mmul(res, a)
+        a = mmul(a, a)
+        b &gt;&gt;= 1
+    return res
+
+def minv(a):
+    return mpow(a, MOD - 2)
+
+def mdiv(a, b):
+    return mmul(a, minv(b))
+
+def mcorr(a):
+    return (a % MOD + MOD) % MOD
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    arr = [int(next(tok)) for _ in range(n)]    # ll arr[n]
+    dp = [[0] * (m + 1) for _ in range(2)]      # ll dp[2][m + 1]
+    for i in range(n, -1, -1):
+        for prev in range(1, m + 1):
+            if i == n:
+                dp[i &amp; 1][prev] = 1
+                continue
+            ans = 0
+            if arr[i] != 0:
+                if abs(arr[i] - prev) &lt;= 1: ans = dp[(i + 1) &amp; 1][arr[i]]
+                else: ans = 0
+            else:
+                for j in range(prev - 1, prev + 2):     # j = prev-1 .. prev+1
+                    if j &gt;= 1 and j &lt;= m: ans = madd(ans, dp[(i + 1) &amp; 1][j])
+            dp[i &amp; 1][prev] = ans
+    if arr[0] != 0:
+        print(dp[0][arr[0]])
+    else:
+        ans = 0
+        for j in range(1, m + 1):
+            ans = madd(ans, dp[1][j])
+        print(ans)
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Position 0 has no real predecessor, so <code>dp[0][*]</code> is meaningless when <code>a[0] = 0</code>; the code sidesteps it by summing row 1 directly. When <code>a[0]</code> is fixed, <code>dp[0][a[0]]</code> works because a value is always within 1 of itself.</div>
       <div class="callout trigger"><strong>Recognize</strong>"fill unknowns, adjacent elements constrained, small value range" &rarr; <code>dp[i][previous value]</code>.</div>

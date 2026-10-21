@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OA: Search, Maps &amp; Greedy &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<body data-base=".." data-slug="oa_2_search_greedy">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; Placement OA</div>
+  <h1>OA: Search, Maps &amp; Greedy</h1>
+  <p class="dek">The short placement-OA problems: binary search on something monotone, a map
+  that turns a search into a lookup, or a sort that decides who gets the big multiplier. These
+  are the problems to finish in the first 20 minutes of an OA.</p>
+  <p class="stats"><b>9</b> problems &middot; <b>3</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Binary search on something monotone</a></div>
+  <div class="toc-fam"><a href="#f2">2 &middot; Precompute into a map</a></div>
+  <div class="toc-fam"><a href="#f3">3 &middot; Greedy order &amp; counting</a></div>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.
+      Every rule is demonstrated by at least two entries on this page.</p></div>
+    <div class="rules">
+      <div class="rule"><span class="n">1</span>
+        <p>Make something monotone, then binary search. In GPU Idle and Servers &amp; Receivers,
+        feasibility is monotone in the answer. In First Greater Index, the prefix max makes the
+        array sorted so <span class="rule-code">upper_bound</span> works.</p></div>
+      <div class="rule"><span class="n">2</span>
+        <p>If every candidate can be listed ahead of time, put them in a map and answer each question with a lookup.
+        4Sum stores pair sums, Fibonacci Index stores all &asymp; 75 terms up to \(10^{15}\), and Second Most Frequent stores counts.</p></div>
+      <div class="rule"><span class="n">3</span>
+        <p>When order decides the value, sort once and read the answer off the order. Maximum Profit opens
+        categories cheapest-first. Repeated String Cover outputs its letters sorted (the smallest string).
+        Second Most Frequent sorts <span class="rule-code">(freq, value)</span> pairs.</p></div>
+      <div class="rule"><span class="n">4</span>
+        <p>Watch integer division. Repeated String Cover needs a true ceiling,
+        Servers &amp; Receivers needs \(\lfloor \text{slack}/2\rfloor\), and Trapezium Area
+        needs <span class="rule-code">p % q == 0</span> before trusting <span class="rule-code">p / q</span>.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== FAMILY 1 ===================== -->
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Binary search on something monotone</h2></div>
+    <p class="family-note">Either a yes/no check that stays yes once the answer is big enough, or an
+    array made sorted by a running max. Both turn a linear search into <code>log</code> steps.</p>
+
+    <article class="entry" id="minimize-gpu-idle-count">
+      <div class="entry-head"><h3>Minimize GPU Idle Count</h3><span class="badge num">OA &middot; \(O(n \log n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A string \(s\) of length \(n\) uses only <code>a</code> and <code>b</code>. Its "idle count"
+is the length of its longest block of equal characters. You may flip at most \(k\) characters
+(<code>a</code> ↔ <code>b</code>). What is the smallest idle count you can reach?</p>
+<dl class="io">
+<dt>Input</dt><dd>The string \(s\) and the number \(k\) (<code>switchCount</code>).</dd>
+<dt>Output</dt><dd>The minimum possible longest block.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd><code>aabbbaaaa</code>, \(k = 2\) → <code>2</code> (e.g. <code>aabababaa</code>)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Turn it into a yes/no question: \(\text{ok}(x)\) = "can every block be made \(\le x\) with at most \(k\) flips?" If it works for \(x\), it works for \(x + 1\), so binary search the smallest \(x \in [1, n]\).</span></li>
+<li><span class="why">For \(x \ge 2\), blocks can be fixed separately. A block of length \(L\) is cut by flipping every \((x+1)\)-th character, which needs</span>
+\[ \text{flips}(L) = \left\lfloor \frac{L}{x + 1} \right\rfloor, \qquad \text{ok}(x) \iff \sum_{\text{blocks}} \left\lfloor \frac{L}{x + 1} \right\rfloor \le k \]
+<span class="why">Sample, \(x = 2\): blocks \(2, 3, 4\) need \(0 + 1 + 1 = 2 \le 2\). Yes.</span></li>
+<li><span class="why">\(x = 1\) means a fully alternating string, either <code>abab…</code> or <code>baba…</code>. The exact test compares against both:</span>
+\[ \text{ok}(1) \iff \min\big( \#\{i : s_i \ne \texttt{abab}\ldots_i\},\ \#\{i : s_i \ne \texttt{baba}\ldots_i\} \big) \le k \]</li>
+<li><span class="why">Simplest form: binary search with an \(O(n)\) check, \(O(n \log n)\) total.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>If blocks \(\le x\) can be reached with \(k\) flips, then blocks \(\le x + 1\) can too. The test is monotone, so binary search \(x\) over \([1, n]\).</li>
+<li>Blocks are independent. A block of length \(L\) needs \(\lfloor L/(x+1) \rfloor\) flips to get under \(x + 1\).</li>
+<li>\(x = 1\) means a fully alternating string, so it gets a special case. Note the code's test there, \(k \ge n - 1\), is only a sufficient condition; the exact test counts mismatches against both alternating patterns (step 3).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try every \(x\) from \(1\) upward with a linear check.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\) gives \(10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Binary search on \(x\): <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 440 110" role="img" aria-label="sample runs and flips for x = 2">
+  <g>
+    <rect class="s-box" x="10" y="30" width="40" height="30" rx="4"/><rect class="s-box" x="54" y="30" width="40" height="30" rx="4"/>
+    <rect class="s-box" x="98" y="30" width="40" height="30" rx="4"/><rect class="s-box" x="142" y="30" width="40" height="30" rx="4"/>
+    <rect class="s-warn" x="186" y="30" width="40" height="30" rx="4"/><rect class="s-box" x="230" y="30" width="40" height="30" rx="4"/>
+    <rect class="s-box" x="274" y="30" width="40" height="30" rx="4"/><rect class="s-warn" x="318" y="30" width="40" height="30" rx="4"/>
+    <rect class="s-box" x="362" y="30" width="40" height="30" rx="4"/>
+  </g>
+  <text class="s-t" x="26" y="50">a</text><text class="s-t" x="70" y="50">a</text><text class="s-t" x="114" y="50">b</text>
+  <text class="s-t" x="158" y="50">b</text><text class="s-t" x="202" y="50">b</text><text class="s-t" x="246" y="50">a</text>
+  <text class="s-t" x="290" y="50">a</text><text class="s-t" x="334" y="50">a</text><text class="s-t" x="378" y="50">a</text>
+  <text class="s-td" x="10" y="20">s = aabbbaaaa, k = 2, try x = 2</text>
+  <text class="s-ta" x="10" y="86">flip the 3rd b and the 3rd a &rarr; 2 flips &le; k &rarr; x = 2 ok</text>
+</svg>
+          <figcaption>The check walks each run and spends a flip whenever the run would grow past x. The sample needs 2 flips at x = 2, and x = 1 is impossible.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>check(x)</code> counts down a copy of the budget (<code>switchCount = temp</code>). After a flip it sets <code>idle = 1</code> but keeps <code>p = c</code>, so the next equal character counts as continuing a run. <code>s</code> and <code>temp</code> are globals that <code>check</code> reads.</p>
+        <div class="src-meta"><span class="path">placement oa prep/minimize_gpu_idle_count.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+#define ll long long 
+string s ; 
+ll temp ; 
+ll check(ll x)
+{
+    // this returns true if the idle count of x can be achieved  with at most switchCount operations
+    ll n = s.size() ;
+    if(x == 1)
+    {
+        if(temp &gt;= n - 1)
+        {
+            return true ; 
+        }
+        else 
+        {
+            return false ; 
+        }
+    }
+    ll idle = 1 ;
+    ll switchCount = temp ; 
+    char p = s[0] ;
+    for(ll i = 1 ; i &lt; n ; i++)
+    {
+        
+        char c = s[i] ;
+        if(c == p &amp;&amp; idle &lt; x)
+        {
+            idle++ ; 
+            p = c ;
+        }
+        else if(c == p &amp;&amp; idle == x)
+        {
+            switchCount-- ; 
+            if(switchCount &lt; 0)
+            {
+                return false ; 
+            }
+            idle = 1 ; 
+            p = c ;
+        }
+        else 
+        {
+            p = c ; 
+            idle = 1 ; 
+        }
+
+        
+    }
+    if (switchCount &lt; 0)
+    {
+        return false ; 
+    }
+    return true ;
+    
+
+}
+void solve() {
+
+    cin &gt;&gt; s &gt;&gt; temp ; 
+    ll n = s.size();
+    ll lo = 1 , hi = n , ans = n;
+    while(lo &lt;= hi) 
+    {
+        ll mid = lo + (hi - lo) / 2;
+        if(check(mid))
+        {
+            ans = mid ; 
+            hi = mid - 1 ; 
+        }
+        else 
+        {
+            lo = mid + 1 ; 
+        }
+    }
+    cout &lt;&lt; ans &lt;&lt; endl ;
+    
+    
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    int t = 1;
+    // cin &gt;&gt; t;
+    while (t--) {
+        solve();
+    }
+    
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+s = ""
+temp = 0
+
+def check(x):
+    # this returns true if the idle count of x can be achieved  with at most switchCount operations
+    n = len(s)
+    if x == 1:
+        if temp &gt;= n - 1:
+            return True
+        else:
+            return False
+    idle = 1
+    switchCount = temp
+    p = s[0]
+    for i in range(1, n):
+        c = s[i]
+        if c == p and idle &lt; x:
+            idle += 1
+            p = c
+        elif c == p and idle == x:
+            switchCount -= 1
+            if switchCount &lt; 0:
+                return False
+            idle = 1
+            p = c
+        else:
+            p = c
+            idle = 1
+    if switchCount &lt; 0:
+        return False
+    return True
+
+def solve():
+    global s, temp
+    s, temp = next(tok), int(next(tok))    # cin &gt;&gt; s &gt;&gt; temp
+    n = len(s)
+    lo, hi, ans = 1, n, n
+    while lo &lt;= hi:
+        mid = lo + (hi - lo) // 2
+        if check(mid):
+            ans = mid
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    print(ans)
+
+t = 1
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The sample passes, but the check over-counts flips. It flips every x-th equal character instead of every (x+1)-th, and the x = 1 test asks for k &ge; n&minus;1 instead of the cost of alternating. On <code>aaaaa 1</code> it prints 3, but <code>aabaa</code> gives 2. On <code>aaaa 2</code> it prints 2, but <code>abab</code> gives 1. A correct check spends &lfloor;L/(x+1)&rfloor; flips per run of length L, and for x = 1 uses min(mismatches against abab&hellip;, against baba&hellip;) &le; k.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"minimise the maximum run / load with a limited number of edits" &rarr; binary search the maximum, with a greedy feasibility check.</div>
+    </article>
+
+    <article class="entry" id="server-receivers">
+      <div class="entry-head"><h3>Servers and Receivers</h3><span class="badge num">SDE OA &middot; \(O(n \log \text{INF})\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) servers and \(m\) receivers. Receiver \(i\) prefers server \(a_i\), where
+serving it takes \(1\) second; serving it on any other server takes \(2\) seconds. All servers work at the
+same time, each serving one receiver at a time. What is the minimum time until every receiver is served?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(a_1, \dots, a_m\).</dd>
+<dt>Output</dt><dd>One integer: the minimum total time.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(s_j\) be the number of receivers that prefer server \(j\). Fix a deadline \(T\).</span></li>
+<li><span class="why">A server with \(s_j \gt T\) cannot finish its own receivers; \(s_j - T\) of them must move. A server with \(s_j \lt T\) has \(T - s_j\) spare seconds, enough for \(\lfloor (T - s_j)/2 \rfloor\) moved receivers:</span>
+\[ \text{need}(T) = \sum_{s_j \gt T} (s_j - T), \qquad \text{spare}(T) = \sum_{s_j \lt T} \left\lfloor \frac{T - s_j}{2} \right\rfloor \]</li>
+<li><span class="why">\(T\) works iff the spare room covers the overflow. A larger \(T\) only helps, so binary search the smallest:</span>
+\[ \text{ans} = \min \{\, T : \text{need}(T) \le \text{spare}(T) \,\} \]</li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The load \(s_j\) is the number of receivers that prefer server \(j\).</li>
+<li>With deadline \(T\), an overloaded server must hand off \(s_j - T\) receivers. A server with spare time \(T - s_j\) can take \(\lfloor (T - s_j)/2 \rfloor\) of them.</li>
+<li>\(\text{ok}(T)\) is monotone in \(T\), so binary search for the smallest \(T\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try \(T = 0, 1, 2, \dots\) up to \(2m\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 10^5\) gives \(10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Binary search on \(T\): <span class="cost">\(O(n \log \text{INF})\)</span>, about \(60 n\).</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 440 160" role="img" aria-label="loads against a deadline line">
+  <rect class="s-fill" x="40" y="40" width="50" height="100"/><text class="s-t" x="58" y="156">s0=4</text>
+  <rect class="s-fill" x="140" y="115" width="50" height="25"/><text class="s-t" x="156" y="156">s1=1</text>
+  <rect class="s-box" x="240" y="138" width="50" height="2"/><text class="s-t" x="256" y="156">s2=0</text>
+  <line class="s-hi" x1="20" y1="65" x2="320" y2="65"/><text class="s-ta" x="330" y="69">T = 3</text>
+  <rect class="s-warn" x="40" y="40" width="50" height="25"/><text class="s-tm" x="96" y="56">excess 1</text>
+  <text class="s-tm" x="140" y="100">slack 2 &rarr; 1</text><text class="s-tm" x="240" y="100">slack 3 &rarr; 1</text>
+  <text class="s-td" x="20" y="20">T = 3 feasible (1 &le; 2); T = 2 not (2 &gt; 1)</text>
+</svg>
+          <figcaption>Each moved receiver costs 2 s, so spare time is halved. At T = 3 the one extra receiver on server 0 fits on server 1 or 2.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>s[a[i]]++</code> builds the loads. <code>check</code> sums the excess (<code>mm</code>) and the halved spare capacity (<code>c</code>). <code>hi = INF</code> (\(10^{18}\)) costs about 60 iterations, though <code>hi = m</code> would be enough.</p>
+        <div class="src-meta"><span class="path">placement oa prep/sde/server_receivers.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+using namespace std;
+
+#define ll long long
+#define endl "\n"
+#define INF 1e18
+vector &lt; ll &gt; a , s ; 
+ll n , m ; 
+bool check(ll time)
+{
+    ll mm , c ; 
+    mm = c = 0 ; 
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        if(s[i] &gt; time)
+        {
+            mm += s[i] - time ; 
+        }
+        else if (s[i] &lt; time)
+        {
+            c += (time - s[i]) / 2 ; 
+        }
+    }
+    return mm &lt;= c ; 
+}
+void solve()
+{
+    cin &gt;&gt; n &gt;&gt; m ; 
+    a.assign(m , 0 ) ; 
+    s.assign(n , 0 ) ; 
+    for( ll i = 0 ; i &lt; m ; i++)
+    {
+        cin &gt;&gt; a[i] ; 
+        s[a[i]]++ ; 
+    }
+    ll lo = 0 ; 
+    ll hi = INF ; 
+    ll ans = 0 ; 
+    while( lo &lt;= hi)
+    {
+        ll mid = lo + (hi - lo ) / 2 ; 
+        if(check(mid))
+        {
+            ans = mid ; 
+            hi = mid - 1 ; 
+        }
+        else 
+        {
+            lo = mid + 1 ; 
+        }
+        
+    }
+    cout &lt;&lt; ans &lt;&lt; endl ; 
+
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    int t = 1;
+    // cin &gt;&gt; t;
+    while (t--) {
+        solve();
+    }
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+a, s = [], []
+n, m = 0, 0
+
+def check(time):
+    mm = c = 0                              # mm = c = 0
+    for i in range(n):
+        if s[i] &gt; time:
+            mm += s[i] - time
+        elif s[i] &lt; time:
+            c += (time - s[i]) // 2
+    return mm &lt;= c
+
+def solve():
+    global n, m, a, s
+    n, m = int(next(tok)), int(next(tok))
+    a = [0] * m
+    s = [0] * n
+    for i in range(m):
+        a[i] = int(next(tok))
+        s[a[i]] += 1
+    lo = 0
+    hi = INF
+    ans = 0
+    while lo &lt;= hi:
+        mid = lo + (hi - lo) // 2
+        if check(mid):
+            ans = mid
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    print(ans)
+
+t = 1
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>s</code> has size n and is indexed by <code>a[i]</code>, so server ids must be 0-based. A 1-based input writes to <code>s[n]</code>, out of bounds.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"minimise finishing time, and moving a job elsewhere costs more" &rarr; binary search T, then compare total excess with total spare capacity.</div>
+    </article>
+
+    <article class="entry" id="array-first-greater-index">
+      <div class="entry-head"><h3>Array First Greater Index</h3><span class="badge num">Eternal &middot; \(O((|a|+|b|) \log |b|)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given two arrays \(a\) and \(b\). For each \(a_i\), find the smallest 1-based index
+\(j\) with \(b_j \gt a_i\). Return all the indices, using \(-1\) when no such \(j\) exists.</p>
+<dl class="io">
+<dt>Input</dt><dd>Arrays \(a\) and \(b\).</dd>
+<dt>Output</dt><dd>One index (or <code>-1</code>) per element of \(a\).</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans}_i = \min \{\, j : b_j \gt a_i \,\} \quad (\text{or } -1) \]</li>
+<li><span class="why">Use the prefix maximum \(P_j = \max(b_1, \dots, b_j)\). Some \(b_{j'}\) with \(j' \le j\) beats \(a_i\) exactly when \(P_j\) does, so</span>
+\[ \text{ans}_i = \min \{\, j : P_j \gt a_i \,\} \]</li>
+<li><span class="why">Simplest form: \(P\) never decreases, so this is a binary search: <code>upper_bound(P, a_i)</code>. If it reaches the end, nothing in \(b\) is larger: \(-1\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>"The first \(j\) with \(b_j \gt x\)" is the same as "the first \(j\) where \(\max(b_1..b_j) \gt x\)".</li>
+<li>The prefix max <code>pre</code> never decreases, so <code>upper_bound(pre, x)</code> finds that \(j\).</li>
+<li>If it reaches the end, nothing in \(b\) is larger, so the answer is \(-1\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Scan \(b\) from the left for each \(a_i\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(|a| \cdot |b|)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(10^5\) each gives \(10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Prefix max plus binary search: <span class="cost">\(O((|a| + |b|) \log |b|)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 120" role="img" aria-label="prefix max and upper bound">
+  <text class="s-td" x="10" y="20">b   = 3 1 5 2 7</text>
+  <g>
+    <rect class="s-box" x="70" y="30" width="50" height="30" rx="4"/><rect class="s-box" x="124" y="30" width="50" height="30" rx="4"/>
+    <rect class="s-good" x="178" y="30" width="50" height="30" rx="4"/><rect class="s-box" x="232" y="30" width="50" height="30" rx="4"/>
+    <rect class="s-box" x="286" y="30" width="50" height="30" rx="4"/>
+  </g>
+  <text class="s-tm" x="10" y="50">pre</text>
+  <text class="s-t" x="91" y="50">3</text><text class="s-t" x="145" y="50">3</text><text class="s-t" x="199" y="50">5</text>
+  <text class="s-t" x="253" y="50">5</text><text class="s-t" x="307" y="50">7</text>
+  <text class="s-ta" x="70" y="88">x = 4 &rarr; upper_bound &rarr; index 2 &rarr; answer 3 (b[3] = 5)</text>
+  <text class="s-tm" x="70" y="106">x = 7 &rarr; end &rarr; &minus;1</text>
+</svg>
+          <figcaption>The prefix max turns an unsorted b into a sorted array without moving any index, so one binary search answers each query.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">In this file <code>#define ll int</code>, so <code>pre</code> is <code>vector&lt;int&gt;</code>. <code>it - pre.begin() + 1</code> turns the iterator into a 1-based index. <code>main</code> is empty, because the function is the whole submission.</p>
+        <div class="src-meta"><span class="path">placement oa prep/eternal/array_first_greater_index.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+#define ll int 
+vector&lt;int&gt; solveFirstGreaterIndex(vector&lt;int&gt;&amp; a, vector&lt;int&gt;&amp; b) {
+    ll n = b.size() ; 
+    if (n == 0) return vector&lt;int&gt;(a.size(), -1);
+    vector &lt; ll &gt; pre(n,0) ; 
+    pre[0] = b[0] ; 
+    for( ll i = 1 ; i &lt; n ; i++)
+    {
+        pre[i] = max( pre[i-1]  , b[i] ) ; 
+
+    }
+    // pre stores the max from 0 to i 
+    vector &lt; ll &gt; ans ; 
+    for (auto&amp; x : a)
+    {
+        auto it = upper_bound(pre.begin(), pre.end(), x);
+        // this returns the iterator to the first first element in pre that is bigger than a
+        if(it == pre.end())
+        {
+            ans.push_back(-1) ; 
+        }
+        else 
+        {
+            ans.push_back((it - pre.begin()) + 1 ) ; 
+        }
+    }
+    return ans;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    // Testing logic here
+    
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>from bisect import bisect_right
+
+def solveFirstGreaterIndex(a, b):
+    n = len(b)
+    if n == 0: return [-1] * len(a)        # vector&lt;int&gt;(a.size(), -1)
+    pre = [0] * n
+    pre[0] = b[0]
+    for i in range(1, n):
+        pre[i] = max(pre[i - 1], b[i])
+    # pre stores the max from 0 to i
+    ans = []
+    for x in a:
+        j = bisect_right(pre, x)            # upper_bound(pre.begin(), pre.end(), x) as an index
+        # this returns the iterator to the first first element in pre that is bigger than a
+        if j == n:                          # it == pre.end()
+            ans.append(-1)
+        else:
+            ans.append(j + 1)               # (it - pre.begin()) + 1
+    return ans
+
+if __name__ == "__main__":
+    pass                                    # Testing logic here</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Use <code>upper_bound</code> (strictly greater), not <code>lower_bound</code>. With an equal value, <code>lower_bound</code> returns a b[j] that equals x and is not larger.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"the first position whose value exceeds x, for many x, in an unsorted array" &rarr; prefix max, then upper_bound.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 2 ===================== -->
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; Precompute into a map</h2></div>
+    <p class="family-note">The candidates can be listed ahead of time: pair sums, sequence terms, or
+    counts. Store them once, and each question becomes a <code>find</code>.</p>
+
+    <article class="entry" id="four-sum">
+      <div class="entry-head"><h3>4Sum</h3><span class="badge num">Accenture &middot; \(O(n^{2} \log n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers and a target \(x\). Are there four values at
+distinct positions whose sum is \(x\)? Print <code>YES</code> or <code>NO</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(a_1, \dots, a_n\).</dd>
+<dt>Output</dt><dd><code>YES</code> or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000,\ \ 1 \le x, a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd>\(x = 15\), <code>3 2 5 8 1 3 2 3</code> → <code>YES</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \exists\ i \lt j \lt k \lt l : \ a_i + a_j + a_k + a_l = x \]</li>
+<li><span class="why">Split into a left pair and a right pair around a pivot index \(i\). At step \(i\), the stored set holds every pair sum with both indices \(\lt i\):</span>
+\[ H_i = \{\, a_p + a_q : p \lt q \lt i \,\} \]</li>
+<li><span class="why">First query every pair that starts at \(i\), then add the pairs that end at \(i\):</span>
+\[ \text{query: } x - (a_i + a_j) \in H_i \ \ (j \gt i), \qquad \text{then } H_{i+1} = H_i \cup \{\, a_k + a_i : k \lt i \,\} \]</li>
+<li><span class="why">Simplest form: stored pairs use indices \(\lt i\) and queried pairs use \(\ge i\), so all four indices are distinct automatically. \(O(n^2 \log n)\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Split the four into two pairs and look up one pair's complement among stored pair sums.</li>
+<li>At index \(i\): first query the pairs \((i, j)\) with \(j \gt i\), then store the pairs \((k, i)\) with \(k \lt i\).</li>
+<li>Stored pairs use indices \(\lt i\) and queried pairs use indices \(\ge i\), so all four are distinct automatically.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Four nested loops.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^4)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000\) gives \(10^{12}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Meet in the middle on pair sums: <span class="cost">\(O(n^2 \log n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 520 110" role="img" aria-label="stored pairs left of i, queried pairs right of i">
+  <rect class="s-good" x="10" y="30" width="210" height="30" rx="4"/><text class="s-t" x="20" y="50">pairs left of i &rarr; map</text>
+  <rect class="s-fill" x="230" y="30" width="40" height="30" rx="4"/><text class="s-t" x="245" y="50">i</text>
+  <rect class="s-box" x="280" y="30" width="230" height="30" rx="4"/><text class="s-t" x="290" y="50">j &gt; i: find x &minus; a&#7522; &minus; a&#11388;</text>
+  <text class="s-ta" x="10" y="90">query first, then insert (i, k) for k &lt; i</text>
+</svg>
+          <figcaption>The map only ever holds pairs strictly to the left of i, and the query pair starts at i, so the two pairs can never share an index.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>main</code> reads a test count T first, which the statement's sample lacks. With a leading <code>1</code> it prints the expected YES. <code>pos</code> stores the pair indices, but only <code>find</code> is ever used.</p>
+        <div class="src-meta"><span class="path">placement oa prep/accenture/four_sum.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+void solve() 
+{
+    ll n, x ;
+    cin &gt;&gt; n &gt;&gt; x ;
+
+    vector &lt; ll &gt; a(n) ;
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; a[i] ;
+
+    map &lt; ll , pll &gt; pos ;
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = i + 1 ; j &lt; n ; j++)
+        {
+            ll rem = x - a[i] - a[j] ;
+
+            if(pos.find(rem) != pos.end())
+            {
+                py ; 
+                return ;
+            }
+        }
+        for(ll j = 0 ; j &lt; i ; j++)
+        {
+            ll sum = a[i] + a[j] ;
+            pos[sum] = {i, j} ;
+        }
+        
+
+        
+    }
+
+    pn ;
+}
+    
+
+
+    
+   
+
+
+
+
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    ll t ; 
+    cin &gt;&gt; t ;
+    while(t--)
+    {
+        solve() ; 
+    }
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, x = int(next(tok)), int(next(tok))
+    a = [int(next(tok)) for _ in range(n)]
+    pos = {}                                # map&lt;ll, pll&gt;
+    for i in range(n):
+        for j in range(i + 1, n):
+            rem = x - a[i] - a[j]
+            if rem in pos:                  # pos.find(rem) != pos.end()
+                print("YES")
+                return
+        for j in range(i):
+            sum_ = a[i] + a[j]
+            pos[sum_] = (i, j)
+    print("NO")
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Insert the pairs (i, k&lt;i) only <em>after</em> querying with i. If you insert first, a stored pair can reuse index i.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"four elements summing to x" &rarr; meet in the middle on pair sums, inserting the left pairs after querying.</div>
+    </article>
+
+    <article class="entry" id="fibonacci-index">
+      <div class="entry-head"><h3>Fibonacci Index</h3><span class="badge num">Accenture &middot; \(O(75 + T \log 75)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> The Fibonacci sequence is \(F(0) = 0,\ F(1) = 1,\ F(i) = F(i-1) + F(i-2)\). For each of
+\(T\) numbers \(N \ge 2\), print the index \(i\) with \(F(i) = N\), or \(-1\) if \(N\) is not a Fibonacci number.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(T\), then \(T\) integers \(N\).</dd>
+<dt>Output</dt><dd>For each \(N\), its index or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le T \le 10,\ \ 2 \le N \le 10^{15}\)</dd>
+<dt>Sample</dt><dd>\(13 \to 7\); \(34 \to 9\); \(21 \to 8\); \(10 \to -1\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans}(N) = i \ \text{ such that } F(i) = N, \quad \text{or } -1 \]</li>
+<li><span class="why">Fibonacci numbers grow like \(\varphi^i / \sqrt{5}\) with \(\varphi = \frac{1 + \sqrt 5}{2} \approx 1.618\). So</span>
+\[ F(i) \le 10^{15} \iff i \lesssim \log_{\varphi}\!\big(\sqrt{5} \cdot 10^{15}\big) \approx 73.5 \]
+<span class="why">There are only about \(74\) values to consider.</span></li>
+<li><span class="why">Simplest form: build a map from \(F(i)\) to \(i\) once, with exact integers, and answer each query with one lookup. (\(N \ge 2\), so the repeated value \(1 = F(1) = F(2)\) never matters.)</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>\(F\) grows like \(\varphi^i\), so \(F(i)\) passes \(10^{15}\) at about \(i = 74\). There are only about \(74\) values.</li>
+<li>Build value → index once; each query is then one map lookup.</li>
+<li>\(N \ge 2\), so the repeated value \(1\) (\(F(1) = F(2)\)) never matters.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Regenerate the sequence for each query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(75 \cdot T)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Never: \(T \le 10\). The real trap is testing \(N\) with a floating-point formula.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Build the map once: the same speed, with exact integers.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>#include "algodebug.h"</code> is a local debug header in <code>../coding grind/</code>. The file compiles with that directory added via <code>-I</code>. <code>c &gt; 1e15</code> compares a long long with a double, which is exact at this size.</p>
+        <div class="src-meta"><span class="path">placement oa prep/accenture/fibonacci_index.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+#include "algodebug.h"
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+map &lt; ll,ll&gt; fib ;
+void precompute()
+{
+    // Precompute Fibonacci numbers up to 10^15
+    ll a = 0, b = 1;
+    fib[a] = 0; 
+    fib[b] = 1; 
+    ll index = 2;
+    while (true) {
+        ll c = a + b;
+        if (c &gt; 1e15) break; 
+        fib[c] = index; 
+        a = b;
+        b = c;
+        index++;
+    }
+}
+void solve() 
+{
+    ll n ; 
+    cin &gt;&gt; n ;
+    ll ans = -1 ;
+    if (fib.find(n) != fib.end()) 
+    {
+        ans = fib[n] ;
+    }
+    cout &lt;&lt; ans &lt;&lt; endl ;
+    
+
+
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    ll t ; 
+    cin &gt;&gt; t ;
+    precompute() ;
+    while(t--)
+    {
+        solve() ; 
+    }
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+fib = {}                                    # map&lt;ll, ll&gt;
+
+def precompute():
+    # Precompute Fibonacci numbers up to 10^15
+    a, b = 0, 1
+    fib[a] = 0
+    fib[b] = 1
+    index = 2
+    while True:
+        c = a + b
+        if c &gt; 10**15: break
+        fib[c] = index
+        a = b
+        b = c
+        index += 1
+
+def solve():
+    n = int(next(tok))
+    ans = -1
+    if n in fib:
+        ans = fib[n]
+    print(ans)
+
+t = int(next(tok))
+precompute()
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The value 1 is inserted twice, so the map ends with <code>fib[1] = 2</code>. That is harmless only because N &ge; 2.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"is X in a fast-growing sequence, and at which position" &rarr; precompute every term up to the limit into a map.</div>
+    </article>
+
+    <article class="entry" id="second-most-frequent">
+      <div class="entry-head"><h3>Second Most Frequent Element</h3><span class="badge num">Eternal (IIT ISM) &middot; \(O(n \log n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(N\) integers. Rank the distinct values by frequency (how many
+times each appears), higher first; on equal frequency, the larger value ranks higher. Print the value
+ranked second, or \(-1\) if there are fewer than two distinct values.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\), then \(A_1, \dots, A_N\).</dd>
+<dt>Output</dt><dd>The second-ranked value, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(f(v)\) be the frequency of \(v\). The ranking compares pairs, first by frequency, then by value:</span>
+\[ v \text{ ranks above } w \iff \big(f(v), v\big) \gt \big(f(w), w\big) \ \text{ (lexicographically)} \]</li>
+<li><span class="why">Simplest form: count with a map, sort the pairs \((f(v), v)\) ascending, and read the second-to-last one. The tie-break comes free from pair comparison.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The rank key is the pair (frequency, value), compared lexicographically, with higher better in both fields.</li>
+<li>Sort these pairs ascending: the best lands last and the second best at <code>size - 2</code>.</li>
+<li>The tie-break by larger value comes free from pair comparison.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Count each value with a full scan.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\) gives \(10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Count with a map, then sort the (frequency, value) pairs: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 100" role="img" aria-label="sorted frequency pairs">
+  <text class="s-td" x="10" y="18">A = 5 5 3 3 1</text>
+  <rect class="s-box" x="10" y="30" width="110" height="30" rx="4"/><text class="s-t" x="40" y="50">(1, 1)</text>
+  <rect class="s-good" x="130" y="30" width="110" height="30" rx="4"/><text class="s-t" x="160" y="50">(2, 3)</text>
+  <rect class="s-fill" x="250" y="30" width="110" height="30" rx="4"/><text class="s-t" x="280" y="50">(2, 5)</text>
+  <text class="s-ta" x="130" y="82">v[size &minus; 2] &rarr; 3</text><text class="s-tm" x="250" y="82">best</text>
+</svg>
+          <figcaption>Both 3 and 5 appear twice. The larger value ranks higher, so 5 is first and 3 is second.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The map is named <code>mp</code>, which is also a macro (<code>#define mp make_pair</code>). The declaration expands to <code>map&lt;ll,ll&gt; make_pair</code> and compiles, because that name just hides <code>std::make_pair</code>. Pairs are pushed as <code>{count, value}</code>.</p>
+        <div class="src-meta"><span class="path">placement oa prep/iit_ism_dhanbad/second_most_frequent.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+
+void solve() 
+{
+    ll n ; 
+    cin &gt;&gt; n ;
+    map &lt;ll,ll&gt; mp ;
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        ll x ; 
+        cin &gt;&gt; x ;
+        mp[x]++ ;
+    }
+    vector &lt; pair &lt; ll , ll &gt; &gt; v ;
+    for(auto it : mp)
+    {
+        v.push_back({it.sc , it.fr}) ;
+    }
+    sort(v.begin() , v.end()) ;
+    if(v.size() &lt; 2)
+    {
+        cout &lt;&lt; -1 &lt;&lt; endl ;
+    }
+    else
+    {
+        cout &lt;&lt; v[v.size() - 2].sc &lt;&lt; endl ;
+    }
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    ll t ; 
+    cin &gt;&gt; t ; 
+    while(t--)
+    {
+        solve() ; 
+    }
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    mp = {}
+    for i in range(n):
+        x = int(next(tok))
+        mp[x] = mp.get(x, 0) + 1
+    v = []
+    for key, cnt in mp.items():             # for (auto it : mp): it.fr = key, it.sc = count
+        v.append((cnt, key))
+    v.sort()                                # tuples compare like pairs: count, then value
+    if len(v) &lt; 2:
+        print(-1)
+    else:
+        print(v[len(v) - 2][1])             # v[v.size() - 2].sc  (or v[-2][1])
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Push <code>{it.sc, it.fr}</code>, i.e. (count, value), not (value, count). The sort key must lead with frequency.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"k-th most frequent, with a tie-break by value" &rarr; count, sort the (freq, value) pairs, and index from the end.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 3 ===================== -->
+  <section class="family" id="f3">
+    <div class="family-head"><h2>3 &middot; Greedy order &amp; counting</h2></div>
+    <p class="family-note">There is no search here: the answer is a formula over counts, or over a sorted order.
+    The care goes into deciding what gets the big multiplier and into exact integer arithmetic.</p>
+
+    <article class="entry" id="maximum-profit">
+      <div class="entry-head"><h3>Maximum Profit</h3><span class="badge num">HackerRank &middot; \(O(n \log n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A shop has \(n\) items; item \(i\) has category \(c_i\) and price \(p_i\). The items are
+sold one by one in an order you choose. Selling an item earns its price times the number of different
+categories sold so far (including this item's category). Maximise the total profit.</p>
+<dl class="io">
+<dt>Input</dt><dd>The arrays <code>category</code> and <code>price</code>.</dd>
+<dt>Output</dt><dd>One integer: the maximum total profit.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd><code>category = [3,1,2,3]</code>, <code>price = [2,1,4,4]</code> → <code>29</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(D\) be the number of distinct categories. The multiplier only grows, from \(1\) to \(D\), and it rises by one exactly at the first sale of each category (an "opener").</span></li>
+<li><span class="why">So the \(D\) openers get multipliers \(1, 2, \dots, D\), and every other item can wait until all categories are open and get \(D\):</span>
+\[ \text{profit} = \sum_{k=1}^{D} k \cdot o_k \;+\; D \cdot \sum_{\text{other items}} p \]
+<span class="why">where \(o_k\) is the price of the \(k\)-th opener.</span></li>
+<li><span class="why">To maximise it, each category's opener should be its cheapest item (the rest then get the full \(D\)), and openers should be sold cheapest first, so small multipliers meet small prices (rearrangement inequality):</span>
+\[ o_1 \le o_2 \le \dots \le o_D \]</li>
+<li><span class="why">Simplest form, sample: openers \(1, 2, 4\) give \(1 + 4 + 12 = 17\); the other item \(4\) gives \(3 \cdot 4 = 12\); total \(29\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The multiplier only grows, up to \(D\) = the number of distinct categories, and it rises once per category: on that category's first sale.</li>
+<li>The \(D\) opening sales get multipliers \(1..D\). Every other item can wait until all categories are open and get \(D\).</li>
+<li>Open each category with its cheapest item, and open the categories cheapest-first, so the small multipliers go to the small prices.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try every selling order.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n! \cdot n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 12\) gives about \(5\cdot 10^9\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Group, sort, and use the closed form: <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 440 120" role="img" aria-label="opening sales then the rest">
+  <text class="s-td" x="10" y="18">category = 3 1 2 3,  price = 2 1 4 4</text>
+  <rect class="s-good" x="10" y="30" width="60" height="30" rx="4"/><text class="s-t" x="22" y="50">1&times;1</text>
+  <rect class="s-good" x="76" y="30" width="60" height="30" rx="4"/><text class="s-t" x="88" y="50">2&times;2</text>
+  <rect class="s-good" x="142" y="30" width="60" height="30" rx="4"/><text class="s-t" x="154" y="50">4&times;3</text>
+  <rect class="s-fill" x="214" y="30" width="60" height="30" rx="4"/><text class="s-t" x="226" y="50">4&times;3</text>
+  <text class="s-ta" x="10" y="84">openers (cheapest per category, ascending) = 1 + 4 + 12 = 17</text>
+  <text class="s-tm" x="10" y="104">rest &times; D = 4 &times; 3 = 12  &rarr;  total 29</text>
+</svg>
+          <figcaption>The cheapest item of each category opens it, in ascending price order. The remaining item of category 3 waits and earns the full multiplier 3.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>map&lt;ll, vector&lt;ll&gt;&gt;</code> groups prices by category. After sorting, <code>v[0]</code> is a category's opener and <code>fst</code> collects the openers. <code>(i + 1) * fst[i]</code> pays the rising multiplier, and every <code>v[i]</code> with i &ge; 1 pays <code>fst.size()</code>. The hardcoded <code>main</code> prints the sample's 29.</p>
+        <div class="src-meta"><span class="path">placement oa prep/maximum_profit.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+#define ll long long 
+long long findMaximumProfit(vector&lt;int&gt; c, vector&lt;int&gt; p) {
+    map &lt; ll , vector &lt; ll &gt; &gt; g ;
+    for(ll i = 0 ; i &lt; c.size() ; i++)
+    {
+        g[c[i]].push_back(p[i]) ;
+    }
+    
+    vector &lt; ll &gt; fst ; 
+    
+    // check the first element in every category 
+    for(auto &amp;[k , v] : g)
+    {
+        sort(v.begin() , v.end()) ; 
+        fst.push_back(v[0]) ;
+
+    }
+    sort(fst.begin() , fst.end()) ;
+    ll ans = 0 ;
+    for(ll i = 0 ; i &lt; fst.size() ; i++)
+    {
+        ans += (i + 1) * fst[i] ; 
+    }
+    for(auto &amp;[k , v] : g)
+    {
+        for(ll i = 1 ; i &lt; v.size() ; i++)
+        {
+            ans += v[i] * fst.size() ;
+        }
+    }
+    return ans ;
+
+
+
+
+    
+    
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    vector&lt;int&gt; category = {3, 1, 2, 3};
+    vector&lt;int&gt; price = {2, 1, 4, 4};
+    cout &lt;&lt; findMaximumProfit(category, price) &lt;&lt; "\n";
+    
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>def findMaximumProfit(c, p):
+    g = {}                                  # map&lt;ll, vector&lt;ll&gt;&gt;
+    for i in range(len(c)):
+        g.setdefault(c[i], []).append(p[i]) # g[c[i]].push_back(...): setdefault creates the list if missing
+    fst = []
+    # check the first element in every category
+    for k, v in g.items():
+        v.sort()
+        fst.append(v[0])
+    fst.sort()
+    ans = 0
+    for i in range(len(fst)):
+        ans += (i + 1) * fst[i]
+    for k, v in g.items():
+        for i in range(1, len(v)):
+            ans += v[i] * len(fst)
+    return ans
+
+if __name__ == "__main__":
+    category = [3, 1, 2, 3]
+    price = [2, 1, 4, 4]
+    print(findMaximumProfit(category, price))</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Open with the <em>cheapest</em> item, not the most expensive. The opener is the item that takes the low multiplier.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"multiplier = number of distinct groups seen so far" &rarr; open each group with its cheapest item, cheapest group first; everything else &times; D.</div>
+    </article>
+
+    <article class="entry" id="repeated-string-cover">
+      <div class="entry-head"><h3>Repeated String Cover</h3><span class="badge num">Harness &middot; \(O(n + |\text{data}|)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an integer \(n\) and a string <code>data</code> of lowercase letters. Build a
+string \(s\) of length exactly \(n\). Repeat \(s\) the fewest times needed to reach length at least
+\(|\text{data}|\); the result must contain every letter at least as many times as <code>data</code> does.
+Print the alphabetically smallest such \(s\), or <code>-1</code> if none exists.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then <code>data</code>.</dd>
+<dt>Output</dt><dd>The smallest valid \(s\), or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le |\text{data}| \le 10^5\)</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">The number of copies is fixed:</span>
+\[ r = \left\lceil \frac{|\text{data}|}{n} \right\rceil \]</li>
+<li><span class="why">Every copy of \(s\) has the same letter counts, so letter \(c\) with count \(f_c\) in <code>data</code> must appear in \(s\) at least</span>
+\[ \text{need}_c = \left\lceil \frac{f_c}{r} \right\rceil \text{ times}, \qquad \text{possible} \iff \sum_{c} \text{need}_c \le n \]</li>
+<li><span class="why">Simplest form: fill the \(n - \sum \text{need}_c\) spare places with <code>a</code> (the smallest letter), then print all letters in sorted order, the smallest arrangement.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Letter \(c\) must appear \(\lceil f_c / r \rceil\) times in \(s\), because each copy of \(s\) contributes the same count.</li>
+<li>If \(\sum \text{need} \gt n\), it is impossible.</li>
+<li>Fill the spare places with <code>'a'</code> and write all letters in sorted order. A sorted string is the smallest arrangement.</li>
+<li>When \(n \ge |\text{data}|\), \(r = 1\): \(s\) is <code>data</code> sorted, with extra <code>'a'</code>s at the front.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try strings in alphabetical order and test each one.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(26^n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\): hopeless.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Count, divide rounding up, and print in sorted order: <span class="cost">\(O(n + |\text{data}|)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 440 110" role="img" aria-label="need counts for n = 4">
+  <text class="s-td" x="10" y="18">n = 4, data = bbbbaac (7) &rarr; r = &lceil;7/4&rceil; = 2</text>
+  <rect class="s-box" x="10" y="30" width="120" height="30" rx="4"/><text class="s-t" x="20" y="50">a: 2 &rarr; 1</text>
+  <rect class="s-box" x="140" y="30" width="120" height="30" rx="4"/><text class="s-t" x="150" y="50">b: 4 &rarr; 2</text>
+  <rect class="s-box" x="270" y="30" width="120" height="30" rx="4"/><text class="s-t" x="280" y="50">c: 1 &rarr; 1</text>
+  <text class="s-ta" x="10" y="86">&sum; need = 4 = n, no padding &rarr; s = abbc</text>
+  <text class="s-tm" x="10" y="104">abbc abbc has a&times;2, b&times;4, c&times;2 &ge; data</text>
+</svg>
+          <figcaption>Each letter's count is ceil-divided by the number of copies. The needs add up to exactly n, so s is just those letters in sorted order.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The file defines its own integer <code>ceil(ll, ll)</code>, which hides <code>std::ceil</code> for these arguments. In the <code>n &gt; ds</code> branch, <code>data</code> is sorted descending and popped from the back, so it comes out ascending.</p>
+        <div class="src-meta"><span class="path">placement oa prep/harness/repeated_string_cover.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+
+#define ll long long
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1)
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll ceil(ll a , ll b)
+{
+    if(a%b)
+    {
+        return a / b + 1 ; 
+    }
+    else 
+    {
+        return a / b ; 
+    }
+}
+void solve()
+{
+    ll n ; 
+    cin &gt;&gt; n ; 
+    string d ; 
+    cin &gt;&gt; d ; 
+    ll ds = d.length() ; 
+    vector &lt; char &gt; data ; 
+    vector &lt; ll &gt; fd(26,0) ; 
+    for(ll i = 0 ; i &lt; ds ; i++)
+    {
+        fd[d[i]-'a']++ ; 
+        data.push_back(d[i]) ; 
+    }
+    string ans ; 
+    if ( n &gt; ds)
+    {
+        ll left = n - ds ; 
+        for(ll i = 0 ; i &lt; left ; i++)
+        {
+            ans += 'a' ; 
+        }
+        sort(data.rbegin() , data.rend()) ; 
+        while(!data.empty())
+        {
+            ans += data.back() ; 
+            data.pop_back() ;
+        }
+    }
+    else
+    {
+        ll x = ceil(ds , n) ; 
+        ll tn = 0 ; 
+        vector &lt; ll &gt; need(26,0) ; 
+        for(ll i = 0 ; i &lt; 26 ; i++)
+        {
+            need[i] = ceil(fd[i] , x) ; 
+            tn += need[i] ; 
+        }
+        if ( tn &gt; n)
+        {
+            ans = "-1" ; 
+        }
+        else 
+        {
+            ll left = n - tn ; 
+            ll i = 0 ; 
+            for(; i &lt; left ; i++)
+            {
+                ans += 'a' ; 
+            }
+            for(ll i = 0 ; i &lt; 26 ; i++)
+            {
+                while(need[i]!=0)
+                {
+                    ans += 'a' + i ; 
+                    need[i]-- ; 
+                }
+            }
+
+        }
+        
+
+    }
+    cout &lt;&lt; ans &lt;&lt; endl ; 
+
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    solve();
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def ceil(a, b):                             # integer ceil; math.ceil(a / b) would go through floats
+    if a % b:
+        return a // b + 1
+    else:
+        return a // b
+
+def solve():
+    n = int(next(tok))
+    d = next(tok)
+    ds = len(d)
+    data = []
+    fd = [0] * 26
+    for i in range(ds):
+        fd[ord(d[i]) - ord('a')] += 1
+        data.append(d[i])
+    ans = []                                # build chars in a list, ''.join at the end
+    if n &gt; ds:
+        left = n - ds
+        for i in range(left):
+            ans.append('a')
+        data.sort(reverse=True)             # sort(data.rbegin(), data.rend()): descending
+        while data:
+            ans.append(data.pop())          # data.back(); data.pop_back();
+    else:
+        x = ceil(ds, n)
+        tn = 0
+        need = [0] * 26
+        for i in range(26):
+            need[i] = ceil(fd[i], x)
+            tn += need[i]
+        if tn &gt; n:
+            ans = ["-1"]
+        else:
+            left = n - tn
+            for i in range(left):
+                ans.append('a')
+            for i in range(26):
+                while need[i] != 0:
+                    ans.append(chr(ord('a') + i))   # 'a' + i
+                    need[i] -= 1
+    print(''.join(ans))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The ceiling must be done in integers: <code>a / b + (a % b != 0)</code>. Writing <code>ceil(a / b)</code> on two ints floors first, because <code>a / b</code> is already integer division.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"a string repeated k times must cover these counts" &rarr; each letter needs &lceil;count / k&rceil; per copy; sort for the lexicographic minimum.</div>
+    </article>
+
+    <article class="entry" id="trapezium-area">
+      <div class="entry-head"><h3>Trapezium Area</h3><span class="badge num">Rubrik &middot; \(O(1)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> The file has no pasted statement. From the code: given integers \(p\) and \(q\), print
+<code>YES</code> if \(p\) is a multiple of \(q\) that is at least \(2q\), otherwise <code>NO</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(p,\ q\).</dd>
+<dt>Output</dt><dd><code>YES</code> or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State the test exactly:</span>
+\[ \text{YES} \iff q \mid p \ \text{ and } \ \frac{p}{q} \ge 2 \]</li>
+<li><span class="why">Simplest form: check \(p \bmod q = 0\) first; only then is <code>p / q</code> the true quotient, and compare it with \(2\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>There are two checks: \(q\) divides \(p\) exactly, and the quotient is at least \(2\).</li>
+<li>Check divisibility first. Only then does <code>p / q</code> give the real quotient.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Loop \(k = 2, 3, \dots\) testing whether \(k \cdot q = p\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(p / q)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">A large \(p / q\). The file states no limits.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One modulo and one division: <span class="cost">\(O(1)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The <code>&amp;&amp;</code> short-circuits, so <code>p / q</code> is only evaluated once the division is known to be exact. <code>py</code> and <code>pn</code> print YES and NO.</p>
+        <div class="src-meta"><span class="path">placement oa prep/rubrik/trapezium_area.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+
+using namespace std;
+
+void solve() 
+{
+    ll p, q;
+    cin &gt;&gt; p &gt;&gt; q;
+    
+    if (p % q == 0 &amp;&amp; (p / q) &gt;= 2) 
+    {
+        py;
+    } 
+    else 
+    {
+        pn;
+    }
+}
+
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+ 
+    ll t; 
+    cin &gt;&gt; t;
+    while (t--)
+    {
+        solve();
+    }
+    
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    p, q = int(next(tok)), int(next(tok))
+    if p % q == 0 and (p // q) &gt;= 2:
+        print("YES")
+    else:
+        print("NO")
+
+t = int(next(tok))
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Without the <code>p % q == 0</code> test, p = 5 and q = 2 give <code>p / q = 2</code> and would wrongly pass.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"is p an integer multiple, at least k, of q" &rarr; <code>p % q == 0 &amp;&amp; p / q &gt;= k</code>.</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+  <div class="excluded">
+    <h4>Excluded from this ledger</h4>
+    <ul>
+      <li><code>placement oa prep/fair_pairs.cpp</code> &mdash; <code>g++ -std=c++17</code>: <code>38:5: error: expected unqualified-id</code> (<code>countFairPairs</code> is unfinished: its body closes after the variable declarations, leaving <code>return 0; }</code> outside any function).</li>
+      <li><code>placement oa prep/squarepoint/palindrome_transformation.cpp</code> &mdash; <code>39:23: error: expected ';' at end of declaration</code> (the DSU struct is unfinished).</li>
+      <li><code>placement oa prep/harness/train_and_execute_algorithms.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>placement oa prep/harness/max_position_after_shift.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/oa_2_search_greedy.js"></script>
+</body>
+</html>

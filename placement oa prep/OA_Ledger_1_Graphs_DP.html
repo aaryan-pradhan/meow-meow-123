@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OA: Graphs, Trees &amp; DP &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<body data-base=".." data-slug="oa_1_graphs_dp">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; Placement OA</div>
+  <h1>OA: Graphs, Trees &amp; DP</h1>
+  <p class="dek">Placement online-assessment problems that need structure: a DSU, a
+  shortest-path run per leg, a two-pass tree DP, a right-to-left DP table, or a
+  segment tree whose nodes carry extra fields. The company sits in each entry's badge.</p>
+  <p class="stats"><b>7</b> problems &middot; <b>4</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Components &amp; shortest paths</a></div>
+  <div class="toc-fam"><a href="#f2">2 &middot; Tree passes</a></div>
+  <div class="toc-fam"><a href="#f3">3 &middot; Right-to-left DP</a></div>
+  <div class="toc-fam"><a href="#f4">4 &middot; Segment tree with summaries</a></div>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.
+      Every rule is demonstrated by at least two entries on this page.</p></div>
+    <div class="rules">
+      <div class="rule"><span class="n">1</span>
+        <p>If the answer for a whole can't be built from the parts' answers alone, store extra
+        fields per part. Peak Profit Window keeps <span class="rule-code">sum, pre, suf</span>,
+        White Subtree keeps <span class="rule-code">in</span> and <span class="rule-code">out</span>,
+        and Malware Spread keeps a component's size and its infected count.</p></div>
+      <div class="rule"><span class="n">2</span>
+        <p>If a piece is optional, clamp it with \(\max (0, \cdot )\) or give
+        the recurrence a skip branch. White Subtree drops negative child subtrees, Fruit Selection
+        has "don't take", and Dice Rolls only offers the free jump when <span class="rule-code">A[l] &gt; 0</span>.</p></div>
+      <div class="rule"><span class="n">3</span>
+        <p>If moves only go forward, fill the DP from the end with the base at
+        <span class="rule-code">n</span>. Examples: Dice Rolls (<span class="rule-code">dp[n] = 0</span>) and Fruit
+        Selection (the row after the last fruit is all zeros).</p></div>
+      <div class="rule"><span class="n">4</span>
+        <p>A tree needs no visited array: DFS with <span class="rule-code">(node, parent)</span> and
+        skip the parent. White Subtree uses this in both passes, and Treelabeling uses it to 2-colour.</p></div>
+      <div class="rule"><span class="n">5</span>
+        <p>Count the questions before picking a tool. A few legs (K &le; 10) means rerunning
+        Dijkstra each time (Ordered Checkpoints). Many range queries (M = \(5\cdot 10^{4}\)) means
+        building once and answering in log N (Peak Profit Window).</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== FAMILY 1 ===================== -->
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Components &amp; shortest paths</h2></div>
+    <p class="family-note">A graph question that reduces to one standard pass: union every edge
+    and read the component sizes, or run Dijkstra once for each leg of a fixed route.</p>
+
+    <article class="entry" id="minimize-malware-spread">
+      <div class="entry-head"><h3>Minimize Malware Spread</h3><span class="badge num">Eternal &middot; \(O(n^{2} \alpha )\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A network of \(n\) nodes is given as an \(n \times n\) adjacency matrix. Some nodes,
+the list <code>initial</code>, are infected. Infection spreads along every connection until nothing new
+can be infected; \(M\) is the final number of infected nodes. You must remove exactly one node from
+<code>initial</code> (it may still get infected later by spreading). Return the node whose removal makes
+\(M\) smallest; on a tie, return the smallest index.</p>
+<dl class="io">
+<dt>Input</dt><dd>The matrix <code>graph</code> and the list <code>initial</code>.</dd>
+<dt>Output</dt><dd>One node index.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 300\); <code>graph</code> is symmetric with \(1\)s on the diagonal; <code>initial</code> has distinct values.</dd>
+<dt>Sample</dt><dd><code>[[1,1,0],[1,1,0],[0,0,1]]</code>, <code>initial = [0,1]</code> → <code>0</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Infection fills whole connected components. For a component \(C\), let \(c(C)\) be how many initial nodes it contains:</span>
+\[ M = \sum_{C \,:\, c(C) \ge 1} |C| \]</li>
+<li><span class="why">Removing \(x \in C\) helps only if \(x\) is the <em>only</em> initial node in \(C\); otherwise another one re-infects all of \(C\):</span>
+\[ \text{saved}(x) = \begin{cases} |C| &amp; \text{if } c(C) = 1 \\ 0 &amp; \text{otherwise} \end{cases} \]</li>
+<li><span class="why">Simplest form: pick the largest saving, smallest index on ties. If every saving is \(0\), the answer is \(\min(\text{initial})\):</span>
+\[ \text{ans} = \arg\max_{x \in \text{initial}} \text{saved}(x) \quad (\text{ties} \to \text{smallest } x) \]</li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Infection fills whole components, so \(M\) is the total size of the components that contain an initial node.</li>
+<li>Removing \(x\) saves its component only if \(x\) is the <em>only</em> initial node in it. Otherwise another initial node re-infects it and nothing is saved.</li>
+<li>The saving is the component's size. Take the largest, and on a tie the smallest index: sort <code>initial</code>, then compare with a strict <code>&gt;</code>.</li>
+<li>If no component has exactly one initial node, every removal saves \(0\), so the answer is <code>min(initial)</code>.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For each \(x\) in <code>initial</code>, simulate the spread without \(x\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(k \cdot n^2)\)</span> on the matrix.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = k = 300\) gives \(2.7\cdot 10^7\). That passes here, but it repeats the same spread \(k\) times.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One DSU pass plus an infected count per root: <span class="cost">\(O(n^2 \alpha(n))\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 130" role="img" aria-label="two components, one with a lone infected node">
+  <line class="s-edge" x1="50" y1="50" x2="110" y2="50"/><line class="s-edge" x1="110" y1="50" x2="170" y2="50"/>
+  <line class="s-edge" x1="270" y1="50" x2="330" y2="50"/>
+  <rect class="s-warn" x="32" y="32" width="36" height="36" rx="18"/><text class="s-t" x="46" y="55">0</text>
+  <rect class="s-good" x="92" y="32" width="36" height="36" rx="18"/><text class="s-t" x="106" y="55">1</text>
+  <rect class="s-good" x="152" y="32" width="36" height="36" rx="18"/><text class="s-t" x="166" y="55">2</text>
+  <rect class="s-warn" x="252" y="32" width="36" height="36" rx="18"/><text class="s-t" x="266" y="55">3</text>
+  <rect class="s-warn" x="312" y="32" width="36" height="36" rx="18"/><text class="s-t" x="326" y="55">4</text>
+  <text class="s-ta" x="40" y="96">infected = 1 &rarr; remove 0 saves 3</text>
+  <text class="s-tm" x="250" y="96">infected = 2 &rarr; saves 0</text>
+  <text class="s-td" x="8" y="122">initial = {0, 3, 4} &rarr; answer 0</text>
+</svg>
+          <figcaption>Removing 0 saves its whole component of 3. Removing 3 or 4 saves nothing, because the other node in that component re-infects it.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>infected[p]</code> counts initial nodes per DSU root, and is only built after every merge is done. <code>sort(initial)</code> runs before the scan so that the strict <code>&gt;</code> keeps the smallest index on a tie. <code>main</code> is empty: this is a LeetCode-style <code>Solution</code> class with no stdin harness.</p>
+        <div class="src-meta"><span class="path">placement oa prep/eternal/minimize_malware_spread.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+#define ll long long
+#define endl "\n"
+struct UnionFind{
+    ll n , *par , *rank , setsz , maxsz ; 
+    UnionFind(ll a)
+    {
+        n = a ; 
+        par = new ll[n] ; 
+        rank = new ll[n] ; 
+        setsz = n ; 
+        maxsz = 1 ; 
+        for(ll i = 0 ; i &lt; n ; i++)
+        {
+            par[i] = i ; 
+            rank[i] = 1 ; 
+        }
+    }
+    ll find ( ll x )
+    {
+        if(par[x] == x) return x ; 
+        return par[x] = find(par[x]) ; 
+    }
+    void merge( ll x , ll y)
+    {
+        ll px = find(x) ; 
+        ll py = find(y) ; 
+        if(px == py) return ; 
+        // rank is nothing but the size of the component
+        if(rank[px] &gt; rank[py])
+        {
+            par[py] = px ; 
+            rank[px] += rank[py] ; 
+            maxsz = max(maxsz, rank[px]) ; 
+        }
+        else
+        {
+            par[px] = py ; 
+            rank[py] += rank[px] ; 
+            maxsz = max(maxsz, rank[py]) ; 
+        }
+        setsz-- ;
+    }
+    ll getSize( ll x )
+    {
+        return rank[find(x)] ; 
+    }
+    ll setsize()
+    {
+        return setsz ; 
+    }
+    ll maxsize()
+    {
+        return maxsz ;
+    }
+};
+
+#define INF 1e18
+
+class Solution {
+public:
+    int minMalwareSpread(vector&lt;vector&lt;int&gt;&gt;&amp; graph, vector&lt;int&gt;&amp; initial) {
+        ll m = initial.size() ;
+        ll n = graph.size() ;
+        UnionFind uf(n) ;
+        for(ll i = 0 ; i &lt; n ; i++)
+        {
+            for(ll j = 0 ; j &lt; n ; j++)
+            {
+                if(graph[i][j] == 1)
+                {
+                    uf.merge(i, j) ;
+                }
+            }
+        }
+        vector &lt; ll &gt; infected(n, 0) ;
+        // this stores the number of infected nodes in each component
+        for(auto x : initial)
+        {
+            ll p = uf.find(x) ; 
+            infected[p]++  ; 
+        }
+        sort(initial.begin(), initial.end()) ;
+        ll ans = -1 ;
+        ll maxinfected = -1 ;
+        for(auto x : initial)
+        {
+            ll p = uf.find(x) ; 
+            if(infected[p] == 1)
+            {
+                ll sz = uf.getSize(p) ; 
+                if(sz &gt; maxinfected)
+                {
+                    maxinfected = sz ; 
+                    ans = x ; 
+                }
+            }
+        }
+        if(ans == -1)
+        {
+            ans = initial[0] ; 
+        }
+        return ans ;
+
+        
+       
+
+        
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    // Testing logic here
+    
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>class UnionFind:
+    def __init__(self, a):
+        self.n = a
+        self.par = list(range(a))           # new ll[n]; par[i] = i
+        self.rank = [1] * a
+        self.setsz = a
+        self.maxsz = 1
+
+    def find(self, x):
+        if self.par[x] == x: return x
+        self.par[x] = self.find(self.par[x])
+        return self.par[x]
+
+    def merge(self, x, y):
+        px = self.find(x)
+        py = self.find(y)
+        if px == py: return
+        # rank is nothing but the size of the component
+        if self.rank[px] &gt; self.rank[py]:
+            self.par[py] = px
+            self.rank[px] += self.rank[py]
+            self.maxsz = max(self.maxsz, self.rank[px])
+        else:
+            self.par[px] = py
+            self.rank[py] += self.rank[px]
+            self.maxsz = max(self.maxsz, self.rank[py])
+        self.setsz -= 1
+
+    def getSize(self, x):
+        return self.rank[self.find(x)]
+
+    def setsize(self):
+        return self.setsz
+
+    def maxsize(self):
+        return self.maxsz
+
+class Solution:                             # class Solution { public: ... };
+    def minMalwareSpread(self, graph, initial):
+        m = len(initial)
+        n = len(graph)
+        uf = UnionFind(n)
+        for i in range(n):
+            for j in range(n):
+                if graph[i][j] == 1:
+                    uf.merge(i, j)
+        infected = [0] * n
+        # this stores the number of infected nodes in each component
+        for x in initial:
+            p = uf.find(x)
+            infected[p] += 1
+        initial.sort()                      # sorts the caller's list in place, like the C++ reference
+        ans = -1
+        maxinfected = -1
+        for x in initial:
+            p = uf.find(x)
+            if infected[p] == 1:
+                sz = uf.getSize(p)
+                if sz &gt; maxinfected:
+                    maxinfected = sz
+                    ans = x
+        if ans == -1:
+            ans = initial[0]
+        return ans
+
+if __name__ == "__main__":                  # int main() { // Testing logic here }
+    pass</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>If no component has a lone initial node, the answer is <code>min(initial)</code>, not &minus;1. The <code>ans == -1</code> fallback works only because <code>initial</code> was sorted first.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"remove one source to minimise total spread through connected groups" &rarr; DSU, count the sources per component, and only lone sources matter.</div>
+    </article>
+
+    <article class="entry" id="ordered-checkpoints">
+      <div class="entry-head"><h3>Ordered Checkpoints</h3><span class="badge num">Accenture &middot; \(O(K (N+M) \log N)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an undirected graph of \(N\) cities and \(M\) roads with positive travel
+times, a start city \(S\), and \(K\) checkpoint cities \(A_1, \dots, A_K\). Starting at \(S\), you must
+reach \(A_1\), then \(A_2\), …, then \(A_K\), in that order, and finish at \(A_K\). Between checkpoints
+any cities and roads may be used. Print the minimum total time, or \(-1\) if it is impossible.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\ M\); \(M\) lines \(U\ V\ T\); then \(S\ K\); then \(A_1 \dots A_K\).</dd>
+<dt>Output</dt><dd>The minimum total time, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le N, M \le 10^5,\ \ 1 \le T \le 10^9,\ \ 1 \le K \le \min(N - 1, 10)\)</dd>
+<dt>Sample</dt><dd>sample 1 → <code>6</code> (\(1 \to 4 \to 3\) costs \(2\), then \(3 \to 5\) costs \(4\)); sample 3 → <code>-1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Set \(A_0 = S\). The order is fixed, so the trip is \(K\) separate legs \(A_{i-1} \to A_i\).</span></li>
+<li><span class="why">Each leg may use any cities, so its cheapest cost is the plain shortest distance, and the legs do not affect each other:</span>
+\[ \text{ans} = \sum_{i=1}^{K} \operatorname{dist}(A_{i-1}, A_i) \]</li>
+<li><span class="why">Simplest form: times are positive, so one Dijkstra per leg, at most \(10\) runs. If any leg has \(\operatorname{dist} = \infty\), print \(-1\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The order is fixed, so the walk splits into \(K\) independent legs \(A_{i-1} \to A_i\).</li>
+<li>Each leg may use any city, so its cheapest cost is the plain shortest distance.</li>
+<li>Times are positive, so run Dijkstra once per leg. \(K \le 10\) means at most \(10\) runs.</li>
+<li>If any leg is unreachable, the answer is \(-1\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Compute all-pairs distances with Floyd–Warshall, then add the legs.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(N^3)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(N = 10^5\) gives \(10^{15}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">\(K\) Dijkstra runs: <span class="cost">\(10 \cdot 2\cdot 10^5 \cdot 17 \approx 3\cdot 10^7\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 460 170" role="img" aria-label="sample 2 split into three legs">
+  <line class="s-edge" x1="40" y1="40" x2="140" y2="40"/><text class="s-tm" x="84" y="32">2</text>
+  <line class="s-edge" x1="140" y1="40" x2="240" y2="40"/><text class="s-tm" x="184" y="32">2</text>
+  <line class="s-edge" x1="240" y1="40" x2="340" y2="40"/><text class="s-tm" x="284" y="32">1</text>
+  <line class="s-edge" x1="40" y1="40" x2="340" y2="120"/><text class="s-tm" x="150" y="92">10</text>
+  <line class="s-hi" x1="340" y1="40" x2="340" y2="120"/><text class="s-ta" x="348" y="84">1</text>
+  <line class="s-hi" x1="340" y1="120" x2="430" y2="80"/><text class="s-ta" x="390" y="118">1</text>
+  <line class="s-edge" x1="340" y1="40" x2="430" y2="80"/><text class="s-tm" x="390" y="50">3</text>
+  <rect class="s-box" x="24" y="24" width="32" height="32" rx="16"/><text class="s-t" x="36" y="45">1</text>
+  <rect class="s-good" x="124" y="24" width="32" height="32" rx="16"/><text class="s-t" x="136" y="45">2</text>
+  <rect class="s-box" x="224" y="24" width="32" height="32" rx="16"/><text class="s-t" x="236" y="45">3</text>
+  <rect class="s-good" x="324" y="24" width="32" height="32" rx="16"/><text class="s-t" x="336" y="45">4</text>
+  <rect class="s-box" x="324" y="104" width="32" height="32" rx="16"/><text class="s-t" x="336" y="125">5</text>
+  <rect class="s-good" x="414" y="64" width="32" height="32" rx="16"/><text class="s-t" x="426" y="85">6</text>
+  <text class="s-td" x="8" y="162">legs 1&rarr;2 = 2, 2&rarr;4 = 3, 4&rarr;5&rarr;6 = 2 &rarr; total 7</text>
+</svg>
+          <figcaption>Sample 2, with checkpoints 2, 4, 6 in green. The last leg goes 4&rarr;5&rarr;6 for a cost of 2, cheaper than the direct edge of 3.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>dij(s)</code> fills the global <code>dist</code>. After each leg, both <code>dist</code> and <code>vis</code> are reset with <code>assign</code>, and <code>s</code> moves to the checkpoint just reached. The total fits in <code>ll</code>: at most 10 &middot; \(10^{5}\) &middot; \(10^{9}\) = \(10^{15}\).</p>
+        <div class="src-meta"><span class="path">placement oa prep/accenture/ordered_checkpoints.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+
+#define ll long long
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1)
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+vector &lt; vector &lt; pll &gt; &gt; graph ; 
+vector &lt; ll &gt; dist ;
+vector &lt; ll &gt; vis ; 
+void dij(ll s )
+{
+    dist[s] = 0 ;
+    priority_queue &lt; pll , vector &lt; pll &gt; , greater &lt; pll &gt; &gt; pq ;
+    pq.push({0, s}) ;
+    while(!pq.empty())
+    {
+        pll u = pq.top() ;
+        ll n = u.sc ;
+        ll d = u.fr ;
+        pq.pop() ;
+        if(vis[n])
+        {
+            continue ; 
+        }
+        vis[n] = 1 ;
+        for(auto&amp; [w , ch] : graph[n])
+        {
+            if(dist[ch] &gt; d + w)
+            {
+                dist[ch] = d + w ;
+                pq.push({dist[ch], ch}) ;
+            }
+        }
+
+    }
+}
+void solve()
+{
+    ll n , m ; 
+    cin &gt;&gt; n &gt;&gt; m ;
+    graph.assign(n + 1 , vector &lt; pll &gt; () ) ;
+    dist.assign(n + 1 , INF) ;
+    vis.assign(n + 1 , 0) ;
+    for(ll i = 0 ; i &lt; m ; i++)
+    {
+        ll u , v , t ;
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; t ;
+        graph[u].push_back({t, v}) ;
+        graph[v].push_back({t, u}) ;
+    }
+    ll s , k ; 
+    cin &gt;&gt; s &gt;&gt; k ;
+    vector &lt; ll &gt; c(k) ;
+    for(ll i = 0 ; i &lt; k ; i++)
+        cin &gt;&gt; c[i] ;
+    ll ans = 0 ; 
+    for(ll i = 0 ; i &lt; k ; i++)
+    {
+        dij(s) ;
+        if(dist[c[i]] == INF)
+        {
+            cout &lt;&lt; -1 &lt;&lt; endl ;
+            return ;
+        }
+        s = c[i] ;
+        ans += dist[s] ;
+        dist.assign(n + 1 , INF) ;
+        vis.assign(n + 1 , 0) ;
+    }
+    cout &lt;&lt; ans &lt;&lt; endl ;
+    
+
+
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    solve();
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+import heapq
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+graph = []
+dist = []
+vis = []
+
+def dij(s):
+    dist[s] = 0
+    pq = []
+    heapq.heappush(pq, (0, s))
+    while pq:
+        d, n = heapq.heappop(pq)            # u = top; n = u.sc; d = u.fr; pop
+        if vis[n]:
+            continue
+        vis[n] = 1
+        for w, ch in graph[n]:              # for (auto&amp; [w, ch] : graph[n])
+            if dist[ch] &gt; d + w:
+                dist[ch] = d + w
+                heapq.heappush(pq, (dist[ch], ch))
+
+def solve():
+    global graph, dist, vis
+    n, m = int(next(tok)), int(next(tok))
+    graph = [[] for _ in range(n + 1)]      # graph.assign(n + 1, vector&lt;pll&gt;())
+    dist = [INF] * (n + 1)
+    vis = [0] * (n + 1)
+    for i in range(m):
+        u, v, t = int(next(tok)), int(next(tok)), int(next(tok))
+        graph[u].append((t, v))
+        graph[v].append((t, u))
+    s, k = int(next(tok)), int(next(tok))
+    c = [int(next(tok)) for _ in range(k)]
+    ans = 0
+    for i in range(k):
+        dij(s)
+        if dist[c[i]] == INF:
+            print(-1)
+            return
+        s = c[i]
+        ans += dist[s]
+        dist[:] = [INF] * (n + 1)           # assign() IN PLACE: dij() reads the same list object
+        vis[:] = [0] * (n + 1)
+    print(ans)
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Reset <code>vis</code> between legs too. If you don't, the second Dijkstra run skips every node. Also, the statement's sample 2 claims 8, but 4&rarr;5&rarr;6 costs 1 + 1 = 2, so the true answer is 7, and the code prints 7.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"visit these points in this order, shortest total" &rarr; one shortest-path run per leg, then sum.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 2 ===================== -->
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; Tree passes</h2></div>
+    <p class="family-note">Root the tree at 1 and DFS with a parent argument. One pass is enough to
+    2-colour the tree. A per-vertex answer over the whole tree takes two passes: down for the
+    subtree, then up for everything else.</p>
+
+    <article class="entry" id="maximum-white-subtree">
+      <div class="entry-head"><h3>Maximum White Subtree</h3><span class="badge num">Eternal &middot; \(O(n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given a tree with \(n\) vertices; each vertex is white (\(a_v = 1\)) or black
+(\(a_v = 0\)). For every vertex \(v\), choose a connected set of vertices that contains \(v\) so that
+(number of white) \(-\) (number of black) is as large as possible, and print that value.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\); \(a_1, \dots, a_n\); then \(n - 1\) edges.</dd>
+<dt>Output</dt><dd>\(n\) integers: the best value for each vertex.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 2\cdot 10^5\) (Codeforces 1324F)</dd>
+<dt>Sample</dt><dd>\(a =\) <code>0 1 1 1 0 0 0 0 1</code>, edges \((1,2)(1,3)(3,4)(3,5)(2,6)(4,7)(6,8)(5,9)\) → <code>2 2 2 2 2 1 1 0 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Give each vertex a weight \(w(u) = +1\) if white, \(-1\) if black. We want, for each \(v\):</span>
+\[ \text{ans}(v) = \max_{\substack{S \text{ connected} \\ v \in S}} \sum_{u \in S} w(u) \]</li>
+<li><span class="why">Root the tree. Going down from \(v\), add a child's part only if it helps:</span>
+\[ \text{in}(v) = w(v) + \sum_{c} \max\big(0,\ \text{in}(c)\big) \]</li>
+<li><span class="why">The best part above child \(c\) goes through its parent \(p\): everything \(p\) has, minus what \(c\) gave it, plus the best above \(p\):</span>
+\[ \text{out}(c) = \text{in}(p) - \max\big(0, \text{in}(c)\big) + \max\big(0, \text{out}(p)\big), \qquad \text{out}(\text{root}) = 0 \]</li>
+<li><span class="why">Simplest form, two DFS passes:</span>
+\[ \text{ans}(v) = \text{in}(v) + \max\big(0,\ \text{out}(v)\big) \]</li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Down pass: \(\text{in}(v) = w(v) + \sum_c \max(0, \text{in}(c))\). Take a child's part only if it helps.</li>
+<li>The part outside \(v\)'s subtree arrives through the parent \(p\): \(p\)'s value, \(p\)'s other children, and whatever is above \(p\).</li>
+<li>\(p\)'s other children together give \(\text{in}(p) - \max(0, \text{in}(c)) - w(p)\). Subtract the child's own share instead of adding the siblings again.</li>
+<li>\(\text{ans}(v) = \text{in}(v) + \max(0, \text{out}(v))\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Re-root at every \(v\) and run the down DP.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Rerooting: one down pass and one up pass, <span class="cost">\(O(n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 480 180" role="img" aria-label="in, out and answer on a 4-node tree">
+  <line class="s-edge" x1="200" y1="40" x2="110" y2="110"/><line class="s-edge" x1="200" y1="40" x2="290" y2="110"/>
+  <line class="s-edge" x1="110" y1="110" x2="110" y2="160"/>
+  <rect class="s-good" x="182" y="22" width="36" height="36" rx="18"/><text class="s-t" x="196" y="45">1</text>
+  <rect class="s-warn" x="92" y="92" width="36" height="36" rx="18"/><text class="s-t" x="106" y="115">2</text>
+  <rect class="s-good" x="272" y="92" width="36" height="36" rx="18"/><text class="s-t" x="286" y="115">3</text>
+  <rect class="s-warn" x="92" y="146" width="36" height="28" rx="14"/><text class="s-t" x="106" y="165">4</text>
+  <text class="s-ta" x="228" y="36">in 2 &middot; out 0 &middot; ans 2</text>
+  <text class="s-ta" x="4" y="96">in &minus;1 &middot; out 2</text><text class="s-ta" x="4" y="110">ans 1</text>
+  <text class="s-ta" x="316" y="110">in 1 &middot; out 1 &middot; ans 2</text>
+  <text class="s-ta" x="136" y="166">in &minus;1 &middot; out 1 &middot; ans 0</text>
+</svg>
+          <figcaption>Green is white (+1) and orange is black (&minus;1). Node 2's own subtree is worth &minus;1, but through its parent it reaches {1, 3} worth +2, so its answer is 1.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">This file has no pasted statement. It is Codeforces 1324F. The parameter <code>n</code> in <code>dfsin</code>/<code>dfsout</code> is the current node and hides the global <code>n</code>. <code>0LL</code> makes both arguments of <code>max</code> long long.</p>
+        <div class="src-meta"><span class="path">placement oa prep/eternal/maximum_white_subtree.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+#define ll long long
+#define endl "\n"
+vector &lt; vector &lt; ll &gt; &gt;  graph ; 
+ll n ; 
+vector &lt; ll &gt; indp ; 
+vector &lt; ll &gt; outdp ;
+vector &lt; ll &gt; a ;
+void dfsin(ll n , ll p )
+{
+    indp[n] = ( a[n] == 1 ? 1 : -1 ) ;
+    for(auto ch : graph[n])
+    {
+        if(ch == p) continue ; 
+        dfsin(ch, n ) ; 
+        indp[n] += max(0LL, indp[ch]) ;
+    }
+
+}
+// p - &gt; n - &gt; c 
+void dfsout( ll n , ll p, ll outval )
+{
+    outdp[n] = outval ;
+    for(auto ch : graph[n])
+    {
+        if(ch == p) continue ; 
+        // what will the new out value be for the children
+        // sare baki sab children ( matlab is child ko chdke baki sab children ka contribution ) + parent ka contribution
+        ll newout = 0 ; 
+        newout += max(0LL, outval) ;
+        // baki sab children ka contribution 
+        ll cc = indp[n] - max(0LL, indp[ch]) - ( a[n] == 1 ? 1 : -1 ) ;
+        newout += (a[n]== 1) ? 1 : -1 ;
+        newout += max(0LL, cc) ;
+        dfsout(ch, n , newout ) ;
+
+
+    }
+    
+
+}
+
+void solve() {
+    cin &gt;&gt; n ; 
+    graph.assign(n+1, vector &lt; ll &gt; () ) ;
+    indp.assign(n+1, 0 ) ;
+    outdp.assign(n+1, 0 ) ;
+    a.assign(n+1, 0 ) ;
+    for(ll i = 1 ; i &lt;= n ; i++) cin &gt;&gt; a[i] ; 
+    for(ll i = 1 ; i &lt; n ; i++)
+    {
+        ll u , v ; 
+        cin &gt;&gt; u &gt;&gt; v ; 
+        graph[u].push_back(v) ; 
+        graph[v].push_back(u) ; 
+    }
+    dfsin(1, 0) ;
+    dfsout(1, 0, 0 ) ;
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        cout &lt;&lt; indp[i] + max(0LL, outdp[i]) &lt;&lt; " " ; 
+    }
+    cout &lt;&lt; endl ;
+
+
+
+
+}
+
+signed main() 
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    ll t ; 
+    t = 1 ; 
+    while(t--)
+    {
+        solve() ; 
+    }
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+graph = []
+n = 0
+indp = []
+outdp = []
+a = []
+
+def dfsin(n, p):                            # parameter n is the node; it hides the global n, as in C++
+    indp[n] = (1 if a[n] == 1 else -1)
+    for ch in graph[n]:
+        if ch == p: continue
+        dfsin(ch, n)
+        indp[n] += max(0, indp[ch])         # max(0LL, ...): no LL suffix needed
+
+# p - &gt; n - &gt; c
+def dfsout(n, p, outval):
+    outdp[n] = outval
+    for ch in graph[n]:
+        if ch == p: continue
+        # what will the new out value be for the children
+        # sare baki sab children ( matlab is child ko chdke baki sab children ka contribution ) + parent ka contribution
+        newout = 0
+        newout += max(0, outval)
+        # baki sab children ka contribution
+        cc = indp[n] - max(0, indp[ch]) - (1 if a[n] == 1 else -1)
+        newout += 1 if a[n] == 1 else -1
+        newout += max(0, cc)
+        dfsout(ch, n, newout)
+
+def solve():
+    global n, graph, indp, outdp, a
+    n = int(next(tok))
+    graph = [[] for _ in range(n + 1)]
+    indp = [0] * (n + 1)
+    outdp = [0] * (n + 1)
+    a = [0] * (n + 1)
+    for i in range(1, n + 1): a[i] = int(next(tok))
+    for i in range(1, n):
+        u, v = int(next(tok)), int(next(tok))
+        graph[u].append(v)
+        graph[v].append(u)
+    dfsin(1, 0)
+    dfsout(1, 0, 0)
+    print(' '.join(str(indp[i] + max(0, outdp[i])) for i in range(1, n + 1)))
+
+t = 1
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>cc</code> subtracts w(n), because <code>indp[n]</code> already includes it, and then <code>newout</code> adds w(n) back once. Drop either line and every out value is off by &plusmn;1.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"for every vertex, the best connected group containing it" &rarr; reroot: down DP, then up DP, clamping with max(0, &middot;).</div>
+    </article>
+
+    <article class="entry" id="treelabeling">
+      <div class="entry-head"><h3>Treelabeling</h3><span class="badge num">Codeforces &middot; \(O(n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A game is played on a tree with \(n\) nodes. A token starts on some node; players
+take turns moving it to an unvisited neighbouring node \(u\) from the current node \(v\), allowed only
+if \(u \oplus v \le \min(u, v)\) (\(\oplus\) is bitwise XOR). A player who cannot move loses. Eikooc's
+first turn is placing the token on any node; after that the players alternate moves, starting with Sushi. Before the game, Eikooc may relabel the nodes with any
+permutation of \(1..n\). Print a labelling that gives Eikooc a win from as many starting nodes as
+possible.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(t\) test cases; each has \(n\) and \(n - 1\) edges.</dd>
+<dt>Output</dt><dd>For each case, the new label of every node.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5\), sum of \(n\) at most \(2\cdot 10^5\) (Codeforces 1605D)</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(\text{msb}(x)\) be the position of the highest \(1\)-bit. A move is allowed exactly when the highest bits match:</span>
+\[ u \oplus v \le \min(u, v) \iff \text{msb}(u) = \text{msb}(v) \]
+<span class="why">If they differ, the XOR keeps the larger top bit and exceeds the smaller number. If they match, the top bit cancels and the XOR is below both.</span></li>
+<li><span class="why">So if no edge joins two labels with the same highest bit, Sushi can never move, and Eikooc wins from all \(n\) starts. That is the best possible.</span></li>
+<li><span class="why">A tree can be 2-coloured. Let the smaller colour class have \(S \le n/2\) nodes. Labels with highest bit \(k\) form the block \(B_k = [2^k,\ 2^{k+1} - 1]\) of size \(2^k\). Write \(S\) in binary:</span>
+\[ S = \sum_{k \in K} 2^k \;\Longrightarrow\; \text{give the blocks } B_k\ (k \in K) \text{ to the small class, all other labels to the large class} \]</li>
+<li><span class="why">Simplest form: each edge joins the two classes, hence two different blocks, hence different highest bits. No move ever exists. \(O(n)\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>If the highest bits differ, the XOR keeps the larger one and exceeds the minimum. So a move needs equal highest bits.</li>
+<li>If no edge joins two labels with the same highest bit, there is never a move, so all \(n\) starting nodes win.</li>
+<li>A tree is bipartite. 2-colour it and let the smaller class have \(S \le n/2\) nodes.</li>
+<li>Labels with highest bit \(k\) form a block of \(2^k\) numbers. The \(1\)-bits of \(S\) pick blocks that add up to exactly \(S\). Those blocks go to the small class and the rest to the large one, so every edge joins different blocks.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try every labelling and play out the game.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n! \cdot n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 12\) already gives about \(5\cdot 10^9\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">2-colour, then hand out blocks by the bits of \(S\): <span class="cost">\(O(n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 460 120" role="img" aria-label="msb blocks chosen by the bits of S">
+  <rect class="s-fill" x="20" y="30" width="30" height="34" rx="4"/><text class="s-t" x="31" y="52">1</text>
+  <rect class="s-box" x="60" y="30" width="60" height="34" rx="4"/><text class="s-t" x="76" y="52">2..3</text>
+  <rect class="s-fill" x="130" y="30" width="120" height="34" rx="4"/><text class="s-t" x="172" y="52">4..7</text>
+  <rect class="s-box" x="260" y="30" width="180" height="34" rx="4"/><text class="s-t" x="330" y="52">8..15</text>
+  <text class="s-td" x="20" y="20">msb 0        msb 1        msb 2                msb 3</text>
+  <text class="s-ta" x="20" y="92">S = 5 = 101&#8322; &rarr; blocks {1}, {4..7} &rarr; small class</text>
+  <text class="s-tm" x="20" y="110">everything else goes to the large class</text>
+</svg>
+          <figcaption>Bit k of S decides who gets the whole block of labels with msb k. Every edge joins the two classes, so it joins different blocks and no move exists.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>log2(i)</code> gives the msb position as a double, which is exact at these sizes. Each label <code>i</code> goes to <code>c1</code> or <code>c2</code> depending on bit <code>posmsb</code> of S, so every label in a block goes to the same side. The lists are consumed with <code>back()</code>/<code>pop_back()</code>.</p>
+        <div class="src-meta"><span class="path">placement oa prep/Ajay room problems/D_Treelabeling.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+vector &lt; vector &lt; ll &gt; &gt; graph;
+
+void dfs(ll n , ll p , ll c , vector &lt; ll &gt; &amp;col)
+{
+    col[n] = c ;
+    for(auto ch : graph[n])
+    {
+        if(ch != p)
+        {
+            dfs(ch , n , 3 - c , col) ;
+        }
+    }
+}
+
+// assign node to colour c 
+
+void solve() 
+{
+    ll n ;
+    cin &gt;&gt; n ;
+    graph.assign(n + 1 , vector &lt; ll &gt; ()) ;
+    for(ll i = 1 ; i &lt; n ; i++)
+    {
+        ll u , v ;
+        cin &gt;&gt; u &gt;&gt; v ;
+        graph[u].push_back(v) ;
+        graph[v].push_back(u) ;
+    }
+    vector &lt; ll &gt; col(n + 1 , 0) ;
+    dfs(1 , 0 , 1 , col) ;
+    vector &lt; ll &gt; c1 , c2 ;
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        if(col[i] == 1)
+        {
+            c1.push_back(i) ;
+        }
+        else
+        {
+            c2.push_back(i) ;
+        }
+    }
+    if(c1.size() &gt; c2.size())
+    {
+        swap(c1 , c2) ;
+    }
+    ll S = c1.size() ;
+
+    
+    
+    vector &lt; ll &gt; p(n + 1 , 0) ;
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        ll posmsb = log2(i) ;
+
+        if ((S &gt;&gt; posmsb) &amp; 1)
+        {
+            p[c1.back()] = i ;
+            c1.pop_back() ;
+        }
+        else
+        {
+
+            p[c2.back()] = i ;
+            c2.pop_back() ;
+        }
+        
+    }
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        cout &lt;&lt; p[i] &lt;&lt; " " ;
+    }
+    cout &lt;&lt; endl ;
+    
+
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    ll t ; 
+    cin &gt;&gt; t ;
+    while(t--)
+    {
+        solve() ; 
+    }
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+graph = []
+
+def dfs(n, p, c, col):
+    col[n] = c
+    for ch in graph[n]:
+        if ch != p:
+            dfs(ch, n, 3 - c, col)
+
+# assign node to colour c
+def solve():
+    global graph
+    n = int(next(tok))
+    graph = [[] for _ in range(n + 1)]
+    for i in range(1, n):
+        u, v = int(next(tok)), int(next(tok))
+        graph[u].append(v)
+        graph[v].append(u)
+    col = [0] * (n + 1)
+    dfs(1, 0, 1, col)
+    c1, c2 = [], []
+    for i in range(1, n + 1):
+        if col[i] == 1:
+            c1.append(i)
+        else:
+            c2.append(i)
+    if len(c1) &gt; len(c2):
+        c1, c2 = c2, c1                     # swap(c1, c2)
+    S = len(c1)
+    p = [0] * (n + 1)
+    for i in range(1, n + 1):
+        posmsb = i.bit_length() - 1         # (ll)log2(i), but exact: no floating point
+        if (S &gt;&gt; posmsb) &amp; 1:
+            p[c1.pop()] = i                 # p[c1.back()] = i; c1.pop_back();
+        else:
+            p[c2.pop()] = i
+    out.append(' '.join(str(p[i]) for i in range(1, n + 1)))
+
+out = []
+t = int(next(tok))
+for _ in range(t):
+    solve()
+print('\n'.join(out))</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Swap so that <code>c1</code> is the <em>smaller</em> class. \(S \le n/2\) keeps every bit of \(S\) on a full block. With the larger class, a bit can name the partial last block, which doesn't have 2&#7503; labels.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"an edge is usable iff the xor is &le; min / the labels share their highest bit" &rarr; group labels by msb. On a tree, 2-colour it and assign blocks by the bits of the smaller side.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 3 ===================== -->
+  <section class="family" id="f3">
+    <div class="family-head"><h2>3 &middot; Right-to-left DP</h2></div>
+    <p class="family-note">Every move goes forward, so the state after the last position is the base
+    case and the table fills from the end. Optional moves are a <code>min</code>/<code>max</code> with a
+    branch that may cost nothing.</p>
+
+    <article class="entry" id="minimum-dice-rolls">
+      <div class="entry-head"><h3>Minimum Dice Rolls</h3><span class="badge num">OA Set 2 &middot; \(O(6n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array \(A\) of \(N\) non-negative integers. You start at index \(0\)
+and want to reach any index \(\ge N\). At index \(i\) you may either roll a die (choose any value
+\(1..6\) and jump that far forward, costing \(1\) roll), or jump forward exactly \(A_i\) positions for
+free. Find the minimum number of rolls.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\), then \(A_0, \dots, A_{N-1}\).</dd>
+<dt>Output</dt><dd>The minimum number of rolls.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>\(N = 10\), \(A =\) <code>[0,0,0,0,0,1,1,1,1]</code> → <code>1</code> (as written in the file)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i]\) be the fewest rolls from index \(i\) to the end. Treat every index \(\ge N\) as \(N\), the finish:</span>
+\[ dp[N] = 0 \]</li>
+<li><span class="why">From \(i\), a roll costs \(1\); a free jump costs \(0\) but only counts if \(A_i \gt 0\) (a jump of \(0\) stays in place):</span>
+\[ dp[i] = \min\Big( \min_{d=1}^{6} \big(1 + dp[\min(i + d, N)]\big),\ \ dp[\min(i + A_i, N)] \ \ (\text{if } A_i \gt 0) \Big) \]</li>
+<li><span class="why">Simplest form: every move goes forward, so fill \(i = N-1\) down to \(0\). Answer \(dp[0]\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Moves only go forward, so fill right to left with \(dp[N] = 0\).</li>
+<li>Overshooting \(N\) counts as finishing. A roll past the end costs exactly \(1\), and a free jump past it costs \(0\).</li>
+<li>The free jump is a <code>min</code> with no \(+1\). \(A_i = 0\) is not a move, because it would loop on itself.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Recurse over every sequence of moves without memoisation.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">Up to \(7\) branches per step, so <span class="cost">\(O(7^N)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">It is exponential: even \(N = 30\) is out of reach.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Each index has one answer: <span class="cost">\(O(6N)\)</span> DP.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 440 110" role="img" aria-label="dp values over the sample">
+  <text class="s-td" x="10" y="20">A = 0 0 0 0 0 1 1 1 1   (n = 9)</text>
+  <g>
+    <rect class="s-box" x="10" y="34" width="38" height="30" rx="4"/><rect class="s-box" x="52" y="34" width="38" height="30" rx="4"/>
+    <rect class="s-box" x="94" y="34" width="38" height="30" rx="4"/><rect class="s-box" x="136" y="34" width="38" height="30" rx="4"/>
+    <rect class="s-box" x="178" y="34" width="38" height="30" rx="4"/><rect class="s-good" x="220" y="34" width="38" height="30" rx="4"/>
+    <rect class="s-good" x="262" y="34" width="38" height="30" rx="4"/><rect class="s-good" x="304" y="34" width="38" height="30" rx="4"/>
+    <rect class="s-good" x="346" y="34" width="38" height="30" rx="4"/><rect class="s-fill" x="388" y="34" width="38" height="30" rx="4"/>
+  </g>
+  <text class="s-t" x="25" y="54">1</text><text class="s-t" x="67" y="54">1</text><text class="s-t" x="109" y="54">1</text>
+  <text class="s-t" x="151" y="54">1</text><text class="s-t" x="193" y="54">1</text><text class="s-t" x="235" y="54">0</text>
+  <text class="s-t" x="277" y="54">0</text><text class="s-t" x="319" y="54">0</text><text class="s-t" x="361" y="54">0</text>
+  <text class="s-t" x="403" y="54">0</text>
+  <text class="s-ta" x="220" y="86">free 1-jumps chain to the end</text>
+  <text class="s-tm" x="10" y="86">one roll lands in the green zone</text>
+  <text class="s-td" x="390" y="28">dp[n]</text>
+</svg>
+          <figcaption>From index 5 on, the free jumps carry you out at no cost. From 0..4 a single roll reaches index 5 or beyond, so dp[0] = 1.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>min(1LL, ans)</code> and <code>min(0LL, ans)</code> handle the overshoot cases. The statement says N = 10 but lists only 9 values. With N = 9 the code prints the expected 1. With N = 10 the missing value reads as 0 and it prints 2.</p>
+        <div class="src-meta"><span class="path">placement oa prep/set_2/minimum_dice_rolls.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+using namespace std;
+#define INF 1e18 
+#define ll long long
+#define endl "\n"
+
+void solve() {
+    ll n ; 
+    cin &gt;&gt; n ; 
+    vector &lt; ll &gt; a(n) ; 
+    vector &lt; ll &gt; dp(n+1, 0 ) ; 
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; a[i] ; 
+    for(ll l = n ; l &gt;= 0 ; l--)
+    {
+        if( l == n )
+        {
+            dp[n] = 0 ; 
+            continue ; 
+        }
+
+        ll ans = INF ; 
+        for(ll i = 1 ; i &lt;= 6 ; i++)
+        {
+            if( l + i &lt;= n)
+            {
+                ans = min ( 1 + dp[l+i], ans ) ; 
+            }
+            else 
+            {
+                ans = min ( 1LL , ans ) ; 
+            }
+        }
+        if(a[l])
+        {
+            if(l +a[l] &lt;= n)
+            {
+                ans = min ( ans , dp[l + a[l]]) ;
+
+            }
+            else 
+            {
+                ans = min ( 0LL , ans ) ; 
+            }
+        }
+            
+        dp[l] = ans ; 
+    }
+    cout &lt;&lt; dp[0] &lt;&lt; endl ; 
+
+
+
+}
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    int t = 1;
+    // cin &gt;&gt; t;
+    while (t--) {
+        solve();
+    }
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n = int(next(tok))
+    a = [0] * n
+    dp = [0] * (n + 1)
+    for i in range(n): a[i] = int(next(tok))
+    for l in range(n, -1, -1):              # for (l = n; l &gt;= 0; l--)
+        if l == n:
+            dp[n] = 0
+            continue
+        ans = INF
+        for i in range(1, 7):               # i = 1 .. 6
+            if l + i &lt;= n:
+                ans = min(1 + dp[l + i], ans)
+            else:
+                ans = min(1, ans)           # min(1LL, ans)
+        if a[l]:
+            if l + a[l] &lt;= n:
+                ans = min(ans, dp[l + a[l]])
+            else:
+                ans = min(0, ans)
+        dp[l] = ans
+    print(dp[0])
+
+t = 1
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The goal is "index &ge; N", so a move with <code>l + i &gt; n</code> reaches the end. Treat it as done, not as an invalid move to skip.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"fewest paid moves to reach the end, some moves free" &rarr; DP from the end, where a free edge is just a min without +1.</div>
+    </article>
+
+    <article class="entry" id="fruit-selection">
+      <div class="entry-head"><h3>Fruit Selection with Coupons</h3><span class="badge num">Eternal (IIT ISM) &middot; \(O(N\cdot K\cdot M)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(N\) fruits; fruit \(i\) costs \(p_i\) and gives nutrition \(\nu_i\). You have
+\(M\) money and \(K\) coupons. Each fruit can be bought at most once: at full price \(p_i\), or with one
+coupon at \(\lfloor p_i / 2 \rfloor\). Each coupon works on one fruit. Spend at most \(M\) in total.
+Maximise the total nutrition.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N, M, K\), then the prices and the nutrition values.</dd>
+<dt>Output</dt><dd>One integer: the maximum total nutrition.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: choose a set \(T\) of fruits and a set \(C \subseteq T\) of coupon uses:</span>
+\[ \max \sum_{i \in T} \nu_i \quad \text{s.t.} \quad \sum_{i \in T \setminus C} p_i + \sum_{i \in C} \left\lfloor \frac{p_i}{2} \right\rfloor \le M, \qquad |C| \le K \]</li>
+<li><span class="why">This is 0/1 knapsack with two budgets. Let \(dp[i][c][m]\) be the best nutrition from fruits \(i..N-1\) with \(c\) coupons and \(m\) money left. Each fruit: skip, pay full, or pay half with a coupon:</span>
+\[ dp[i][c][m] = \max\Big( dp[i+1][c][m],\ \ \nu_i + dp[i+1][c][m - p_i],\ \ \nu_i + dp[i+1][c-1]\big[m - \lfloor p_i/2 \rfloor\big] \Big) \]
+<span class="why">(each option only when the money and coupons allow it).</span></li>
+<li><span class="why">Simplest form: \(dp[N][\cdot][\cdot] = 0\); answer \(dp[0][K][M]\). Row \(i\) reads only row \(i + 1\), so two layers are enough.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>This is 0/1 knapsack with a second budget, the coupons. State: (fruit \(i\), coupons left, money left).</li>
+<li>Each fruit has three choices: skip it, pay \(p_i\), or pay \(\lfloor p_i/2 \rfloor\) and use a coupon.</li>
+<li>Row \(i\) reads only row \(i + 1\), so two layers indexed by <code>i &amp; 1</code> are enough.</li>
+<li>The base (\(i = N\)) is all zeros, and the zero-initialised layer already holds it.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try each fruit three ways.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(3^N)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(N = 40\) gives about \(1.2\cdot 10^{19}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">DP over (\(i\), coupons, money): <span class="cost">\(O(N \cdot K \cdot M)\)</span> time, <span class="cost">\(O(K \cdot M)\)</span> memory.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 440 150" role="img" aria-label="three transitions into one dp cell">
+  <rect class="s-fill" x="170" y="20" width="110" height="34" rx="4"/><text class="s-t" x="184" y="42">dp[i][c][m]</text>
+  <rect class="s-box" x="10" y="100" width="120" height="34" rx="4"/><text class="s-t" x="22" y="122">i+1, c, m</text>
+  <rect class="s-box" x="160" y="100" width="130" height="34" rx="4"/><text class="s-t" x="166" y="122">i+1, c, m&minus;p</text>
+  <rect class="s-box" x="310" y="100" width="128" height="34" rx="4"/><text class="s-t" x="314" y="122">i+1, c&minus;1, m&minus;p/2</text>
+  <line class="s-edge" x1="70" y1="100" x2="200" y2="54"/><line class="s-hi" x1="225" y1="100" x2="225" y2="54"/><line class="s-hi" x1="374" y1="100" x2="255" y2="54"/>
+  <text class="s-tm" x="40" y="82">skip</text><text class="s-ta" x="230" y="82">+nu</text><text class="s-ta" x="330" y="82">+nu, coupon</text>
+</svg>
+          <figcaption>Each cell takes the best of three cells in the next layer: skip, pay full price, or pay half with a coupon.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The loop starts at \(n - 1\), so <code>if(i == n)</code> never fires. The base layer is the vector's zero fill at parity <code>n &amp; 1</code>. The <code>ml &gt;= 0</code> guard is always true. The commented <code>rec</code> above is the top-down version this table came from.</p>
+        <div class="src-meta"><span class="path">placement oa prep/iit_ism_dhanbad/fruit_selection.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+
+using namespace std;
+
+#define ll long long
+#define endl "\n"
+
+
+// ll rec(ll i , ll cl , ll ml)
+// {
+//     if(i == n)
+//         return 0;
+//     if (dp[i][cl][ml] != -1)
+//         return dp[i][cl][ml];
+//     // take without coupon
+//     ll ans = 0;
+//     if(ml &gt;= p[i])
+//     {
+//         ans = n[i] + rec(i + 1 , cl , ml - p[i]);
+//     }
+//     // take with coupon
+//     if(cl &gt; 0 &amp;&amp; ml &gt;= p[i] / 2)
+//     {
+//         ans = max(ans , n[i] + rec(i + 1 , cl - 1 , ml - p[i] / 2));
+//     }
+//     // don't take
+//     ans = max(ans , rec(i + 1 , cl , ml));
+//     return dp[i][cl][ml] = ans;
+// }
+void solve() 
+{
+    ll n, m , k ; 
+    cin &gt;&gt; n &gt;&gt; m &gt;&gt; k ;
+    vector &lt; ll &gt; p(n) , nu(n) ;
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; p[i] ; 
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; nu[i] ;
+    vector &lt; vector &lt; vector &lt; ll &gt; &gt; &gt; dp(2 , vector &lt; vector &lt; ll &gt; &gt; (k + 1 , vector &lt; ll &gt; (m + 1 , 0))) ;
+    for(ll i = n - 1 ; i &gt;= 0 ; i--)
+    {
+        for(ll cl = 0 ; cl &lt;= k ; cl++)
+        {
+            for(ll ml = 0 ; ml &lt;= m ; ml++)
+            {
+                if(i == n)
+                {
+                    dp[(i&amp;1)][cl][ml] = 0 ;
+                    continue ;
+                }
+                ll ans = 0 ;
+                if(ml &gt;= p[i])
+                {
+                    ans = nu[i] + dp[(i + 1)&amp;1][cl][ml - p[i]] ;
+                }
+                if(cl &gt; 0 &amp;&amp; ml &gt;= p[i] / 2)
+                {
+                    ans = max(ans , nu[i] + dp[(i + 1)&amp;1][cl - 1][ml - p[i] / 2]) ;
+                }
+                if(ml &gt;= 0)
+                {
+                    ans = max(ans , dp[(i + 1)&amp;1][cl][ml]) ;
+                }
+                dp[(i&amp;1)][cl][ml] = ans ;
+                
+
+            
+            }
+        }
+    }
+    cout &lt;&lt; dp[0][k][m] &lt;&lt; endl ;
+
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    int t = 1;
+    // cin &gt;&gt; t;
+    while (t--) {
+        solve();
+    }
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+# def rec(i, cl, ml):
+#     if i == n:
+#         return 0
+#     if dp[i][cl][ml] != -1:
+#         return dp[i][cl][ml]
+#     # take without coupon
+#     ans = 0
+#     if ml &gt;= p[i]:
+#         ans = n[i] + rec(i + 1, cl, ml - p[i])
+#     # take with coupon
+#     if cl &gt; 0 and ml &gt;= p[i] // 2:
+#         ans = max(ans, n[i] + rec(i + 1, cl - 1, ml - p[i] // 2))
+#     # don't take
+#     ans = max(ans, rec(i + 1, cl, ml))
+#     dp[i][cl][ml] = ans
+#     return ans
+
+def solve():
+    n, m, k = int(next(tok)), int(next(tok)), int(next(tok))
+    p = [int(next(tok)) for _ in range(n)]
+    nu = [int(next(tok)) for _ in range(n)]
+    # vector&lt;vector&lt;vector&lt;ll&gt;&gt;&gt; dp(2, (k+1) x (m+1) zeros): build every level with a comprehension
+    dp = [[[0] * (m + 1) for _ in range(k + 1)] for _ in range(2)]
+    for i in range(n - 1, -1, -1):
+        for cl in range(k + 1):
+            for ml in range(m + 1):
+                if i == n:
+                    dp[i &amp; 1][cl][ml] = 0
+                    continue
+                ans = 0
+                if ml &gt;= p[i]:
+                    ans = nu[i] + dp[(i + 1) &amp; 1][cl][ml - p[i]]
+                if cl &gt; 0 and ml &gt;= p[i] // 2:
+                    ans = max(ans, nu[i] + dp[(i + 1) &amp; 1][cl - 1][ml - p[i] // 2])
+                if ml &gt;= 0:
+                    ans = max(ans, dp[(i + 1) &amp; 1][cl][ml])
+                dp[i &amp; 1][cl][ml] = ans
+    print(dp[0][k][m])
+
+t = 1
+for _ in range(t):
+    solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Read from <code>(i+1)&amp;1</code> and write to <code>i&amp;1</code>. If you write into the layer you are reading, row i+1 gets overwritten halfway through the loop.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"knapsack, but up to K items can be discounted" &rarr; add the discounts left as a DP dimension.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 4 ===================== -->
+  <section class="family" id="f4">
+    <div class="family-head"><h2>4 &middot; Segment tree with summaries</h2></div>
+    <p class="family-note">Here the best answer for a range is not just the max of the two halves'
+    answers. Each node stores the extra fields that the combine step needs.</p>
+
+    <article class="entry" id="peak-profit-window">
+      <div class="entry-head"><h3>Peak Profit Window</h3><span class="badge num">InMobi &middot; \(O((N+M) \log N)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A trading desk logs its profit or loss \(A_i\) for each of \(N\) days (values may be
+negative). Answer \(M\) queries: for days \(x..y\), what is the largest total over any unbroken run of
+days \(i..j\) with \(x \le i \le j \le y\)?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\); \(A_1, \dots, A_N\); \(M\); then \(M\) lines \(x\ y\).</dd>
+<dt>Output</dt><dd>For each query, the best run total inside \([x, y]\).</dd>
+<dt>Limits</dt><dd>\(1 \le N, M \le 5\cdot 10^4,\ \ |A_i| \le 15007\), time limit 0.6 s</dd>
+<dt>Sample</dt><dd>Not given in the file.</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans}(x, y) = \max_{x \le i \le j \le y} \sum_{k=i}^{j} A_k \]</li>
+<li><span class="why">Split a segment into a left half \(L\) and right half \(R\). The best run lies in \(L\), in \(R\), or crosses the middle; a crossing run is a best suffix of \(L\) plus a best prefix of \(R\).</span></li>
+<li><span class="why">So each segment tree node stores four numbers: total \(\Sigma\), best prefix \(P\), best suffix \(S\), best run \(B\). Merging \(L\) and \(R\):</span>
+\[ \Sigma = \Sigma_L + \Sigma_R, \quad P = \max(P_L,\ \Sigma_L + P_R), \quad S = \max(S_R,\ \Sigma_R + S_L), \quad B = \max(B_L,\ B_R,\ S_L + P_R) \]</li>
+<li><span class="why">Simplest form: a query merges the \(O(\log N)\) nodes covering \([x, y]\) left to right and reads \(B\). The empty node is \(\Sigma = 0,\ P = S = B = -\infty\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The best run of a segment lies in the left half, in the right half, or crosses the middle.</li>
+<li>A crossing run is the left half's best suffix plus the right half's best prefix.</li>
+<li>So each node stores <code>sum, p, s, ans</code>: \(p = \max(a.p,\ a.\text{sum} + b.p)\), \(s = \max(b.s,\ b.\text{sum} + a.s)\), and \(\text{ans} = \max(a.\text{ans},\ b.\text{ans},\ a.s + b.p)\).</li>
+<li>The empty node has \(\text{sum} = 0\) and \(p = s = \text{ans} = -\infty\), so it never wins a max.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Run Kadane on \([x, y]\) for each query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(N \cdot M)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(N = M = 5\cdot 10^4\) gives \(2.5\cdot 10^9\) against a 0.6 s limit.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">A segment tree of four-field nodes: <span class="cost">\(O(\log N)\)</span> per query.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 460 150" role="img" aria-label="merging two nodes">
+  <rect class="s-box" x="10" y="20" width="200" height="34" rx="4"/><text class="s-t" x="20" y="42">[2, &minus;1, 3]</text>
+  <text class="s-tm" x="10" y="72">sum 4 &middot; p 4 &middot; s 4 &middot; ans 4</text>
+  <rect class="s-box" x="250" y="20" width="200" height="34" rx="4"/><text class="s-t" x="260" y="42">[&minus;1, 5]</text>
+  <text class="s-tm" x="250" y="72">sum 4 &middot; p 4 &middot; s 5 &middot; ans 5</text>
+  <rect class="s-fill" x="120" y="96" width="220" height="34" rx="4"/>
+  <text class="s-t" x="130" y="118">ans = max(4, 5, 4 + 4) = 8</text>
+  <text class="s-ta" x="150" y="146">a.s + b.p: the crossing run wins</text>
+</svg>
+          <figcaption>Neither half's own answer (4 or 5) is the best. The run that crosses the middle, the left suffix 4 plus the right prefix 4, gives 8.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The identity <code>stnode()</code> uses &minus;INF = &minus;\(10^{18}\) for p, s and ans. Adding a real sum to it stays far below any real value and does not overflow. <code>arr</code> is a fixed global of 50050, and <code>st</code> is sized <code>4n + 10</code>.</p>
+        <div class="src-meta"><span class="path">placement oa prep/inmobi/peak_profit_window.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+#define INF 1e18 
+#define ll long long 
+ll arr[50050] ; 
+
+struct stnode{
+    ll sum ; 
+    ll p ; 
+    ll s ; 
+    ll ans ; 
+    stnode()
+    {
+        sum = 0 ; 
+        p = s = ans = -INF ; 
+    }
+
+}; 
+vector &lt; stnode &gt; st ; 
+stnode merge( stnode a , stnode b)
+{
+    stnode res ; 
+    res.sum = a.sum + b.sum; 
+    res.p = max(a.p , a.sum + b.p) ; 
+    res.s = max(b.s , b.sum + a.s ) ; 
+    res.ans = max({a.ans , b.ans , a.s + b.p}) ; 
+    return res ; 
+
+}
+void build(ll id , ll l , ll r)
+{
+    if(l == r)
+    {
+        st[id].sum = arr[l] ; 
+        st[id].p = arr[l] ; 
+        st[id].s = arr[l] ; 
+        st[id].ans = arr[l] ; 
+    }
+    else 
+    {
+        ll mid = l + ( r - l ) / 2 ; 
+        build(2 * id , l , mid) ; 
+        build(2*id + 1 , mid + 1 , r) ; 
+        st[id] = merge(st[2 * id ] , st[ 2 * id + 1]) ; 
+    }
+}
+stnode query(ll id , ll l , ll r , ll lq , ll rq)
+{
+    if(lq &gt; r )
+    {
+        return stnode() ; 
+    }
+    if (rq &lt; l)
+    {
+        return stnode() ; 
+    }
+    if ( lq &lt;= l &amp;&amp; r &lt;= rq)
+    {
+        return st[id] ; 
+    }
+    ll mid = l + ( r - l ) / 2 ;
+    stnode left = query(2 * id , l , mid , lq , rq) ; 
+    stnode right = query(2 * id + 1 , mid + 1 , r , lq , rq ) ; 
+    return merge(left , right) ; 
+}
+void solve() {
+    ll n ; 
+    cin &gt;&gt; n ;
+
+    st.resize(4 * n + 10 ); 
+    for(ll i = 1 ; i &lt;= n ; i++) cin &gt;&gt; arr[i]; 
+    build(1 , 1 , n ) ;
+    ll m ; 
+    cin &gt;&gt; m ; 
+    for(ll i = 0 ; i &lt; m ; i++)
+    {
+        ll x , y ;  
+        cin &gt;&gt; x &gt;&gt; y ; 
+        stnode res = query(1 , 1 , n , x , y ) ; 
+        cout &lt;&lt; res.ans &lt;&lt; endl ; 
+        
+
+    }
+}
+    
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    solve();
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+arr = [0] * 50050
+
+class stnode:
+    def __init__(self):
+        self.sum = 0
+        self.p = self.s = self.ans = -INF   # chained assignment works the same way
+
+st = []
+
+def merge(a, b):
+    res = stnode()
+    res.sum = a.sum + b.sum
+    res.p = max(a.p, a.sum + b.p)
+    res.s = max(b.s, b.sum + a.s)
+    res.ans = max(a.ans, b.ans, a.s + b.p)  # max({x, y, z}) -&gt; max(x, y, z)
+    return res
+
+def build(id, l, r):
+    if l == r:
+        st[id].sum = arr[l]
+        st[id].p = arr[l]
+        st[id].s = arr[l]
+        st[id].ans = arr[l]
+    else:
+        mid = l + (r - l) // 2
+        build(2 * id, l, mid)
+        build(2 * id + 1, mid + 1, r)
+        st[id] = merge(st[2 * id], st[2 * id + 1])
+
+def query(id, l, r, lq, rq):
+    if lq &gt; r:
+        return stnode()
+    if rq &lt; l:
+        return stnode()
+    if lq &lt;= l and r &lt;= rq:
+        return st[id]
+    mid = l + (r - l) // 2
+    left = query(2 * id, l, mid, lq, rq)
+    right = query(2 * id + 1, mid + 1, r, lq, rq)
+    return merge(left, right)
+
+def solve():
+    global st
+    n = int(next(tok))
+    st = [stnode() for _ in range(4 * n + 10)]
+    for i in range(1, n + 1): arr[i] = int(next(tok))
+    build(1, 1, n)
+    m = int(next(tok))
+    out = []
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        res = query(1, 1, n, x, y)
+        out.append(res.ans)
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The identity must be &minus;&infin; for p, s and ans, but 0 for sum. With p = 0, an all-negative range would return 0 instead of its largest element.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"max subarray sum on many ranges" &rarr; a segment tree storing (sum, best prefix, best suffix, best).</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+  <div class="excluded">
+    <h4>Excluded from this ledger</h4>
+    <ul>
+      <li><code>placement oa prep/harness/maximum_weight_tree_degree.cpp</code> &mdash; <code>g++ -std=c++17</code>: <code>109:15: error: expected ';' after expression</code> (<code>k = ki</code>).</li>
+      <li><code>placement oa prep/Ajay room problems/mex_replacement.cpp</code> &mdash; even with <code>algodebug.h</code> found: <code>65:10: error: use of undeclared identifier 'M'</code>.</li>
+      <li><code>placement oa prep/squarepoint/odd_even_operations.cpp</code> &mdash; <code>27:1: error: unexpected character &lt;U+20B9&gt;</code> (a stray &#8377; inside <code>rec</code>).</li>
+      <li><code>placement oa prep/squarepoint/minimize_infected_nodes.cpp</code> &mdash; compiles, but <code>solve()</code> only builds the DSU and never prints an answer.</li>
+      <li><code>placement oa prep/iit_ism_dhanbad/minimum_sum_assignment.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>placement oa prep/harness/maximum_memory_collection.cpp</code> &mdash; <code>maximumMemory</code> is a stub that returns 0.</li>
+      <li><code>placement oa prep/harness/multiply_divide_ways.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>placement oa prep/accenture/test1.cpp</code> (TLDR grid) &mdash; compiles, but on its own sample <code>printf "2\n3 3 3 1\nRRL\nTDT\nTRT\n2 2 1 2\nLD\nLT\n" | ./test1</code> it prints <code>1 1000000000000000000</code>, expected <code>1 3</code>.</li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/oa_1_graphs_dp.js"></script>
+</body>
+</html>

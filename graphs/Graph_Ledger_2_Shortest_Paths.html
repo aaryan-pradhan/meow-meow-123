@@ -44,7 +44,7 @@
       <p>The judgment calls that separate these problems from each other.</p></div>
     <div class="rules">
       <div class="rule"><span class="n">1</span>
-        <p>Pick by weights and query shape: non-negative, one source &rarr; Dijkstra (Shortest Routes I); negative edges or cycles &rarr; Bellman-Ford (High Score, Cycle Finding); all pairs with <code>n ≤ 500</code> &rarr; Floyd (Shortest Routes II).</p></div>
+        <p>Pick by weights and query shape: non-negative, one source &rarr; Dijkstra (Shortest Routes I); negative edges or cycles &rarr; Bellman-Ford (High Score, Cycle Finding); all pairs with \(n \le 500\) &rarr; Floyd (Shortest Routes II).</p></div>
       <div class="rule"><span class="n">2</span>
         <p>Extend the vertex, not the algorithm: Flight Discount doubles vertices by coupon state; Flight Routes lets each vertex be finalised k times.</p></div>
       <div class="rule"><span class="n">3</span>
@@ -58,27 +58,45 @@
     <div class="family-head"><h2>1 &middot; Dijkstra and variants</h2></div>
     <p class="family-note">Min-heap over tentative distances. The variants change the state (Flight Discount), the pop limit (Flight Routes) or what is carried (Investigation).</p>
     <article class="entry" id="shortest-routes-i">
-      <div class="entry-head"><h3>Shortest Routes I</h3><span class="badge num">O((n+m) log m)</span></div>
+      <div class="entry-head"><h3>Shortest Routes I</h3><span class="badge num">\(O((n+m) \log m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Shortest distance from city 1 to every city; directed, non-negative weights.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights; flight \(i\) goes from \(a\) to
+\(b\) and has length \(c\). Find the length of the shortest route from city \(1\) to every city.
+Every city can be reached.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd>\(n\) integers: the shortest distance from city \(1\) to cities \(1, \dots, n\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5,\ \ 1 \le c \le 10^9\)</dd>
+<dt>Sample</dt><dd>flights \((1,2,6)(1,3,2)(3,2,3)(1,3,4)\) → <code>0 5 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly, where a route is a sequence of flights:</span>
+\[ \text{dist}(v) = \min_{\text{routes } 1 \to v} \sum_{\text{flights}} c, \qquad \text{dist}(1) = 0 \]</li>
+<li><span class="why">The last flight of a shortest route to \(v\) comes from some \(u\):</span>
+\[ \text{dist}(v) = \min_{(u, v, c)} \big( \text{dist}(u) + c \big) \]</li>
+<li><span class="why">All lengths are \(\ge 0\). So the unfinished city with the smallest tentative distance can never be improved later: any other route to it passes through a city that is at least as far.</span></li>
+<li><span class="why">Simplest form (Dijkstra): repeatedly take the smallest tentative distance from a min-heap, fix it, and relax its edges: \(\text{dist}(v) \leftarrow \min(\text{dist}(v),\ \text{dist}(u) + c)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Non-negative weights &rArr; the smallest tentative distance is final when popped.</li>
-          <li>Lazy deletion: push duplicates, skip a vertex already finalised.</li>
-          <li>Each edge relaxes at most once per finalised vertex &rArr; ≤ m pushes.</li>
-        </ol>
+<li>All weights are \(\ge 0\), so the smallest tentative distance is final when it is popped.</li>
+<li>Lazy deletion: push duplicates into the heap, and skip a city that is already finalised.</li>
+<li>Each edge is relaxed once, when its start city is finalised, so there are at most \(m\) pushes.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Bellman-Ford: relax all edges n times.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(n·m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code> &rarr; 2·10¹⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Binary-heap Dijkstra: <span class="cost">O((n+m) log m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Bellman–Ford: relax all edges \(n\) times.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\) gives \(2\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Dijkstra with a binary heap: <span class="cost">\(O((n + m) \log m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -171,32 +189,83 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+import heapq
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[a].append((c, b))
+        # daam phir naam
+    dist = [INF] * (n + 1)
+    vis = [0] * (n + 1)
+    pq = []                                 # priority_queue&lt;pll, vector&lt;pll&gt;, greater&lt;pll&gt;&gt;:
+                                            # heapq is a MIN-heap on a plain list, so greater&lt;&gt; is the default
+    dist[1] = 0
+    heapq.heappush(pq, (0, 1))              # pq.push({0, 1})
+    while pq:
+        x = heapq.heappop(pq)               # x = pq.top(); pq.pop();
+        node = x[1]
+        d = x[0]
+        if vis[node]:
+            continue
+        vis[node] = 1
+        for y in g[node]:
+            child = y[1]
+            w = y[0]
+            if dist[child] &gt; dist[node] + w:
+                dist[child] = dist[node] + w
+                heapq.heappush(pq, (dist[child], child))
+    print(' '.join(str(dist[i]) for i in range(1, n + 1)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Without the <code>vis</code> skip, every stale entry rescans its adjacency list; a star-shaped graph turns that into quadratic time.</div>
       <div class="callout trigger"><strong>Recognize</strong>"shortest distance from one source, weights ≥ 0" &rarr; Dijkstra with lazy deletion.</div>
     </article>
     <article class="entry" id="flight-discount">
-      <div class="entry-head"><h3>Flight Discount</h3><span class="badge num">O((n+m) log m)</span></div>
+      <div class="entry-head"><h3>Flight Discount</h3><span class="badge num">\(O((n+m) \log m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Cheapest route 1 &rarr; n when exactly one flight may be halved (rounded down).</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights with prices. Find the cheapest
+route from city \(1\) to city \(n\). You have one coupon: on one flight of your choice, a price \(c\)
+becomes \(\lfloor c/2 \rfloor\). The coupon can be used only once.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd>One integer: the cheapest price from \(1\) to \(n\).</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5,\ \ 1 \le c \le 10^9\)</dd>
+<dt>Sample</dt><dd>flights \((1,2,3)(2,3,1)(1,3,7)(2,1,5)\) → <code>2</code> (\(\lfloor 3/2 \rfloor + 1\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Add one bit to the state: has the coupon been used? Vertices become pairs \((v, u)\) with \(u \in \{0, 1\}\).</span></li>
+<li><span class="why">Each flight \(a \to b\) with price \(c\) becomes three edges:</span>
+\[ (a, 0) \xrightarrow{\,c\,} (b, 0), \qquad (a, 0) \xrightarrow{\,\lfloor c/2 \rfloor\,} (b, 1), \qquad (a, 1) \xrightarrow{\,c\,} (b, 1) \]</li>
+<li><span class="why">Simplest form: one Dijkstra from \((1, 0)\) on \(2n\) vertices and \(3m\) edges. The answer is \(\text{dist}(n, 1)\), since using the coupon never costs more.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>"Used the coupon yet?" is one extra bit of state.</li>
-          <li>Double every city; the coupon edge moves from layer 0 to layer 1.</li>
-          <li>Plain Dijkstra on the layered graph; answer is <code>(n, 1)</code> &mdash; halving never hurts.</li>
-        </ol>
+<li>"Have I used the coupon yet?" is one extra bit of state.</li>
+<li>Make two copies of every city; the coupon edge goes from copy 0 to copy 1.</li>
+<li>Run plain Dijkstra on this layered graph. The answer is \((n, 1)\), because halving never hurts.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">For each edge, halve it and rerun Dijkstra.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(m · (n+m) log m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>m ≤ 2·10⁵</code> &rarr; ~10¹¹.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">One Dijkstra on <span class="cost">2n</span> vertices and <span class="cost">3m</span> edges.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">For each flight, halve it and rerun Dijkstra.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(m \cdot (n + m) \log m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(m = 2\cdot 10^5\) gives about \(10^{11}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One Dijkstra on <span class="cost">\(2n\)</span> vertices and <span class="cost">\(3m\)</span> edges.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -292,32 +361,85 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+import heapq
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def encode(a, b):
+    return a * 2 + b
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    N = n * 2 + 1
+    g = [[] for _ in range(N + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[encode(a, 0)].append((c, encode(b, 0)))
+        g[encode(a, 0)].append((c // 2, encode(b, 1)))     # c / 2 -&gt; c // 2
+        g[encode(a, 1)].append((c, encode(b, 1)))
+    vis = [0] * (N + 1)
+    dist = [INF] * (N + 1)
+    dist[encode(1, 0)] = 0
+    pq = []
+    heapq.heappush(pq, (0, encode(1, 0)))
+    while pq:
+        d, node = heapq.heappop(pq)         # pq.top().fr / .sc, then pop
+        if vis[node]:
+            continue
+        vis[node] = 1
+        for x in g[node]:
+            child = x[1]
+            w = x[0]
+            if dist[child] &gt; dist[node] + w:
+                dist[child] = dist[node] + w
+                heapq.heappush(pq, (dist[child], child))
+    print(dist[encode(n, 1)])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Halving the largest edge on the ordinary shortest path is wrong: a longer path with one huge edge can become cheapest after the discount.</div>
       <div class="callout trigger"><strong>Recognize</strong>"one (or k) free/discounted uses along a shortest path" &rarr; layered state graph, then Dijkstra.</div>
     </article>
     <article class="entry" id="flight-routes">
-      <div class="entry-head"><h3>Flight Routes</h3><span class="badge num">O(k·(n+m) log(km))</span></div>
+      <div class="entry-head"><h3>Flight Routes</h3><span class="badge num">\(O(k \cdot (n+m) \log (km))\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">The <code>k</code> cheapest routes (not necessarily simple) from 1 to n.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights with prices. Find the prices of the
+\(k\) cheapest routes from city \(1\) to city \(n\). A route may visit a city more than once, and two
+different routes with the same price are both counted.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m,\ k\), then \(m\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd>\(k\) integers: the \(k\) cheapest route prices, in increasing order.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5,\ \ 1 \le c \le 10^9,\ \ 1 \le k \le 10\)</dd>
+<dt>Sample</dt><dd>the 6 flights in the file, \(k = 3\) → <code>4 4 7</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Run Dijkstra on (city, cost) pairs, but allow each city to be popped up to \(k\) times instead of once.</span></li>
+<li><span class="why">With non-negative prices, pops come out in non-decreasing cost. So the \(j\)-th time city \(v\) is popped, its cost is the \(j\)-th cheapest route to \(v\).</span></li>
+<li><span class="why">A route among the \(k\) cheapest to \(n\) only passes through prefixes that are among the \(k\) cheapest to their own city. (If a prefix to \(v\) were not, swapping in any of the \(k\) cheaper prefixes would give \(k\) cheaper routes to \(n\).) So pops beyond \(k\) can be thrown away.</span></li>
+<li><span class="why">Simplest form: stop after the \(k\)-th pop of \(n\). There are at most \(k \cdot n\) pops and \(k \cdot m\) pushes.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>The j-th pop of a vertex from a min-heap is its j-th shortest walk.</li>
-          <li>The k-th shortest route to n only extends routes that are among the k shortest at each vertex.</li>
-          <li>Cap pops per vertex at <code>k</code>; stop after <code>k</code> pops of <code>n</code>.</li>
-        </ol>
+<li>The \(j\)-th pop of a city from a min-heap is its \(j\)-th cheapest route.</li>
+<li>The \(k\)-th cheapest route to \(n\) only extends routes that are among the \(k\) cheapest at each city.</li>
+<li>Cap pops per city at \(k\); stop after \(k\) pops of \(n\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate walks by cost.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">unbounded</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 10⁵</code>, <code>m ≤ 2·10⁵</code>, <code>k ≤ 10</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Dijkstra with a per-vertex pop counter: <span class="cost">O(k·m log(km))</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List routes in order of cost.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">unbounded</span> (routes may repeat cities).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Dijkstra with a pop counter per city: <span class="cost">\(O(k \cdot m \log(k m))\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -418,32 +540,83 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+import heapq
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m, k = int(next(tok)), int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[a].append((c, b))
+    vis = [0] * (n + 1)
+    pq = []
+    heapq.heappush(pq, (0, 1))
+    ans = []
+    while pq:
+        d, node = heapq.heappop(pq)         # auto [d, node] = pq.top(); pq.pop();
+        if vis[node] == k:
+            continue
+        vis[node] += 1
+        if node == n:
+            ans.append(d)
+            if len(ans) == k:
+                break
+        for edge in g[node]:
+            child = edge[1]
+            wt = edge[0]
+            if vis[child] &lt; k:
+                heapq.heappush(pq, (d + wt, child))
+    print(' '.join(map(str, ans)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>A boolean <code>vis</code> (standard Dijkstra) returns only the shortest route <code>k</code> times over or stops at one.</div>
       <div class="callout trigger"><strong>Recognize</strong>"k shortest paths / k cheapest routes, k small" &rarr; Dijkstra allowing k pops per vertex.</div>
     </article>
     <article class="entry" id="investigation">
-      <div class="entry-head"><h3>Investigation</h3><span class="badge num">O((n+m) log m)</span></div>
+      <div class="entry-head"><h3>Investigation</h3><span class="badge num">\(O((n+m) \log m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">For shortest routes 1 &rarr; n: the length, how many there are, and the min and max number of flights among them.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights with prices. For routes from city
+\(1\) to city \(n\), answer four questions: (1) the minimum price; (2) how many routes have that
+minimum price, modulo \(10^9 + 7\); (3) the fewest flights on a minimum-price route; (4) the most
+flights on a minimum-price route.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd>Four integers: price, count, min flights, max flights.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5,\ \ 1 \le c \le 10^9\)</dd>
+<dt>Sample</dt><dd>flights \((1,4,5)(1,2,4)(2,4,5)(1,3,2)(3,4,3)\) → <code>5 2 1 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">A flight \(u \to v\) with price \(c\) lies on some cheapest route exactly when</span>
+\[ \text{dist}(u) + c = \text{dist}(v) \]
+<span class="why">These edges form a graph with no cycles (prices are \(\ge 1\)).</span></li>
+<li><span class="why">On those edges, carry three values for each city: number of cheapest routes \(W\), fewest flights \(F_{\min}\), most flights \(F_{\max}\):</span>
+\[ W(v) = \sum_{u} W(u), \qquad F_{\min}(v) = 1 + \min_u F_{\min}(u), \qquad F_{\max}(v) = 1 + \max_u F_{\max}(u) \]</li>
+<li><span class="why">Dijkstra finalises cities in order of distance, which is a valid order for these sums. When a relaxation is strictly better, reset the three values; when it ties, merge them.</span></li>
+<li><span class="why">Simplest form: start with \(W(1) = 1,\ F_{\min}(1) = F_{\max}(1) = 0\). Print \(\text{dist}(n), W(n), F_{\min}(n), F_{\max}(n)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Restrict to shortest-path edges: those with <code>dist[u] + w = dist[v]</code>.</li>
-          <li>Dijkstra finalises in distance order, which is a topological order of that sub-DAG.</li>
-          <li>Strictly better arrival resets the aggregates; an equal arrival merges them.</li>
-        </ol>
+<li>Keep only the cheapest-route edges: those with \(\text{dist}(u) + c = \text{dist}(v)\).</li>
+<li>Dijkstra finalises cities in order of distance, which is a topological order of that subgraph.</li>
+<li>A strictly better arrival resets the three values; an equal arrival merges them.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate all shortest paths.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">counts reach 10⁹+7-sized values; <code>m ≤ 2·10⁵</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Carry (ways, minF, maxF) through Dijkstra: <span class="cost">O((n+m) log m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List all cheapest routes.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">The count can be huge (hence the modulo), and \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Carry \((W, F_{\min}, F_{\max})\) through Dijkstra: <span class="cost">\(O((n + m) \log m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -590,6 +763,63 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+import heapq
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+MOD = 1000000007
+
+def madd(a, b):
+    return (a % MOD + b % MOD) % MOD
+
+# n, m = 0, 0
+# g = []
+# vis = []
+# dist = []
+# def djisketra(src):
+#     ...
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[a].append((c, b))
+    # print(djisketra(1), end=" ")
+    dist = [INF] * (n + 1)
+    ways = [0] * (n + 1)
+    min_flights = [INF] * (n + 1)
+    max_flights = [0] * (n + 1)
+    vis = [0] * (n + 1)
+    q = []
+    heapq.heappush(q, (0, 1))
+    ways[1] = 1
+    min_flights[1] = 0
+    max_flights[1] = 0
+    dist[1] = 0
+    while q:
+        d, node = heapq.heappop(q)
+        if vis[node]:
+            continue
+        vis[node] = 1
+        for wt, child in g[node]:           # for (auto [wt, child] : g[node])
+            if d + wt &gt; dist[child]:
+                continue
+            elif d + wt == dist[child]:
+                dist[child] = d + wt
+                ways[child] = madd(ways[child], ways[node])
+                min_flights[child] = min(min_flights[child], min_flights[node] + 1)
+                max_flights[child] = max(max_flights[child], max_flights[node] + 1)
+            elif d + wt &lt; dist[child]:
+                dist[child] = d + wt
+                ways[child] = ways[node]
+                min_flights[child] = min_flights[node] + 1
+                max_flights[child] = max_flights[node] + 1
+                heapq.heappush(q, (dist[child], child))
+    print(dist[n], ways[n], min_flights[n], max_flights[n])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Merging on equality is only safe because <code>node</code> is final when popped. Merging in a Bellman-Ford-style loop would double-count ways.</div>
       <div class="callout trigger"><strong>Recognize</strong>"number of shortest paths / min & max edges among shortest paths" &rarr; Dijkstra carrying aggregates, reset on &lt;, merge on =.</div>
@@ -600,27 +830,46 @@ signed main()
     <div class="family-head"><h2>2 &middot; Bellman-Ford</h2></div>
     <p class="family-note">Relax every edge n&minus;1 times; anything still relaxable afterwards is on or behind a negative cycle.</p>
     <article class="entry" id="high-score">
-      <div class="entry-head"><h3>High Score</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>High Score</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Maximum score path 1 &rarr; n; print &minus;1 if the score can be made arbitrarily large.</div>
+        <div class="ask">
+<p><b>Question.</b> A game has \(n\) rooms and \(m\) one-way tunnels. Going through tunnel \(a \to b\)
+changes your score by \(x\), which may be negative. Tunnels can be reused. Starting at room \(1\) with
+score \(0\), walk to room \(n\). What is the maximum score? Print \(-1\) if the score can be made
+arbitrarily large.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\ x\).</dd>
+<dt>Output</dt><dd>One integer: the maximum score, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2500,\ \ 1 \le m \le 5000,\ \ -10^9 \le x \le 10^9\)</dd>
+<dt>Sample</dt><dd>tunnels \((1,2,3)(2,4,-1)(1,3,-2)(3,4,7)(1,4,4)\) → <code>5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Maximising a sum is minimising its negative. Give every tunnel weight \(w = -x\):</span>
+\[ \max \sum x \;=\; -\min \sum w \]</li>
+<li><span class="why">Weights can be negative, so use Bellman–Ford. After \(n - 1\) rounds, every shortest path without a negative cycle is final.</span></li>
+<li><span class="why">If an edge \(u \to v\) can still be relaxed in round \(n\), it touches a negative cycle (a positive-score loop). The score is unbounded only if that loop can be reached from \(1\) <em>and</em> can reach \(n\):</span>
+\[ \text{ans} = -1 \iff \exists\, u \to v \text{ relaxable in round } n,\ \ 1 \leadsto u,\ \ v \leadsto n \]</li>
+<li><span class="why">Simplest form: a reverse BFS from \(n\) marks which rooms can reach \(n\). Otherwise \(\text{ans} = -\text{dist}(n)\).</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Max-sum path = shortest path with negated weights.</li>
-          <li>Unbounded &hArr; a negative cycle reachable from 1 <em>and</em> able to reach n.</li>
-          <li>Reverse BFS from n marks which vertices can reach n.</li>
-        </ol>
+<li>A maximum-sum path is a shortest path with the weights negated.</li>
+<li>The score is unbounded iff a negative cycle (after negation) is reachable from \(1\) <em>and</em> can reach \(n\).</li>
+<li>A reverse BFS from \(n\) marks which rooms can reach \(n\).</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Dijkstra on negated weights.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">wrong</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v">negative edges break Dijkstra's finality.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Bellman-Ford n rounds + one detection round: <span class="cost">O(n·m) ≈ 5·10⁵</span> at <code>n ≤ 2500</code>, <code>m ≤ 5000</code>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Dijkstra on the negated weights.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">wrong</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Negative edges break Dijkstra's "popped means final" rule.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Bellman–Ford, \(n\) rounds plus one check round: <span class="cost">\(O(n \cdot m) \approx 1.25\cdot 10^7\)</span> at \(n = 2500,\ m = 5000\).</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -750,32 +999,96 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    rg = [[] for _ in range(n + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[a].append((-c, b))
+        rg[b].append(a)
+    vis = [0] * (n + 1)
+    q = deque()
+    q.append(n)
+    vis[n] = 1
+    while q:
+        node = q.popleft()
+        for child in rg[node]:
+            if not vis[child]:
+                vis[child] = 1
+                q.append(child)
+    dist = [INF] * (n + 1)
+    dist[1] = 0
+    for i in range(1, n + 1):
+        for node in range(1, n + 1):
+            if dist[node] == INF:
+                continue
+            for x in g[node]:
+                child = x[1]
+                w = x[0]
+                if dist[child] &gt; dist[node] + w and vis[child]:
+                    dist[child] = dist[node] + w
+    for node in range(1, n + 1):
+        if dist[node] == INF:
+            continue
+        for x in g[node]:
+            child = x[1]
+            w = x[0]
+            if dist[child] &gt; dist[node] + w and vis[child]:
+                print(-1)
+                return
+    print(-dist[n])
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Printing &minus;1 for <em>any</em> negative cycle is the classic wrong answer; the cycle must lie on some 1 &rarr; n walk.</div>
       <div class="callout trigger"><strong>Recognize</strong>"maximum score, may be infinite" &rarr; negate, Bellman-Ford, check relaxable cycles on a 1&rarr;n path.</div>
     </article>
     <article class="entry" id="cycle-finding">
-      <div class="entry-head"><h3>Cycle Finding</h3><span class="badge num">O(n·m)</span></div>
+      <div class="entry-head"><h3>Cycle Finding</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Does the directed graph have a negative cycle? If so, print one.</div>
+        <div class="ask">
+<p><b>Question.</b> You are given a directed graph with \(n\) nodes and \(m\) weighted edges (weights may
+be negative). Does it contain a negative cycle, that is, a cycle whose total weight is below \(0\)?
+If yes, print one.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\ c\).</dd>
+<dt>Output</dt><dd><code>YES</code> and the nodes of one negative cycle in order, or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2500,\ \ 1 \le m \le 5000,\ \ -10^9 \le c \le 10^9\)</dd>
+<dt>Sample</dt><dd>the 5 edges in the file → <code>YES</code>, <code>1 2 4 1</code> (weight \(1 + 1 - 3 = -1\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Start every distance at \(0\). That is the same as adding a new source with a \(0\)-weight edge to every node, so every cycle is reachable:</span>
+\[ \text{dist}(v) = 0 \quad \text{for all } v \]</li>
+<li><span class="why">Run \(n\) rounds of Bellman–Ford, \(\text{dist}(b) \leftarrow \min(\text{dist}(b),\ \text{dist}(a) + c)\), recording \(\text{par}(b) = a\) on each improvement. Without a negative cycle, nothing improves in round \(n\).</span></li>
+<li><span class="why">If node \(x\) improves in round \(n\), following \(\text{par}\) from \(x\) eventually loops. After \(n\) steps you are certainly on that loop, because a path of \(n\) steps must repeat a node.</span></li>
+<li><span class="why">Simplest form: from that node \(y\), follow \(\text{par}\) until \(y\) appears again, then print the nodes in reverse.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>Starting all distances at 0 is a virtual source with 0-edges to every vertex &rArr; every cycle is reachable.</li>
-          <li>If round <code>n</code> still relaxes something, a negative cycle exists.</li>
-          <li>Following <code>par</code> <code>n</code> times from that vertex guarantees landing <em>on</em> the cycle.</li>
-        </ol>
+<li>Starting all distances at \(0\) acts like a virtual source with \(0\)-edges to every node, so every cycle is reachable.</li>
+<li>If round \(n\) still improves something, a negative cycle exists.</li>
+<li>Following <code>par</code> \(n\) times from that node guarantees you land <em>on</em> the cycle.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Enumerate cycles.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>n ≤ 2500</code>, <code>m ≤ 5000</code>.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Bellman-Ford with parents: <span class="cost">O(n·m)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">List all cycles and add up their weights.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 2500\), \(m = 5000\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Bellman–Ford with parents: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -887,6 +1200,46 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[a].append((c, b))
+    dist = [0] * (n + 1)
+    par = [-1] * (n + 1)
+    x = 0
+    for i in range(1, n + 1):
+        x = 0
+        for node in range(1, n + 1):
+            for edge in g[node]:
+                child = edge[1]
+                wt = edge[0]
+                if dist[node] + wt &lt; dist[child]:
+                    dist[child] = dist[node] + wt
+                    par[child] = node
+                    x = child
+    for i in range(1, n + 1):
+        if x == 0:
+            break
+        x = par[x]
+    if x == 0:
+        print("NO")
+    else:
+        print("YES")
+        ans = []
+        temp = x
+        while temp != x or len(ans) == 0:   # Python has no do-while: this condition fakes one
+            ans.append(temp)
+            temp = par[temp]
+        ans.append(x)
+        ans.reverse()
+        print(' '.join(map(str, ans)))      # C++ reuses x as the loop var here; no need in Python
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong>Collecting the cycle directly from <code>x</code> (without the <code>n</code> parent steps) can start on a tail leading into the cycle and never return to <code>x</code>.</div>
       <div class="callout trigger"><strong>Recognize</strong>"detect and print a negative cycle" &rarr; Bellman-Ford from all-zero dist, walk parents n times.</div>
@@ -897,27 +1250,42 @@ signed main()
     <div class="family-head"><h2>3 &middot; Floyd–Warshall</h2></div>
     <p class="family-note">All-pairs by allowing intermediates one at a time.</p>
     <article class="entry" id="shortest-routes-ii">
-      <div class="entry-head"><h3>Shortest Routes II</h3><span class="badge num">O(n³ + q)</span></div>
+      <div class="entry-head"><h3>Shortest Routes II</h3><span class="badge num">\(O(n^{3} + q)\)</span></div>
       <div class="sec">
         <div class="sec-label" data-n="1">The ask</div>
-        <div class="ask">Answer <code>q</code> shortest-distance queries between arbitrary pairs; undirected, <code>n ≤ 500</code>.</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) two-way roads with lengths. Answer \(q\) queries:
+the length of the shortest route between cities \(a\) and \(b\), or \(-1\) if there is none.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m,\ q\); then \(m\) lines \(a\ b\ c\); then \(q\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>For each query, the shortest distance or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 500,\ \ 1 \le m \le n^2,\ \ 1 \le q \le 10^5,\ \ 1 \le c \le 10^9\)</dd>
+<dt>Sample</dt><dd>roads \((1,2,5)(1,3,9)(2,3,3)\); queries → <code>5 5 8 -1 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(d_k(i, j)\) be the shortest route from \(i\) to \(j\) whose intermediate cities all lie in \(\{1, \dots, k\}\). \(d_0\) is the direct road (the shortest one if there are several), or \(\infty\).</span></li>
+<li><span class="why">A best route using cities up to \(k\) either avoids \(k\), or goes through \(k\) once:</span>
+\[ d_k(i, j) = \min\big( d_{k-1}(i, j),\ \ d_{k-1}(i, k) + d_{k-1}(k, j) \big) \]</li>
+<li><span class="why">Simplest form (Floyd–Warshall): one table updated in place, with \(k\) as the <em>outer</em> loop. After \(k = n\), each query is a lookup.</span></li>
+</ol></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="2">Key observations</div>
         <ol class="obs">
-          <li>After phase <code>k</code>, <code>g[i][j]</code> is the best path using only intermediates <code>1..k</code>.</li>
-          <li><code>n ≤ 500</code> &rArr; <code>n³ = 1.25·10⁸</code>, tiny inner loop.</li>
-          <li>Parallel edges: keep the minimum when reading.</li>
-        </ol>
+<li>After phase \(k\), <code>g[i][j]</code> is the best route using only cities \(1..k\) in between.</li>
+<li>\(n \le 500\) gives \(n^3 = 1.25\cdot 10^8\) steps of a tiny inner loop.</li>
+<li>For repeated roads between the same pair, keep the minimum when reading.</li>
+</ol>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
         <div class="brute">
-          <div class="row"><span class="k">naive</span><span class="v">Dijkstra per query.</span></div>
-          <div class="row"><span class="k">cost</span><span class="v"><span class="cost">O(q · m log m)</span></span></div>
-          <div class="row dies"><span class="k">dies at</span><span class="v"><code>q ≤ 10⁵</code>, <code>m ≤ n²/2</code> &rarr; ~10¹⁰.</span></div>
-          <div class="row therefore"><span class="k">therefore</span><span class="v">Precompute all pairs once: <span class="cost">O(n³)</span>, each query <span class="cost">O(1)</span>.</span></div>
-        </div>
+<div class="row"><span class="k">naive</span><span class="v">Dijkstra for every query.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(q \cdot m \log m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(q = 10^5\), \(m\) up to \(n^2/2\): about \(10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Compute all pairs once: <span class="cost">\(O(n^3)\)</span>, then each query is <span class="cost">\(O(1)\)</span>.</span></div>
+</div>
       </div>
       <div class="sec">
         <div class="sec-label" data-n="4">Diagram</div>
@@ -928,7 +1296,7 @@ signed main()
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">INF is <code>1e18</code>, so <code>INF + INF = 2·10¹⁸</code> still fits in <code>long long</code> and no guard is needed. Diagonal set to 0 after reading edges.</p>
+        <p class="impl-note">INF is <code>1e18</code>, so \(\text{INF} + \text{INF} = 2\cdot 10^{18}\) still fits in <code>long long</code> and no guard is needed. Diagonal set to 0 after reading edges.</p>
         <div class="src-meta"><span class="path">graphs/Shortest_Routes_II.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
@@ -1005,6 +1373,35 @@ signed main()
  
     solve() ; 
 }</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n, m, q = int(next(tok)), int(next(tok)), int(next(tok))
+    g = [[INF] * (n + 1) for _ in range(n + 1)]
+    for i in range(m):
+        a, b, c = int(next(tok)), int(next(tok)), int(next(tok))
+        g[a][b] = min(g[a][b], c)
+        g[b][a] = min(g[b][a], c)
+    for i in range(1, n + 1):
+        g[i][i] = 0
+    for k in range(1, n + 1):
+        for i in range(1, n + 1):
+            for j in range(1, n + 1):
+                g[i][j] = min(g[i][j], g[i][k] + g[k][j])
+                # ponytail: n = 500 -&gt; 1.25e8 Python steps, too slow for CSES; the logic is identical
+    out = []
+    for i in range(q):
+        a, b = int(next(tok)), int(next(tok))
+        if g[a][b] == INF:
+            out.append(-1)
+        else:
+            out.append(g[a][b])
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
       </div>
       <div class="callout gotcha"><strong>Gotcha</strong><code>k</code> must be the outer loop. With <code>i</code> or <code>j</code> outermost the table is not closed under intermediates and gives wrong distances.</div>
       <div class="callout trigger"><strong>Recognize</strong>"many distance queries, n ≤ 500" &rarr; Floyd–Warshall.</div>
