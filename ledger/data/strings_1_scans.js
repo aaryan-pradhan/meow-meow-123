@@ -12,8 +12,5 @@ LEDGER.add(
       fam: "Run-length scan",
       inv: '\\(c_i = c_{i-1} + 1\\) if \\(s_i = s_{i-1}\\), else \\(1\\); \\(\\text{ans} = \\max c_i\\)',
       time: '\\(O(n)\\)' }
-  ],
-  [
-
   ]
 );

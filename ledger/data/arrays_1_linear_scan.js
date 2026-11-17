@@ -57,6 +57,5 @@ LEDGER.add(
       fam: 'monotonic stack',
       inv: 'pop while \\(x_{\\text{top}} \\ge x_i\\); answer = top, else \\(0\\)',
       time: '\\(O(n)\\)' }
-  ],
-  []
+  ]
 );

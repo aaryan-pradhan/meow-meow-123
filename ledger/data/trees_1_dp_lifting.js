@@ -52,8 +52,5 @@ LEDGER.add(
       fam: "Binary lifting & LCA",
       inv: '\\(+1\\) at \\(a, b\\); \\(-1\\) at \\(\\ell, \\text{par}(\\ell)\\); subtree sums',
       time: '\\(O((n+m) \\log n)\\)' }
-  ],
-  [
-
   ]
 );

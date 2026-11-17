@@ -32,9 +32,5 @@ LEDGER.add(
       fam: "2D prefix sums",
       inv: '\\(P(y_2,x_2) - P(y_1{-}1,x_2) - P(y_2,x_1{-}1) + P(y_1{-}1,x_1{-}1)\\)',
       time: '\\(O(n^{2} + q)\\)' }
-  ],
-  [
-    { file: 'trees/Path_Queries.cpp', why: "unfinished: 'algodebug.h' not found; stnode used before declaration; query has no body" },
-    { file: 'trees/Salary_Queries.cpp', why: "empty template: 'algodebug.h' not found; solve() empty" }
   ]
 );

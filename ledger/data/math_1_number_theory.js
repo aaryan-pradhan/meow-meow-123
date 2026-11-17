@@ -52,10 +52,5 @@ LEDGER.add(
       fam: "Divisors & multiples",
       inv: '\\(\\sum_d d \\lfloor n/d \\rfloor\\); block \\(r = \\lfloor n/v \\rfloor\\): \\(v \\cdot \\frac{(l+r)(r-l+1)}{2}\\)',
       time: '\\(O(\\sqrt n \\log p)\\)' }
-  ],
-  [
-    { file: 'mathematics/Divisor_Analysis.cpp', why: "does not compile: no matching function for call to 'mpow' (line 163, exp resolves to std::exp)" },
-    { file: 'mathematics/Filled_Subgrid_Count_I.cpp', why: "empty file" },
-    { file: 'mathematics/Planets_Cycles.cpp', why: "empty file" }
   ]
 );

@@ -57,8 +57,5 @@ LEDGER.add(
       fam: "neighbour-constrained fill",
       inv: '\\(dp[i][p] = \\sum_{|v-p| \\le 1,\\ v \\text{ allowed}} dp[i+1][v]\\)',
       time: '\\(O(n\\cdot m)\\)' }
-  ],
-  [
-    { file: "dp/Counting_Towers.cpp", why: "does not compile: algodebug.h missing (removed in b26f0ca); with it restored, madd is undeclared" }
   ]
 );

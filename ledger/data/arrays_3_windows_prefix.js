@@ -37,6 +37,5 @@ LEDGER.add(
       fam: 'positive-only window',
       inv: '\\(a_i \\ge 1 \\Rightarrow\\) sum grows; extend while \\(\\text{sum} + a_{h+1} \\le x\\)',
       time: '\\(O(n)\\)' }
-  ],
-  []
+  ]
 );

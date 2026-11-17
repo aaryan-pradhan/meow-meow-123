@@ -117,9 +117,7 @@
         block reaches but not how many segments painted any brick. The moment the
         question becomes &ldquo;how many&rdquo;, one scalar touched once per index cannot
         exceed 1 and the family needs a Fenwick/segment tree over compressed endpoints
-        instead &mdash; which is exactly why
-        <span class="rule-code">Nested_Ranges_Count.cpp</span> is in the excluded box
-        at the foot of this page.</p></div>
+        instead (Nested Ranges Count).</p></div>
 
     </div>
   </section>
@@ -574,7 +572,7 @@ ties by \(r\) <strong>descending</strong>. The wider range then comes first, so 
 <code>maxr</code> when the narrower one is tested, and the narrower one is already in <code>minr</code>
 when the backward pass reaches the wider one. One sort order serves both passes.</li>
 <li>Ranges are guaranteed different, so a range never counts as its own witness. No \(i \ne j\) check is needed.</li>
-<li>A running max or min answers "does one exist". It cannot answer "how many". See rule 07 and the excluded box.</li>
+<li>A running max or min answers "does one exist". It cannot answer "how many". See rule 07.</li>
 </ol>
       </div>
 
@@ -1608,22 +1606,6 @@ solve()</code></pre>
 
 <footer>
   <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
-  <div class="excluded">
-    <h4>Excluded from this ledger</h4>
-    <ul>
-      <li><code>arrays/Nested_Ranges_Count.cpp</code> &mdash; compiles clean
-      (<code>g++ -O2 -std=c++17 -fsyntax-only</code>, no diagnostics) but produces the
-      wrong answer on the problem's own sample. Input <code>4 / 1 6 / 2 4 / 4 8 / 3 6</code>;
-      expected first line <code>2 0 0 0</code>, produced <code>1 0 0 0</code>. The cause is
-      structural, not a typo: the file is the Nested Ranges <em>Check</em> sweep with
-      <code>ans1[idx] = 1</code> changed to <code>ans1[idx]++</code>, and each index is
-      visited exactly once per pass, so a counter can never reach 2. A running
-      <code>max r</code> / <code>min r</code> certifies existence, not multiplicity
-      (rule 07); the counting version needs a Fenwick or segment tree over
-      coordinate-compressed right endpoints. Not rewritten here &mdash; the ledger does not
-      invent a working version.</li>
-    </ul>
-  </div>
 </footer>
 
 <script src="../ledger/data.js"></script>

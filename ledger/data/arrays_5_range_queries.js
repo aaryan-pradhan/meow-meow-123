@@ -42,7 +42,5 @@ LEDGER.add(
       fam: 'binary search on answer',
       inv: '\\(\\min\\{x : \\sum_i \\lfloor x / k_i \\rfloor \\ge t\\}\\)',
       time: '\\(O(n \\log C)\\)' }
-  ],
-  [ { file: 'arrays/Sum_of_Divisors.cpp',
-      why: "1-byte file containing the single character 'l'; g++ -fsyntax-only reports \"unknown type name 'l'\". Working solution lives at mathematics/Sum_of_Divisors.cpp." } ]
+  ]
 );

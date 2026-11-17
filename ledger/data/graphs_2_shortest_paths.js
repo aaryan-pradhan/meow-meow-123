@@ -42,8 +42,5 @@ LEDGER.add(
       fam: "Floyd\u2013Warshall",
       inv: '\\(g_{ij} \\leftarrow \\min(g_{ij},\\ g_{ik} + g_{kj})\\), \\(k\\) outermost',
       time: '\\(O(n^{3} + q)\\)' }
-  ],
-  [
-
   ]
 );

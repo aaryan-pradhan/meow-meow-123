@@ -22,8 +22,5 @@ LEDGER.add(
       fam: "Group reversal",
       inv: "tail = K&minus;1 steps; cut; reverse; prev-&gt;next = newHead; head-&gt;next = nextGroup; prev = head",
       time: '\\(O(N)\\)' }
-  ],
-  [
-
   ]
 );

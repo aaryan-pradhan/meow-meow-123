@@ -52,8 +52,5 @@ LEDGER.add(
       fam: "bitmask subsets",
       inv: '\\(dp[M] = \\min_{i \\in M} \\text{add}(dp[M \\setminus \\{i\\}], w_i)\\) on (rides, weight)',
       time: '\\(O(2^{n}\\cdot n)\\)' }
-  ],
-  [
-
   ]
 );

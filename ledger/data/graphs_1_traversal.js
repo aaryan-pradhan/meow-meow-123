@@ -52,8 +52,5 @@ LEDGER.add(
       fam: "DFS colouring / cycles",
       inv: 'directed DFS: edge to a state-1 (on-stack) vertex closes a cycle',
       time: '\\(O(n+m)\\)' }
-  ],
-  [
-    { file: "graphs/Nested_Ranges_Count.cpp", why: "compiles, but on its own sample (<code>4 / 1 6 / 2 4 / 4 8 / 3 6</code>) prints nothing; expected <code>2 0 0 0 / 0 1 0 1</code>. Also not a graph problem (arrays sweep)." }
   ]
 );

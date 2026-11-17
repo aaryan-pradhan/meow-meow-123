@@ -62,6 +62,5 @@ LEDGER.add(
       fam: 'exchange bound',
       inv: '\\(\\max\\big(\\sum t,\\ 2 \\max t\\big)\\)',
       time: '\\(O(n)\\)' }
-  ],
-  []
+  ]
 );

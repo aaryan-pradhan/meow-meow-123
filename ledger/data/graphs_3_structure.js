@@ -52,9 +52,5 @@ LEDGER.add(
       fam: "binary lifting",
       inv: '\\(\\text{up}_j(v) = \\text{up}_{j-1}(\\text{up}_{j-1}(v))\\); one jump per \\(1\\)-bit of \\(k\\)',
       time: '\\(O((n+q) \\log k)\\)' }
-  ],
-  [
-    { file: "graphs/Planets_Queries_II.cpp", why: "does not compile. <code>g++ -O2 -std=c++17 graphs/Planets_Queries_II.cpp</code> &rarr; <code>error: use of undeclared identifier 'LOG'</code> at lines 47 and 56 (no <code>#define LOG</code> in this file)." },
-    { file: "graphs/Planets_Cycles.cpp", why: "does not compile: <code>fatal error: 'algodebug.h' file not found</code> (header removed in b26f0ca). A separate <code>mathematics/Planets_Cycles.cpp</code> exists." }
   ]
 );

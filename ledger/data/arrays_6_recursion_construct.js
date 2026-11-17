@@ -47,15 +47,5 @@ LEDGER.add(
       fam: "Constructive answers",
       inv: 'possible \\(\\iff \\#\\{c : \\text{cnt}_c \\text{ odd}\\} \\le 1\\); odd letter in the middle',
       time: '\\(O(n + 26)\\)' }
-  ],
-  [
-    { file: 'arrays/AZ1.cpp',
-      why: "compiles, but binary search stores the <em>smallest infeasible</em> x as the answer, so it prints one more than the true maximum. On <code>2 / 5 2 / 1 2 3 4 5 / 5 3 / 1 2 3 4 5</code> it prints <code>5</code> and <code>3</code>; correct is <code>4</code> and <code>2</code>. Also a nameless scratch file with no source or link." },
-    { file: 'arrays/AZ2.cpp',
-      why: "nameless scratch file with no problem statement, link, or source; the body is a three-bucket stable partition by sign, nothing to recall." },
-    { file: 'arrays/AZ3.cpp',
-      why: "does not compile: <code>error: expected ';' after struct</code> at line 71. <code>solve()</code>'s query loop is empty as well." },
-    { file: 'arrays/Permutation_Order.cpp',
-      why: "does not compile: stray token <code>no</code> at line 3 &rarr; <code>error: unknown type name 'no'</code>. <code>solve()</code> is an empty stub; only the pasted statement is present." }
   ]
 );
