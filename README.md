@@ -10,6 +10,7 @@ Open **[LEDGER.html](LEDGER.html)** to browse them.
 | `oa/` | online-assessment problems, by company |
 | `cf/` | Codeforces problems |
 | `contests/` | live contest code |
+| `past_practice/` | older Codeforces and AtCoder practice |
 | `prob/` | quant probability pages |
 | `python/` | Python solutions |
 
