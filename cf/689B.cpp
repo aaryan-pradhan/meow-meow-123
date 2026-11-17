@@ -46,17 +46,3 @@ signed main()
     ios::sync_with_stdio(0); cin.tie(0);
     solve();
 }
-
-// Recall Trail
-// 1. Question: for every i, the cheapest walk from 1 to i, where a step
-//    U -> V costs |U - V|, except the shortcut U -> a_U costs 1.
-// 2. Simplify: a walk U -> V that never turns back costs the same as
-//    stepping one intersection at a time through every node in between.
-// 3. So the n^2 walking edges shrink to i -> i + 1 and i -> i - 1 (both
-//    directions!), cost 1 each. Add the shortcuts i -> a_i, cost 1.
-//    About 3n edges.
-// 4. Every edge costs 1, so a walk's energy = its number of edges, so the
-//    fewest edges from 1 (plain BFS from the single source 1) = min energy.
-// 5. Trap: "always take the shortcut" is false (a_1 = 5, target 2: shortcut
-//    costs 4, walking costs 1). BFS picks the edges, not you.
-// 6. O(n) for n = 2 * 10^5.

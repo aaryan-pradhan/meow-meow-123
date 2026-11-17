@@ -63,15 +63,3 @@ signed main()
     ios::sync_with_stdio(0); cin.tie(0);
     solve();
 }
-
-// Recall Trail
-// 1. Question: minimize max(train arrival, bus arrival) at n, never in the
-//    same town (except n) at the same time.
-// 2. Simplify: drop the meeting rule -> each vehicle alone is a BFS
-//    (unit edges), answer max of the two.
-// 3. Fact: every pair has exactly one of railway / road. So the pair (1, n)
-//    is one of them: one vehicle reaches n at time 1.
-// 4. Proof the rule never breaks: the fast one is at n from time 1 on, and n
-//    is allowed. (Two BFS paths in general CAN meet: U-V rail, K-V road.)
-// 5. Answer = BFS on both graphs, max of the two; -1 if either can't reach n.
-// 6. Road graph is the complement, up to n^2 edges: O(n^2) for n = 400.

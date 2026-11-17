@@ -59,15 +59,3 @@ signed main()
     ios::sync_with_stdio(0); cin.tie(0);
     solve();
 }
-
-// Recall Trail
-// 1. Question: buy the fewest letter pairs (c1, c2), each usable any number
-//    of times both ways on both strings, so the strings can be made equal.
-// 2. Small cases: (ab, da) -> 2, (ax, yz) -> 2, (ab, ba) -> 1. Position i
-//    gives the letter pair (s_i, t_i).
-// 3. Graph on 26 letters, edges = bought spells. Done iff for every i,
-//    s_i and t_i are in the same component (NOT "one component overall").
-// 4. Optimal has no cycle: dropping a cycle edge keeps components the same.
-//    So a component of k letters costs exactly k - 1 spells.
-// 5. Union-find over the n pairs; each union that joins two groups is a
-//    spell to print. O(n) on 26 letters.
