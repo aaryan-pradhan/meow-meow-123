@@ -33,7 +33,7 @@ Example:
 
 #include <bits/stdc++.h>
 
-#define int long long 
+#define ll long long 
 #define endl "\n"
 #define fr first
 #define sc second
@@ -47,7 +47,7 @@ Example:
 
 
 using namespace std;
-int gcd ( int a , int b)
+ll gcd ( ll a , ll b)
 {
     if(  b == 0 )
     {
@@ -59,7 +59,7 @@ int gcd ( int a , int b)
     }
 
 }
-int sign ( int x)
+ll sign ( ll x)
 {
     if(x > 0 )
     {
@@ -77,20 +77,20 @@ int sign ( int x)
 }
 void solve()
 {   
-    int n ; 
+    ll n ; 
     cin >> n ; 
-    vector < pair < int , int > > a( n + 1 , {0,0}) ; 
-    int x0 , y0 ; 
+    vector < pair < ll , ll > > a( n + 1 , {0,0}) ; 
+    ll x0 , y0 ; 
     cin >> x0 >> y0 ; 
-    for(int i = 1 ; i <= n ; i++)
+    for(ll i = 1 ; i <= n ; i++)
     {
         cin >> a[i].fr >> a[i].sc ; 
     }
-    set < pair < int , int > > s ; 
-    for(int i = 1 ; i <= n ; i++)
+    set < pair < ll , ll > > s ; 
+    for(ll i = 1 ; i <= n ; i++)
     {
-        int dx = a[i].fr - x0 ; 
-        int dy = a[i].sc - y0 ;
+        ll dx = a[i].fr - x0 ; 
+        ll dy = a[i].sc - y0 ;
         if(dx == 0 && dy == 0)
         {
             continue ;
@@ -101,8 +101,8 @@ void solve()
         }
         else
         {
-            int g = gcd(dx , dy) ;
-            int sgn = sign(dx) * sign(dy) ;
+            ll g = gcd(dx , dy) ;
+            ll sgn = sign(dx) * sign(dy) ;
             s.insert({sgn * abs(dx / g) , abs(dy / g)});
         }
     }

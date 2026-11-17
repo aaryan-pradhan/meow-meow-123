@@ -8,10 +8,10 @@ You have to return the vector of indices.
 
 #include <bits/stdc++.h>
 using namespace std;
-#define ll int 
-vector<int> solveFirstGreaterIndex(vector<int>& a, vector<int>& b) {
+#define ll long long
+vector<ll> solveFirstGreaterIndex(vector<ll>& a, vector<ll>& b) {
     ll n = b.size() ; 
-    if (n == 0) return vector<int>(a.size(), -1);
+    if (n == 0) return vector<ll>(a.size(), -1);
     vector < ll > pre(n,0) ; 
     pre[0] = b[0] ; 
     for( ll i = 1 ; i < n ; i++)
@@ -37,7 +37,7 @@ vector<int> solveFirstGreaterIndex(vector<int>& a, vector<int>& b) {
     return ans;
 }
 
-int main() {
+signed main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
     

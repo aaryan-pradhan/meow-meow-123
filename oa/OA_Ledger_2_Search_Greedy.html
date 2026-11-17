@@ -520,14 +520,14 @@ for _ in range(t):
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note">In this file <code>#define ll int</code>, so <code>pre</code> is <code>vector&lt;int&gt;</code>. <code>it - pre.begin() + 1</code> turns the iterator into a 1-based index. <code>main</code> is empty, because the function is the whole submission.</p>
+        <p class="impl-note"><code>pre</code> is <code>vector&lt;ll&gt;</code>. <code>it - pre.begin() + 1</code> turns the iterator into a 1-based index. <code>main</code> is empty, because the function is the whole submission.</p>
         <div class="src-meta"><span class="path">oa/eternal/array_first_greater_index.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
-#define ll int 
-vector&lt;int&gt; solveFirstGreaterIndex(vector&lt;int&gt;&amp; a, vector&lt;int&gt;&amp; b) {
+#define ll long long
+vector&lt;ll&gt; solveFirstGreaterIndex(vector&lt;ll&gt;&amp; a, vector&lt;ll&gt;&amp; b) {
     ll n = b.size() ; 
-    if (n == 0) return vector&lt;int&gt;(a.size(), -1);
+    if (n == 0) return vector&lt;ll&gt;(a.size(), -1);
     vector &lt; ll &gt; pre(n,0) ; 
     pre[0] = b[0] ; 
     for( ll i = 1 ; i &lt; n ; i++)
@@ -553,7 +553,7 @@ vector&lt;int&gt; solveFirstGreaterIndex(vector&lt;int&gt;&amp; a, vector&lt;int
     return ans;
 }
 
-int main() {
+signed main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
     
@@ -795,11 +795,10 @@ for _ in range(t):
       </div>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
-        <p class="impl-note"><code>#include "algodebug.h"</code> is a local debug header in <code>../coding grind/</code>. The file compiles with that directory added via <code>-I</code>. <code>c &gt; 1e15</code> compares a long long with a double, which is exact at this size.</p>
+        <p class="impl-note"><code>c &gt; 1e15</code> compares a long long with a double, which is exact at this size.</p>
         <div class="src-meta"><span class="path">oa/accenture/fibonacci_index.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
-#include "algodebug.h"
 #define ll long long 
 #define endl "\n"
 #define fr first

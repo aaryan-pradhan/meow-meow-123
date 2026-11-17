@@ -9,25 +9,25 @@
  */
 #include <bits/stdc++.h>
 using namespace std;
-#define int long long
+#define ll long long
 
-const int M = 1e9 + 7;
+const ll M = 1e9 + 7;
 
-int madd(int a, int b)
+ll madd(ll a, ll b)
 {
     return (a % M + b % M) % M;
 }
-int mmul(int a, int b)
+ll mmul(ll a, ll b)
 {
     return (a % M) * (b % M) % M;
 }
 
 long long sumOfPeakMemory(const vector<long long>& m)
 {
-    int n = m.size(), ans = 0;
-    vector<int> L(n, -1), R(n, n);
-    stack<int> st;
-    for (int k = 0; k < n; k++)
+    ll n = m.size(), ans = 0;
+    vector<ll> L(n, -1), R(n, n);
+    stack<ll> st;
+    for (ll k = 0; k < n; k++)
     {
         while (!st.empty() && m[st.top()] < m[k])
         {
@@ -39,8 +39,8 @@ long long sumOfPeakMemory(const vector<long long>& m)
         }
         st.push(k);
     }
-    st = stack<int>();
-    for (int k = n - 1; k >= 0; k--)
+    st = stack<ll>();
+    for (ll k = n - 1; k >= 0; k--)
     {
         while (!st.empty() && m[st.top()] <= m[k])
         {
@@ -52,19 +52,18 @@ long long sumOfPeakMemory(const vector<long long>& m)
         }
         st.push(k);
     }
-    for (int k = 0; k < n; k++)
+    for (ll k = 0; k < n; k++)
     {
         ans = madd(ans, mmul(m[k], mmul(k - L[k], R[k] - k)));
     }
     return ans;
 }
 
-#undef int
-int main() {
-    int n;
-    if (scanf("%d", &n) != 1) return 0;
-    vector<long long> m(n);
-    for (int i = 0; i < n; i++) scanf("%lld", &m[i]);
+signed main() {
+    ll n;
+    if (scanf("%lld", &n) != 1) return 0;
+    vector<ll> m(n);
+    for (ll i = 0; i < n; i++) scanf("%lld", &m[i]);
     printf("%lld\n", sumOfPeakMemory(m));
     return 0;
 }
