@@ -82,7 +82,7 @@
       <div class="rule"><span class="n">4</span>
         <p>Default to the <strong>segment tree</strong>, never a Fenwick tree/BIT.
         The same sum tree that answers Dynamic Range Sum Queries also runs
-        Josephus Queries' <span class="rule-code">findKth</span> descent with six
+        Josephus Problem II's <span class="rule-code">findKth</span> descent with six
         extra lines &mdash; one structure covers point update, range sum, range min
         and order statistics, so there is one thing to remember under interview
         pressure instead of two.</p></div>
@@ -1157,8 +1157,8 @@ main()</code></pre>
     <code>O(log n)</code>. Any repeated remove-by-rank problem lands here.</p>
 
 <!-- ============ ENTRY ============ -->
-    <article class="entry" id="josephus-queries">
-      <div class="entry-head"><h3>Josephus Queries</h3><span class="badge num">\(O(n \log n)\)</span></div>
+    <article class="entry" id="josephus-problem-ii">
+      <div class="entry-head"><h3>Josephus Problem II</h3><span class="badge num">\(O(n \log n)\)</span></div>
 
       <!-- 1 ................................................ THE ASK -->
       <div class="sec">
@@ -1274,8 +1274,8 @@ Sum tree over the flags plus a find-\(r\)-th walk: <span class="cost">\(O(\log n
         1-based <code>k</code> that <code>findKth</code> expects. Positions are
         0-indexed throughout and only become 1-indexed at the final
         <code>order[i] + 1</code> print.</p>
-        <div class="src-meta"><span class="path">arrays/Josephus_Queries.cpp</span><span>verbatim</span></div>
-<pre class="source"><code>// Problem: Josephus Queries (children in a circle)
+        <div class="src-meta"><span class="path">arrays/Josephus_Problem_II.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Josephus Problem II (children in a circle)
 // Link: CSES 2163
 // Pattern: segment tree order-statistics query — find the k-th alive
 // element by rank in O(log n), instead of O(n) list simulation

@@ -1,4 +1,4 @@
-// Problem: Josephus Queries (children in a circle)
+// Problem: Josephus Problem II (children in a circle)
 // Link: CSES 2163
 // Pattern: segment tree order-statistics query — find the k-th alive
 // element by rank in O(log n), instead of O(n) list simulation
