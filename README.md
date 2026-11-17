@@ -2,7 +2,7 @@
 
 My solved DSA and competitive-programming problems, one self-contained C++ file each.
 
-Open **[LEDGER.html](LEDGER.html)**. It indexes everything here.
+Open **[LEDGER.html](LEDGER.html)** to browse them.
 
 | Folder | What |
 |---|---|
