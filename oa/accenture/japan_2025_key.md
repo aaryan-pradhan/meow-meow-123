@@ -1,5 +1,5 @@
 # Accenture Japan 2025 IIT (Quiz_B), answer key
-Source: `../Accenture Japan digital consultant.pdf` (scanned photos). Key written by Claude; the paper has no printed answers.
+Source: `../Accenture Japan digital consultant.pdf` (scanned photos). The paper has no printed answers.
 
 1. One owner and one group; separate permissions for owner, group, others
 2. (two incorrect) "SLO breach → legal liability" + "SLAs are set harder than SLOs"
