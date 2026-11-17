@@ -1,4 +1,4 @@
-// Interactive diagrams for the prob_prep ledgers.
+// Interactive diagrams for the prob pages.
 // Usage: <div class="viz" data-viz="walk" data-p='{"lo":-8,"hi":4}'></div>
 // Each widget draws with the page's .fig SVG classes, so it follows light/dark mode.
 (function () {
