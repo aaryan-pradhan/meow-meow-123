@@ -80,13 +80,13 @@ ostream& operator<<(ostream& os, const Rounded& x)
     Big L = {1};
     for (size_t k = 0; k < primes.size(); k++) for (ll t = 0; t < E[k]; t++) L = mulSmall(L, primes[k]);
 
-    // exact answer = N / L,  approximate answer in quad precision
+    // exact answer = N / L,  approximate answer in long double
     Big N = {0};
-    __float128 val = 0;
+    long double val = 0;
     for (ll i = 0; i < n; i++) for (ll j = i + 1; j < n; j++)
     {
         ll a = x.r[i], b = x.r[j], tot = a * b, fav = favOf(a, b);
-        val += (__float128)fav / tot;
+        val += (long double)fav / tot;
         Big term = {(unsigned long long)fav};
         for (size_t k = 0; k < primes.size(); k++)
             for (ll t = vp(tot, primes[k]); t < E[k]; t++) term = mulSmall(term, primes[k]);
