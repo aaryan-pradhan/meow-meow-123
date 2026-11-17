@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointer Surgery &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<body data-base=".." data-slug="linked_list_1_pointers">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; Linked List</div>
+  <h1>Pointer Surgery</h1>
+  <p class="dek">Singly linked lists rewired in place: find the middle with slow and fast
+  pointers, cut, reverse a piece, splice it back. Reach for this page when only links
+  may change and there is no random access.</p>
+  <p class="stats"><b>3</b> problems &middot; <b>2</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Split &amp; merge</a></div>
+  <div class="toc-fam"><a href="#f2">2 &middot; Group reversal</a></div>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.</p></div>
+    <div class="rules">
+      <div class="rule"><span class="n">1</span>
+        <p>To find the middle, use slow and fast pointers, and choose where fast starts. <code>fast = head-&gt;next</code> gives the first middle (Merge Sort). <code>fast = head</code> with a guarded double step gives the second middle (Reorder List I).</p></div>
+      <div class="rule"><span class="n">2</span>
+        <p>If you need to walk backwards, reverse that part. The same three-pointer <code>reverse</code> appears in Reorder List I (second half) and Reverse Nodes in k-Group (each group).</p></div>
+      <div class="rule"><span class="n">3</span>
+        <p>Cut before you recurse or reverse. <code>mid-&gt;next = nullptr</code> (Merge Sort, Reorder List I) and <code>tail-&gt;next = nullptr</code> (k-Group) give the helper a finite list. Splice afterwards.</p></div>
+      <div class="rule"><span class="n">4</span>
+        <p>If the head might change, start from a dummy node. See the merge in Merge Sort and the group splicing in k-Group.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== FAMILY 1 ===================== -->
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Split &amp; merge</h2></div>
+    <p class="family-note">Find the middle, cut there, work on the halves independently, and then zip them back together. The zip is either a comparison merge or a strict alternation.</p>
+
+    <article class="entry" id="merge-sort-linked-list">
+      <div class="entry-head"><h3>Merge Sort Linked List</h3><span class="badge num">\(O(N \log N)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given the head of a singly linked list with \(N\) nodes. Sort the list by
+value in \(O(N \log N)\) time using merge sort, and return the new head.</p>
+<dl class="io">
+<dt>Input</dt><dd>The list's head pointer.</dd>
+<dt>Output</dt><dd>The head of the sorted list.</dd>
+<dt>Limits</dt><dd>\(0 \le N \le 10^5,\ \ 0 \le \text{value} \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>[2]</code> → <code>[2]</code>; <code>[1,3,6,1,7]</code> → <code>[1,1,3,6,7]</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Split the list \(L\) at its middle into \(A\) (first \(\lceil N/2 \rceil\) nodes) and \(B\) (the rest), sort each, and merge:</span>
+\[ \text{sort}(L) = \text{merge}\big(\text{sort}(A),\ \text{sort}(B)\big), \qquad \text{sort}(L) = L \ \text{ if } N \le 1 \]</li>
+<li><span class="why">Merging two sorted lists takes the smaller head each time, so it costs \(|A| + |B|\) steps. Finding the middle with slow/fast pointers is also \(O(N)\). So</span>
+\[ T(N) = 2\,T(N/2) + O(N) \;\Longrightarrow\; T(N) = O(N \log N) \]</li>
+<li><span class="why">Simplest form: recursion depth is \(\log_2 N\), so the extra space is the \(O(\log N)\) call stack; no array is used.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>There is no index to split on, so slow and fast pointers find the middle in one pass.</li>
+<li>Starting <code>fast = head-&gt;next</code> lands on the <em>first</em> middle, so a 2-node list splits \(1 \mid 1\).</li>
+<li>The merge joins two sorted lists behind a dummy node, and the leftover side is attached whole.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Insertion sort on the list.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(N^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(N = 10^5\) gives \(10^{10}\). Copying to an array and sorting it breaks the "links only" rule.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Merge sort on links: <span class="cost">\(O(N \log N)\)</span> time, <span class="cost">\(O(\log N)\)</span> stack.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 400 130" role="img" aria-label="split and merge 1 3 6 1 7"><text class="s-td" x="4" y="14">split at first middle</text><rect class="s-box" x="20" y="22" width="36" height="26" rx="4"/><rect class="s-box" x="60" y="22" width="36" height="26" rx="4"/><rect class="s-fill" x="100" y="22" width="36" height="26" rx="4"/><rect class="s-box" x="170" y="22" width="36" height="26" rx="4"/><rect class="s-box" x="210" y="22" width="36" height="26" rx="4"/><text class="s-t" x="38" y="40" text-anchor="middle">1</text><text class="s-t" x="78" y="40" text-anchor="middle">3</text><text class="s-t" x="118" y="40" text-anchor="middle">6</text><text class="s-t" x="188" y="40" text-anchor="middle">1</text><text class="s-t" x="228" y="40" text-anchor="middle">7</text><path class="s-hi" d="M153 18 V52"/><text class="s-ta" x="100" y="66">mid</text><text class="s-td" x="4" y="94">merge</text><g><rect class="s-good" x="20" y="100" width="36" height="26" rx="4"/><rect class="s-good" x="60" y="100" width="36" height="26" rx="4"/><rect class="s-good" x="100" y="100" width="36" height="26" rx="4"/><rect class="s-good" x="140" y="100" width="36" height="26" rx="4"/><rect class="s-good" x="180" y="100" width="36" height="26" rx="4"/></g><text class="s-t" x="38" y="118" text-anchor="middle">1</text><text class="s-t" x="78" y="118" text-anchor="middle">1</text><text class="s-t" x="118" y="118" text-anchor="middle">3</text><text class="s-t" x="158" y="118" text-anchor="middle">6</text><text class="s-t" x="198" y="118" text-anchor="middle">7</text></svg>
+          <figcaption>For 5 nodes, mid is node 3 (value 6). The cut gives [1,3,6] and [1,7]. After each half is sorted, the merge gives [1,1,3,6,7].</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>mergesort</code> has the base case, then <code>findMid</code>, then cuts with <code>mid-&gt;next = nullptr</code>, recurses and merges. The merge moves <code>temp</code> along the chosen side. The two trailing <code>while</code> loops walk the leftover side node by node, where one splice would also work.</p>
+        <div class="src-meta"><span class="path">linked_list/Merge_Sort_Linked_List.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Sort a Linked List (Merge Sort)
+// Pattern: divide and conquer — split at midpoint, recurse, merge two sorted lists
+// Time: O(N log N)  Space: O(log N) recursion stack
+//
+// Sort a singly linked list in O(N log N) using merge sort. Return the new head.
+//
+// Constraints: 0 ≤ N ≤ 1e5, 0 ≤ node value ≤ 1e9.
+//
+// Example:
+//     [2]           -&gt; [2]
+//         [1,3,6,1,7]   -&gt; [1,1,3,6,7]
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    ListNode() : val(0), next(nullptr) {}
+    ListNode(int x) : val(x), next(nullptr) {}
+    ListNode(int x, ListNode *next) : val(x), next(next) {}
+};
+
+ListNode* findMid(ListNode* head) {
+    ListNode* slow = head;
+    ListNode* fast = head-&gt;next;
+
+    while (fast &amp;&amp; fast-&gt;next) {
+        slow = slow-&gt;next;
+        fast = fast-&gt;next-&gt;next;
+    }
+
+    return slow;
+}
+
+ListNode* merge(ListNode* left, ListNode* right) {
+    if (!left) return right;
+    if (!right) return left;
+
+    ListNode* dummy = new ListNode(-1);
+    ListNode* temp = dummy;
+    while (left &amp;&amp; right) {
+        if (left-&gt;val &lt; right-&gt;val) {
+            temp-&gt;next = left;
+            temp = left;
+            left = left-&gt;next;
+        } else {
+            temp-&gt;next = right;
+            temp = right;
+            right = right-&gt;next;
+        }
+    }
+
+    while (left) {
+        temp-&gt;next = left;
+        temp = left;
+        left = left-&gt;next;
+    }
+
+    while (right) {
+        temp-&gt;next = right;
+        temp = right;
+        right = right-&gt;next;
+    }
+
+    return dummy-&gt;next;
+}
+
+ListNode* mergesort(ListNode* head) {
+    if (head == nullptr || head-&gt;next == nullptr) {
+        return head;
+    }
+
+    ListNode* mid = findMid(head);
+
+    ListNode* left = head;
+    ListNode* right = mid-&gt;next;
+    mid-&gt;next = nullptr;
+
+    left = mergesort(left);
+    right = mergesort(right);
+
+    return merge(left, right);
+}
+
+ListNode* GetList(vector&lt;int&gt;&amp; num) {
+    ListNode* head = nullptr;
+    ListNode* cur = nullptr;
+    for (int x : num) {
+        ListNode* temp = new ListNode(x);
+        if (!cur) { head = cur = temp; }
+        else { cur-&gt;next = temp; cur = temp; }
+    }
+    return head;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n; cin &gt;&gt; n;
+    vector&lt;int&gt; num(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; num[i];
+
+    ListNode* head = GetList(num);
+    head = mergesort(head);
+
+    while (head) { cout &lt;&lt; head-&gt;val &lt;&lt; " "; head = head-&gt;next; }
+    cout &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+class ListNode:                              # struct ListNode; every Python variable is already a "pointer"
+    def __init__(self, x=0, next=None):     # the three constructors collapse into one with defaults
+        self.val = x
+        self.next = next                    # nullptr -&gt; None
+
+def findMid(head):
+    slow = head
+    fast = head.next
+    while fast and fast.next:               # fast &amp;&amp; fast-&gt;next
+        slow = slow.next
+        fast = fast.next.next
+    return slow
+
+def merge(left, right):
+    if not left: return right
+    if not right: return left
+    dummy = ListNode(-1)
+    temp = dummy
+    while left and right:
+        if left.val &lt; right.val:
+            temp.next = left
+            temp = left
+            left = left.next
+        else:
+            temp.next = right
+            temp = right
+            right = right.next
+    while left:
+        temp.next = left
+        temp = left
+        left = left.next
+    while right:
+        temp.next = right
+        temp = right
+        right = right.next
+    return dummy.next
+
+def mergesort(head):
+    if head is None or head.next is None:   # compare with None using "is"
+        return head
+    mid = findMid(head)
+    left = head
+    right = mid.next
+    mid.next = None
+    left = mergesort(left)
+    right = mergesort(right)
+    return merge(left, right)
+
+def GetList(num):
+    head = None
+    cur = None
+    for x in num:
+        temp = ListNode(x)                  # new ListNode(x): no "new", no delete
+        if not cur:
+            head = cur = temp
+        else:
+            cur.next = temp                 # cur-&gt;next -&gt; cur.next
+            cur = temp
+    return head
+
+def main():
+    n = int(next(tok))
+    num = [int(next(tok)) for _ in range(n)]
+    head = GetList(num)
+    head = mergesort(head)
+    out = []
+    while head:
+        out.append(head.val)
+        head = head.next
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>With <code>fast = head</code>, a 2-node list returns mid = the second node. The right half is then empty and the left half is the whole list again, so the recursion never ends. Start from <code>head-&gt;next</code>.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"sort a linked list in N log N" &rarr; slow and fast split, recurse, merge with a dummy.</div>
+    </article>
+
+    <article class="entry" id="reorder-list-i">
+      <div class="entry-head"><h3>Reorder List I</h3><span class="badge num">\(O(N)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given the head of a singly linked list \(L_1 \to L_2 \to \dots \to L_n\).
+Reorder it in place to \(L_1 \to L_n \to L_2 \to L_{n-1} \to L_3 \to L_{n-2} \to \dots\). You may only
+change links, not node values.</p>
+<dl class="io">
+<dt>Input</dt><dd>The list's head pointer.</dd>
+<dt>Output</dt><dd>The same nodes, relinked.</dd>
+<dt>Limits</dt><dd>\(0 \le n \le 10^6,\ \ 0 \le \text{value} \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>[1,2,3,4]</code> → <code>[1,4,2,3]</code>; <code>[1,2,3,4,5]</code> → <code>[1,5,2,4,3]</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(h = \lceil n/2 \rceil\). Split into the first half \(F = (L_1, \dots, L_h)\) and the second half \(S = (L_{h+1}, \dots, L_n)\). Then \(|F| - |S| \in \{0, 1\}\).</span></li>
+<li><span class="why">The target takes nodes from the back of \(S\) first, so reverse it:</span>
+\[ R = \text{reverse}(S) = (L_n, L_{n-1}, \dots, L_{h+1}) \]</li>
+<li><span class="why">Simplest form: alternate \(F\) and \(R\):</span>
+\[ F_1, R_1, F_2, R_2, \dots \;=\; L_1, L_n, L_2, L_{n-1}, \dots \]
+<span class="why">Stop when \(R\) runs out. If \(n\) is odd, \(F\) has one extra node, which stays attached at the end.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The tail side has to be walked backwards, so reverse the second half.</li>
+<li>Split at the second middle. The first half is then as long as the second, or one longer.</li>
+<li>Interleave while <code>second</code> is not null. The leftover node of the first half stays attached automatically.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For each step, walk to the current tail and move it.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^6\) gives about \(10^{12}\). An array of node pointers fixes the time but costs <span class="cost">\(O(n)\)</span> space.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Split, reverse, interleave: <span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> space.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 400 110" role="img" aria-label="reorder 1..5"><rect class="s-box" x="20" y="14" width="36" height="26" rx="4"/><rect class="s-box" x="60" y="14" width="36" height="26" rx="4"/><rect class="s-box" x="100" y="14" width="36" height="26" rx="4"/><rect class="s-warn" x="180" y="14" width="36" height="26" rx="4"/><rect class="s-warn" x="220" y="14" width="36" height="26" rx="4"/><text class="s-t" x="38" y="32" text-anchor="middle">1</text><text class="s-t" x="78" y="32" text-anchor="middle">2</text><text class="s-t" x="118" y="32" text-anchor="middle">3</text><text class="s-t" x="198" y="32" text-anchor="middle">5</text><text class="s-t" x="238" y="32" text-anchor="middle">4</text><text class="s-ta" x="270" y="32">reversed</text><g><rect class="s-box" x="20" y="70" width="36" height="26" rx="4"/><rect class="s-warn" x="60" y="70" width="36" height="26" rx="4"/><rect class="s-box" x="100" y="70" width="36" height="26" rx="4"/><rect class="s-warn" x="140" y="70" width="36" height="26" rx="4"/><rect class="s-box" x="180" y="70" width="36" height="26" rx="4"/></g><text class="s-t" x="38" y="88" text-anchor="middle">1</text><text class="s-t" x="78" y="88" text-anchor="middle">5</text><text class="s-t" x="118" y="88" text-anchor="middle">2</text><text class="s-t" x="158" y="88" text-anchor="middle">4</text><text class="s-t" x="198" y="88" text-anchor="middle">3</text></svg>
+          <figcaption>For 5 nodes, mid = 3, so the halves are [1,2,3] and [4,5], reversed to [5,4]. Interleaving gives 1 5 2 4 3. Node 3 stays attached through <code>second-&gt;next = tmp1</code>.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>middleNode</code> advances slow only after a successful first step of fast, which lands on the second middle. Each merge round saves both <code>next</code> pointers before overwriting either.</p>
+        <div class="src-meta"><span class="path">linked_list/Reorder_List_I.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Reorder List I
+// Pattern: split + reverse second half + merge alternately
+// Time: O(N)  Space: O(1)
+//
+// Given the head of a singly linked list, reorder it in place from
+// L1 -&gt; L2 -&gt; ... -&gt; Ln to L1 -&gt; Ln -&gt; L2 -&gt; Ln-1 -&gt; L3 -&gt; Ln-2 -&gt; ....
+// Node values may not be changed — only links may be rewired.
+//
+// Constraints: 0 ≤ length ≤ 1e6, 0 ≤ node value ≤ 1e9.
+//
+// Example:
+//     [3]           -&gt; [3]
+//         [1,2,3,4]     -&gt; [1,4,2,3]
+//         [1,2,3,4,5]   -&gt; [1,5,2,4,3]
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    ListNode() : val(0), next(nullptr) {}
+    ListNode(int x) : val(x), next(nullptr) {}
+    ListNode(int x, ListNode *next) : val(x), next(next) {}
+};
+
+ListNode* reverseList(ListNode* head) {
+    ListNode* prev = NULL;
+    ListNode* cur = head;
+    ListNode* next_ = NULL;
+
+    while (cur != NULL) {
+        next_ = cur-&gt;next;
+        cur-&gt;next = prev;
+        prev = cur;
+        cur = next_;
+    }
+    return prev;
+}
+
+ListNode* middleNode(ListNode* head) {
+    ListNode* slow = head;
+    ListNode* fast = head;
+
+    while (fast) {
+        fast = fast-&gt;next;
+        if (fast) {
+            slow = slow-&gt;next;
+            fast = fast-&gt;next;
+        }
+    }
+    return slow;
+}
+
+void reorderList(ListNode* head) {
+    if (!head || !head-&gt;next) return;
+
+    ListNode* mid = middleNode(head);
+    ListNode* second = mid-&gt;next;
+    mid-&gt;next = nullptr;
+    second = reverseList(second);
+
+    ListNode* first = head;
+    while (second) {
+        ListNode* tmp1 = first-&gt;next;
+        ListNode* tmp2 = second-&gt;next;
+        first-&gt;next = second;
+        second-&gt;next = tmp1;
+        first = tmp1;
+        second = tmp2;
+    }
+}
+
+ListNode* GetList(vector&lt;int&gt;&amp; num) {
+    ListNode* head = nullptr;
+    ListNode* cur = nullptr;
+    for (int x : num) {
+        ListNode* temp = new ListNode(x);
+        if (!cur) { head = cur = temp; }
+        else { cur-&gt;next = temp; cur = temp; }
+    }
+    return head;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n; cin &gt;&gt; n;
+    vector&lt;int&gt; num(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; num[i];
+
+    ListNode* head = GetList(num);
+    reorderList(head);
+
+    while (head) { cout &lt;&lt; head-&gt;val &lt;&lt; " "; head = head-&gt;next; }
+    cout &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+class ListNode:                              # struct ListNode; every Python variable is already a "pointer"
+    def __init__(self, x=0, next=None):     # the three constructors collapse into one with defaults
+        self.val = x
+        self.next = next                    # nullptr -&gt; None
+
+def reverseList(head):
+    prev = None
+    cur = head
+    next_ = None
+    while cur is not None:
+        next_ = cur.next
+        cur.next = prev
+        prev = cur
+        cur = next_
+    return prev
+
+def middleNode(head):
+    slow = head
+    fast = head
+    while fast:
+        fast = fast.next
+        if fast:
+            slow = slow.next
+            fast = fast.next
+    return slow
+
+def reorderList(head):
+    if not head or not head.next: return
+    mid = middleNode(head)
+    second = mid.next
+    mid.next = None
+    second = reverseList(second)
+    first = head
+    while second:
+        tmp1 = first.next
+        tmp2 = second.next
+        first.next = second
+        second.next = tmp1
+        first = tmp1
+        second = tmp2
+
+def GetList(num):
+    head = None
+    cur = None
+    for x in num:
+        temp = ListNode(x)                  # new ListNode(x): no "new", no delete
+        if not cur:
+            head = cur = temp
+        else:
+            cur.next = temp                 # cur-&gt;next -&gt; cur.next
+            cur = temp
+    return head
+
+def main():
+    n = int(next(tok))
+    num = [int(next(tok)) for _ in range(n)]
+    head = GetList(num)
+    reorderList(head)
+    out = []
+    while head:
+        out.append(head.val)
+        head = head.next
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Set <code>mid-&gt;next = nullptr</code> <em>before</em> reversing. Otherwise the first half still points into nodes the reversal has turned around, and the interleave creates a cycle.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"interleave the front and back of a singly linked list in place" &rarr; split, reverse the back, zip.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 2 ===================== -->
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; Group reversal</h2></div>
+    <p class="family-note">Reverse fixed-size pieces and splice each one back between the previous group's tail and the next group's head. A dummy node makes the first group behave like the rest.</p>
+
+    <article class="entry" id="reverse-nodes-in-k-group">
+      <div class="entry-head"><h3>Reverse Nodes in k-Group</h3><span class="badge num">\(O(N)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given a singly linked list with \(N\) nodes and an integer \(K\) that divides
+\(N\). Reverse the nodes in each consecutive group of \(K\), and return the new head.</p>
+<dl class="io">
+<dt>Input</dt><dd>The list's head pointer and \(K\).</dd>
+<dt>Output</dt><dd>The head of the relinked list.</dd>
+<dt>Limits</dt><dd>\(1 \le N \le 10^6,\ \ 1 \le K \le N,\ \ K \mid N,\ \ 0 \le \text{value} \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>[1,2,3,4,5,6]</code>, \(K = 3\) → <code>[3,2,1,6,5,4]</code>; <code>[1,3,2]</code>, \(K = 3\) → <code>[2,3,1]</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Number the groups \(g = 0, 1, \dots, N/K - 1\). Group \(g\) is the nodes at positions \(gK + 1, \dots, gK + K\).</span></li>
+<li><span class="why">Each group is reversed on its own, and the groups keep their order:</span>
+\[ \text{prev} \to [\,h, \dots, t\,] \to \text{next} \quad \Longrightarrow \quad \text{prev} \to [\,t, \dots, h\,] \to \text{next} \]</li>
+<li><span class="why">Simplest form: for each group, walk \(K - 1\) steps to its tail, cut it off, reverse it, then reconnect: \(\text{prev} \to t\) and \(h \to \text{next}\). The old head \(h\) becomes the new \(\text{prev}\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Walk \(K - 1\) steps to the group's tail, save <code>tail-&gt;next</code>, and cut.</li>
+<li>After reversing, the old <code>head</code> is the group's last node.</li>
+<li>Reconnect with <code>prev-&gt;next = newHead</code> and <code>head-&gt;next = nextGroup</code>, then set <code>prev = head</code>.</li>
+<li>\(K = 1\) returns early, although the loop would also handle it.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Copy the values into an array, reverse the chunks, write them back.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(N)\)</span> time, <span class="cost">\(O(N)\)</span> extra space.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">Not on time at \(N = 10^6\), but it breaks the \(O(1)\)-space, relink-the-nodes requirement.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Cut, reverse, reconnect each group: <span class="cost">\(O(N)\)</span> time, <span class="cost">\(O(1)\)</span> space.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 400 110" role="img" aria-label="k = 3 on 1..6"><rect class="s-box" x="10" y="14" width="30" height="26" rx="4"/><text class="s-tm" x="25" y="32" text-anchor="middle">D</text><rect class="s-fill" x="50" y="14" width="96" height="26" rx="4"/><rect class="s-box" x="156" y="14" width="96" height="26" rx="4"/><text class="s-t" x="98" y="32" text-anchor="middle">1 2 3</text><text class="s-t" x="204" y="32" text-anchor="middle">4 5 6</text><text class="s-ta" x="270" y="32">K = 3</text><rect class="s-box" x="10" y="70" width="30" height="26" rx="4"/><text class="s-tm" x="25" y="88" text-anchor="middle">D</text><rect class="s-good" x="50" y="70" width="96" height="26" rx="4"/><rect class="s-good" x="156" y="70" width="96" height="26" rx="4"/><text class="s-t" x="98" y="88" text-anchor="middle">3 2 1</text><text class="s-t" x="204" y="88" text-anchor="middle">6 5 4</text><text class="s-ta" x="116" y="62">prev = old head 1</text></svg>
+          <figcaption>Group 1 is reversed and spliced behind the dummy. Its old head, 1, becomes <code>prev</code> and links to 4 until group 2 is reversed and spliced.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>reverse</code> is the plain three-pointer loop on the cut-off group. In <code>reverseList</code>, after the reversal <code>head</code> still points to the same node, which is now the group's tail. So the same variable serves as both the splice point and the next <code>prev</code>.</p>
+        <div class="src-meta"><span class="path">linked_list/Reverse_Nodes_In_K_Group.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Reverse Nodes in k-Group
+// Pattern: group-bounded in-place reversal
+// Time: O(N)  Space: O(1)
+//
+// Given a singly linked list of length N and an integer K, reverse the nodes
+// in groups of size K and return the head. K divides N exactly (no partial
+// final group to worry about).
+//
+// Constraints: 1 ≤ N ≤ 1e6, 1 ≤ K ≤ N, 0 ≤ node values ≤ 1e9, N % K == 0.
+//
+// Example:
+//     [1,2,3,4,5,6], K=3 -&gt; [3,2,1,6,5,4]
+//         [1,3,2],       K=3 -&gt; [2,3,1]
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    ListNode() : val(0), next(nullptr) {}
+    ListNode(int x) : val(x), next(nullptr) {}
+    ListNode(int x, ListNode *next) : val(x), next(next) {}
+};
+
+ListNode* reverse(ListNode* head) {
+    ListNode* prev = NULL;
+    ListNode* cur = head;
+    ListNode* next_ = NULL;
+
+    while (cur != NULL) {
+        next_ = cur-&gt;next;
+        cur-&gt;next = prev;
+        prev = cur;
+        cur = next_;
+    }
+    return prev;
+}
+
+ListNode* reverseList(ListNode* head, int K) {
+    if (head == nullptr || K == 1) return head;
+
+    ListNode* dummy = new ListNode(0, head);
+    ListNode* prev = dummy;
+
+    while (head) {
+        ListNode* tail = head;
+        for (int i = 1; i &lt; K; i++) tail = tail-&gt;next;
+
+        ListNode* nextGroup = tail-&gt;next;
+        tail-&gt;next = nullptr;
+        ListNode* newHead = reverse(head);
+
+        prev-&gt;next = newHead;
+        head-&gt;next = nextGroup;
+
+        prev = head;
+        head = nextGroup;
+    }
+    return dummy-&gt;next;
+}
+
+ListNode* GetList(vector&lt;int&gt;&amp; num) {
+    ListNode* head = nullptr;
+    ListNode* cur = nullptr;
+    for (int x : num) {
+        ListNode* temp = new ListNode(x);
+        if (!cur) { head = cur = temp; }
+        else { cur-&gt;next = temp; cur = temp; }
+    }
+    return head;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n; cin &gt;&gt; n;
+    vector&lt;int&gt; num(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; num[i];
+    int K; cin &gt;&gt; K;
+
+    ListNode* head = GetList(num);
+    head = reverseList(head, K);
+
+    while (head) { cout &lt;&lt; head-&gt;val &lt;&lt; " "; head = head-&gt;next; }
+    cout &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+class ListNode:                              # struct ListNode; every Python variable is already a "pointer"
+    def __init__(self, x=0, next=None):     # the three constructors collapse into one with defaults
+        self.val = x
+        self.next = next                    # nullptr -&gt; None
+
+def reverse(head):
+    prev = None
+    cur = head
+    next_ = None
+    while cur is not None:
+        next_ = cur.next
+        cur.next = prev
+        prev = cur
+        cur = next_
+    return prev
+
+def reverseList(head, K):
+    if head is None or K == 1: return head
+    dummy = ListNode(0, head)
+    prev = dummy
+    while head:
+        tail = head
+        for i in range(1, K): tail = tail.next
+        nextGroup = tail.next
+        tail.next = None
+        newHead = reverse(head)
+        prev.next = newHead
+        head.next = nextGroup
+        prev = head
+        head = nextGroup
+    return dummy.next
+
+def GetList(num):
+    head = None
+    cur = None
+    for x in num:
+        temp = ListNode(x)                  # new ListNode(x): no "new", no delete
+        if not cur:
+            head = cur = temp
+        else:
+            cur.next = temp                 # cur-&gt;next -&gt; cur.next
+            cur = temp
+    return head
+
+def main():
+    n = int(next(tok))
+    num = [int(next(tok)) for _ in range(n)]
+    K = int(next(tok))
+    head = GetList(num)
+    head = reverseList(head, K)
+    out = []
+    while head:
+        out.append(head.val)
+        head = head.next
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Save <code>nextGroup = tail-&gt;next</code> before cutting. After the cut and reversal nothing points to it any more. Link <code>head</code>, not <code>newHead</code>, to <code>nextGroup</code>.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"reverse a linked list in blocks or between positions" &rarr; dummy, cut, reverse, splice, advance prev.</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/linked_list_1_pointers.js"></script>
+</body>
+</html>

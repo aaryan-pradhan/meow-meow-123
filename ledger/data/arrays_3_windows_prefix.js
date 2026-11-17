@@ -1,0 +1,42 @@
+/* ledger/data/arrays_3_windows_prefix.js — index rows for one child ledger.
+ * Adding a problem: append one object to the array. Nothing else to update. */
+LEDGER.add(
+  { slug: 'arrays_3_windows_prefix',
+    topic: 'arrays',
+    title: 'Windows &amp; Prefix Sums',
+    file: 'Array_Ledger_3_Windows_Prefix.html',
+    part: 3 },
+  [
+    { name: 'Playlist',
+      anchor: 'playlist',
+      fam: 'dup-free window',
+      inv: '\\(\\max_l \\big(R(l) - l + 1\\big)\\), two pointers',
+      time: '\\(O(n \\log n)\\)' },
+    { name: 'Distinct Subarrays',
+      anchor: 'distinct-subarrays',
+      fam: 'dup-free window',
+      inv: '\\(\\sum_l \\big(R(l) - l + 1\\big)\\), two pointers',
+      time: '\\(O(n \\log n)\\)' },
+    { name: 'Distinct Values Subarrays II',
+      anchor: 'distinct-values-subarrays-ii',
+      fam: 'dup-free window',
+      inv: '\\(\\sum_l \\big(R(l) - l + 1\\big)\\); extend while \\(x_{h+1} \\in\\) window or \\(D \\lt k\\)',
+      time: '\\(O(n \\log n)\\)' },
+    { name: 'Subarray Sums II',
+      anchor: 'subarray-sums-ii',
+      fam: 'prefix + map',
+      inv: '\\(\\sum_r c[P_r - x]\\), then \\(c[P_r] \\mathrel{+}= 1\\)',
+      time: '\\(O(n \\log n)\\)' },
+    { name: 'Subarray Divisibility',
+      anchor: 'subarray-divisibility',
+      fam: 'prefix + map',
+      inv: '\\(\\sum_t \\binom{c_t}{2}\\), \\(c_t = \\#\\{i : P_i \\equiv t \\pmod n\\}\\)',
+      time: '\\(O(n)\\)' },
+    { name: 'Subarray Sums I',
+      anchor: 'subarray-sums-i',
+      fam: 'positive-only window',
+      inv: '\\(a_i \\ge 1 \\Rightarrow\\) sum grows; extend while \\(\\text{sum} + a_{h+1} \\le x\\)',
+      time: '\\(O(n)\\)' }
+  ],
+  []
+);

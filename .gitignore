@@ -1,4 +1,10 @@
 *.bin
-.DS_Store
 .cph/
+__pycache__/
+*.pyc
+.pytest_cache/
+CLAUDE.md
+.claude/
+.planning/
+.DS_Store
 .vscode/

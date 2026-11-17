@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sums and Knapsack &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<body data-base=".." data-slug="dp_1_sums_knapsack">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; DP</div>
+  <h1>Sums and Knapsack</h1>
+  <p class="dek">One-dimensional progress DP. Either the state is a running total and you branch on the last move, or the state is an item index plus a budget and you branch on take/skip. The loop order encodes whether order matters.</p>
+  <p class="stats"><b>10</b> problems &middot; <b>3</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Last move over a sum</a></div>
+  <div class="toc-fam"><a href="#f2">2 &middot; Take / skip items</a></div>
+  <div class="toc-fam"><a href="#f3">3 &middot; Neighbour-constrained fill</a></div>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.</p></div>
+    <div class="rules">
+      <div class="rule"><span class="n">1</span>
+        <p>Order matters (<em>2+3 ≠ 3+2</em>) &rarr; sum outside, choices inside. Order doesn't &rarr; items outside. Coin Combinations I vs II are the same recurrence with the loops swapped.</p></div>
+      <div class="rule"><span class="n">2</span>
+        <p>Unlimited reuse &rarr; the take branch stays on the same item (Coin Combinations II) or the item index disappears entirely (Minimizing Coins, Coin Combinations I). Each item once &rarr; both branches advance (Book Shop, Money Sums, Two Sets II).</p></div>
+      <div class="rule"><span class="n">3</span>
+        <p>Counting problems seed the empty solution with 1 (Dice Combinations, Coin Combinations I/II); min-count problems seed it with 0 and every other state with INF (Minimizing Coins, Removing Digits).</p></div>
+      <div class="rule"><span class="n">4</span>
+        <p>If row <code>i</code> only reads row <code>i±1</code>, keep two rows indexed by <code>i &amp; 1</code> (Coin Combinations II, Book Shop, Array Description). For Book Shop it is the difference between 1.6 MB and 800 MB.</p></div>
+      <div class="rule"><span class="n">5</span>
+        <p>A constraint on neighbours (grid traps, \(|a[i]-a[i-1]| \le 1\)) becomes a 0 or a filtered candidate list, never a special case: Grid Paths I, Array Description.</p></div>
+    </div>
+  </section>
+
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Last move over a sum</h2></div>
+    <p class="family-note">The state is the total so far. Split on the final step; the menu of steps is fixed (dice, coins) or derived from the state (digits). No item index.</p>
+    <article class="entry" id="dice-combinations">
+      <div class="entry-head"><h3>Dice Combinations</h3><span class="badge num">\(O(6n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> Count the number of ways to get a total of \(n\) by throwing a die one or more
+times. Each throw gives a number from \(1\) to \(6\). Order matters, so \(1+2\) and \(2+1\) are
+different. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The number of ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd>\(n = 3\) → <code>4</code> (\(1{+}1{+}1,\ 1{+}2,\ 2{+}1,\ 3\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i]\) be the number of throw sequences with total \(i\).</span></li>
+<li><span class="why">Split on the <em>last</em> throw \(k\). Before it comes any sequence with total \(i - k\). Different \(k\) give different sequences, so the counts add:</span>
+\[ dp[i] = \sum_{k=1}^{\min(6,\, i)} dp[i - k] \]</li>
+<li><span class="why">The empty sequence has total \(0\), so \(dp[0] = 1\). This makes a single throw \(k\) count as \(dp[0] = 1\) with no special case.</span></li>
+<li><span class="why">Simplest form: fill \(dp[1], \dots, dp[n]\) left to right, each from at most \(6\) earlier values, all \(\bmod\ 10^9 + 7\).</span>
+<span class="why">Sample: \(dp = (1, 1, 2, 4)\) for \(i = 0..3\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Order matters, so split on the <em>last</em> throw \(k\). What comes before it is any sequence with total \(i - k\).</li>
+<li>\(dp[0] = 1\) is the empty sequence. It makes \(dp[k]\) count the single throw \(k\) without a special case.</li>
+<li>Each value reads at most 6 earlier values, so one forward pass is enough.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">List every throw sequence recursively.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span>: the number of sequences itself grows like \(2^n\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^6\): listing them never finishes.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Sequences with the same total behave the same from then on, so keep one number per total: <span class="cost">\(O(6n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 360 96" role="img" aria-label="dp for n = 3"><text class="s-td" x="8" y="16">n = 3</text><text class="s-td" x="56" y="36" text-anchor="middle">0</text><text class="s-td" x="92" y="36" text-anchor="middle">1</text><text class="s-td" x="128" y="36" text-anchor="middle">2</text><text class="s-td" x="164" y="36" text-anchor="middle">3</text><rect class="s-fill" x="40" y="44" width="32" height="28" rx="4"/><text class="s-t" x="56" y="62" text-anchor="middle">1</text><rect class="s-fill" x="76" y="44" width="32" height="28" rx="4"/><text class="s-t" x="92" y="62" text-anchor="middle">1</text><rect class="s-fill" x="112" y="44" width="32" height="28" rx="4"/><text class="s-t" x="128" y="62" text-anchor="middle">2</text><rect class="s-good" x="148" y="44" width="32" height="28" rx="4"/><text class="s-t" x="164" y="62" text-anchor="middle">4</text><text class="s-td" x="8" y="90">dp[3] = dp[2] + dp[1] + dp[0] = 4</text></svg>
+          <figcaption>The last roll is 1, 2 or 3; each leaves a smaller sum whose count is already known.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Plain forward loop, <code>i - k &gt;= 0</code> guards the short prefixes. <code>madd</code> reduces both operands, so it is safe even though every term is already below MOD.</p>
+        <div class="src-meta"><span class="path">dp/Dice_Combinations.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Dice Combinations
+// Link: https://cses.fi/problemset/task/1633
+// Pattern: 1D bottom-up DP
+// Time: O(n)  Space: O(n)
+//
+// Count the number of ways to construct sum `n` by throwing a dice one or
+// more times, each throw producing an outcome between 1 and 6. Order
+// matters (1+2 and 2+1 are distinct). Answer modulo 10^9+7.
+//
+// Constraints: 1 &lt;= n &lt;= 10^6
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+typedef long long ll;
+const ll MOD = 1000000007;
+
+ll madd(ll a, ll b) { ll s = a % MOD + b % MOD; return s % MOD; }
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    vector&lt;ll&gt; dp(n + 1, 0);
+    dp[0] = 1;
+    for (int i = 1; i &lt;= n; i++) {
+        for (int k = 1; k &lt;= 6; k++) {
+            if (i - k &gt;= 0) dp[i] = madd(dp[i], dp[i - k]);
+        }
+    }
+
+    cout &lt;&lt; dp[n] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b): s = a % MOD + b % MOD; return s % MOD
+
+def main():
+    n = int(next(tok))
+    dp = [0] * (n + 1)
+    dp[0] = 1
+    for i in range(1, n + 1):
+        for k in range(1, 7):               # k = 1..6 -&gt; range(1, 7)
+            if i - k &gt;= 0: dp[i] = madd(dp[i], dp[i - k])
+    print(dp[n])
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>dp[0] = 0</code> zeroes the whole table. The base is the empty sequence, which is one way.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"number of ordered ways to reach a total with a fixed menu of step sizes" &rarr; \(\text{dp}[\text{sum}] = \sum \text{dp}[\text{sum} - \text{step}]\).</div>
+    </article>
+    <article class="entry" id="coin-combinations-i">
+      <div class="entry-head"><h3>Coin Combinations I</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coin values \(c_1, \dots, c_n\), each usable any number of
+times. Count the <em>ordered</em> ways to make the sum \(x\) (so \(2{+}2{+}5\), \(2{+}5{+}2\) and
+\(5{+}2{+}2\) are three different ways). Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>The number of ordered ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x \le 10^6,\ \ 1 \le c_i \le 10^6\)</dd>
+<dt>Sample</dt><dd>coins <code>2 3 5</code>, \(x = 9\) → <code>8</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[s]\) be the number of ordered sequences of coins with sum \(s\).</span></li>
+<li><span class="why">Split on the last coin \(c\). Before it comes any sequence with sum \(s - c\):</span>
+\[ dp[0] = 1, \qquad dp[s] = \sum_{\substack{j = 1 \\ c_j \le s}}^{n} dp[s - c_j] \]</li>
+<li><span class="why">Simplest form: loop over sums \(s = 1..x\) on the <em>outside</em> and coins on the inside, so every coin can be the last coin of every sum.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Order matters, so this is Dice Combinations with any set of faces: split on the last coin.</li>
+<li>Sum loop <em>outside</em>, coin loop inside. Every coin is allowed as the last step of every sum, so \(2{+}3\) and \(3{+}2\) are both counted.</li>
+<li>The base is \(dp[0] = 1\), not \(0\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">List sequences recursively.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(x = 10^6\), \(n = 100\): the answer is astronomically large, so listing never ends.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One count per sum: <span class="cost">\(O(n \cdot x) \approx 10^8\)</span> simple additions, which passes.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 400 110" role="img" aria-label="Coin combinations I with 2 3 5, x = 9"><text class="s-td" x="8" y="16">coins {2,3,5}, x = 9</text><text class="s-td" x="36" y="36" text-anchor="middle">0</text><text class="s-td" x="72" y="36" text-anchor="middle">1</text><text class="s-td" x="108" y="36" text-anchor="middle">2</text><text class="s-td" x="144" y="36" text-anchor="middle">3</text><text class="s-td" x="180" y="36" text-anchor="middle">4</text><text class="s-td" x="216" y="36" text-anchor="middle">5</text><text class="s-td" x="252" y="36" text-anchor="middle">6</text><text class="s-td" x="288" y="36" text-anchor="middle">7</text><text class="s-td" x="324" y="36" text-anchor="middle">8</text><text class="s-td" x="360" y="36" text-anchor="middle">9</text><rect class="s-box" x="20" y="44" width="32" height="28" rx="4"/><text class="s-t" x="36" y="62" text-anchor="middle">1</text><rect class="s-box" x="56" y="44" width="32" height="28" rx="4"/><text class="s-t" x="72" y="62" text-anchor="middle">0</text><rect class="s-box" x="92" y="44" width="32" height="28" rx="4"/><text class="s-t" x="108" y="62" text-anchor="middle">1</text><rect class="s-box" x="128" y="44" width="32" height="28" rx="4"/><text class="s-t" x="144" y="62" text-anchor="middle">1</text><rect class="s-fill" x="164" y="44" width="32" height="28" rx="4"/><text class="s-t" x="180" y="62" text-anchor="middle">1</text><rect class="s-box" x="200" y="44" width="32" height="28" rx="4"/><text class="s-t" x="216" y="62" text-anchor="middle">3</text><rect class="s-fill" x="236" y="44" width="32" height="28" rx="4"/><text class="s-t" x="252" y="62" text-anchor="middle">2</text><rect class="s-fill" x="272" y="44" width="32" height="28" rx="4"/><text class="s-t" x="288" y="62" text-anchor="middle">5</text><rect class="s-box" x="308" y="44" width="32" height="28" rx="4"/><text class="s-t" x="324" y="62" text-anchor="middle">6</text><rect class="s-good" x="344" y="44" width="32" height="28" rx="4"/><text class="s-t" x="360" y="62" text-anchor="middle">8</text><text class="s-td" x="8" y="100">dp[9] = dp[7] + dp[6] + dp[4] = 5 + 2 + 1 = 8</text></svg>
+          <figcaption>Last coin 2, 3 or 5 &mdash; add the counts of the three shorter sums.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Identical skeleton to Minimizing Coins: <code>min(...)+1</code> becomes <code>madd</code>. <code>madd</code> uses a conditional subtract since both inputs are already reduced.</p>
+        <div class="src-meta"><span class="path">dp/Coin_Combinations_I.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Coin Combinations I
+// Link: https://cses.fi/problemset/task/1635
+// Pattern: 1D bottom-up DP, order-matters counting over unbounded coin set
+// Time: O(n*x)  Space: O(x)
+//
+// Count the distinct ordered ways to produce sum `x` from `n` reusable coin
+// values (order matters - 2+2+5, 2+5+2, 5+2+2 count separately). Answer
+// modulo 10^9+7.
+//
+// Constraints: 1 &lt;= n &lt;= 100, 1 &lt;= x &lt;= 10^6, 1 &lt;= c_i &lt;= 10^6
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+typedef long long ll;
+const ll MOD = 1000000007;
+
+ll madd(ll a, ll b) { ll s = a + b; return s &gt;= MOD ? s - MOD : s; }
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n, x;
+    cin &gt;&gt; n &gt;&gt; x;
+
+    vector&lt;int&gt; coins(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; coins[i];
+
+    vector&lt;ll&gt; dp(x + 1, 0);
+    dp[0] = 1;
+    for (int sum = 1; sum &lt;= x; sum++) {
+        for (int c : coins) {
+            if (sum - c &gt;= 0) dp[sum] = madd(dp[sum], dp[sum - c]);
+        }
+    }
+
+    cout &lt;&lt; dp[x] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    s = a + b
+    return s - MOD if s &gt;= MOD else s
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+    coins = [int(next(tok)) for _ in range(n)]
+    dp = [0] * (x + 1)
+    dp[0] = 1
+    for sum_ in range(1, x + 1):
+        for c in coins:                     # for (int c : coins)
+            if sum_ - c &gt;= 0: dp[sum_] = madd(dp[sum_], dp[sum_ - c])
+    print(dp[x])
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Swap the loops (coins outside) and you silently get Coin Combinations II &mdash; the unordered count. Loop order <em>is</em> the specification.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"distinct ordered ways" / "2+3 and 3+2 are different" &rarr; sums outside, choices inside.</div>
+    </article>
+    <article class="entry" id="minimizing-coins">
+      <div class="entry-head"><h3>Minimizing Coins</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coin values \(c_1, \dots, c_n\), each usable any number of times.
+Make the sum \(x\) using as few coins as possible. Print that number, or \(-1\) if \(x\) cannot be made.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>The minimum number of coins, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x \le 10^6,\ \ 1 \le c_i \le 10^6\)</dd>
+<dt>Sample</dt><dd>coins <code>1 5 7</code>, \(x = 11\) → <code>3</code> (\(5 + 5 + 1\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[s]\) be the fewest coins with sum \(s\), or \(\infty\) if \(s\) cannot be made.</span></li>
+<li><span class="why">The last coin is some \(c_j \le s\). The rest must be an optimal way to make \(s - c_j\):</span>
+\[ dp[0] = 0, \qquad dp[s] = 1 + \min_{c_j \le s} dp[s - c_j] \]</li>
+<li><span class="why">Coins can be reused, so which coins were used before never matters. The state is only the sum.</span></li>
+<li><span class="why">Simplest form: fill \(dp[1..x]\) in order; answer \(dp[x]\), printing \(-1\) if it is still \(\infty\).</span>
+<span class="why">Sample: \(dp[11] = 1 + \min(dp[10], dp[6], dp[4]) = 1 + \min(2, 2, 4) = 3\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Coins can be reused, so no coin is ever "used up" and the coin index carries no information. Drop it: the state is just the sum.</li>
+<li>The last coin is some \(c\); the rest is an optimal solution for \(s - c\).</li>
+<li>Sums that cannot be made must stay that way: <code>INF + 1</code> must never win a <code>min</code>.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Memoised <code>rec(i, left)</code>: take coin \(i\) (stay) or skip it (move on).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot x)\)</span> states, recursion depth up to \(x\).</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(x = 10^6\): a recursion \(10^6\) deep overflows the stack, and the \(i\) dimension adds \(10^8\) wasted states.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Keep only \(dp[s]\), try all coins per sum, bottom-up: <span class="cost">\(O(n \cdot x)\)</span> time, <span class="cost">\(O(x)\)</span> space.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 470 110" role="img" aria-label="Minimizing coins with 1 5 7, x = 11"><text class="s-td" x="8" y="16">coins {1,5,7}, x = 11</text><text class="s-td" x="36" y="36" text-anchor="middle">0</text><text class="s-td" x="72" y="36" text-anchor="middle">1</text><text class="s-td" x="108" y="36" text-anchor="middle">2</text><text class="s-td" x="144" y="36" text-anchor="middle">3</text><text class="s-td" x="180" y="36" text-anchor="middle">4</text><text class="s-td" x="216" y="36" text-anchor="middle">5</text><text class="s-td" x="252" y="36" text-anchor="middle">6</text><text class="s-td" x="288" y="36" text-anchor="middle">7</text><text class="s-td" x="324" y="36" text-anchor="middle">8</text><text class="s-td" x="360" y="36" text-anchor="middle">9</text><text class="s-td" x="396" y="36" text-anchor="middle">10</text><text class="s-td" x="432" y="36" text-anchor="middle">11</text><rect class="s-box" x="20" y="44" width="32" height="28" rx="4"/><text class="s-t" x="36" y="62" text-anchor="middle">0</text><rect class="s-box" x="56" y="44" width="32" height="28" rx="4"/><text class="s-t" x="72" y="62" text-anchor="middle">1</text><rect class="s-box" x="92" y="44" width="32" height="28" rx="4"/><text class="s-t" x="108" y="62" text-anchor="middle">2</text><rect class="s-box" x="128" y="44" width="32" height="28" rx="4"/><text class="s-t" x="144" y="62" text-anchor="middle">3</text><rect class="s-fill" x="164" y="44" width="32" height="28" rx="4"/><text class="s-t" x="180" y="62" text-anchor="middle">4</text><rect class="s-box" x="200" y="44" width="32" height="28" rx="4"/><text class="s-t" x="216" y="62" text-anchor="middle">1</text><rect class="s-fill" x="236" y="44" width="32" height="28" rx="4"/><text class="s-t" x="252" y="62" text-anchor="middle">2</text><rect class="s-box" x="272" y="44" width="32" height="28" rx="4"/><text class="s-t" x="288" y="62" text-anchor="middle">1</text><rect class="s-box" x="308" y="44" width="32" height="28" rx="4"/><text class="s-t" x="324" y="62" text-anchor="middle">2</text><rect class="s-box" x="344" y="44" width="32" height="28" rx="4"/><text class="s-t" x="360" y="62" text-anchor="middle">3</text><rect class="s-fill" x="380" y="44" width="32" height="28" rx="4"/><text class="s-t" x="396" y="62" text-anchor="middle">2</text><rect class="s-good" x="416" y="44" width="32" height="28" rx="4"/><text class="s-t" x="432" y="62" text-anchor="middle">3</text><text class="s-td" x="8" y="100">dp[11] = 1 + min(dp[10], dp[6], dp[4]) = 1 + 2 = 3</text></svg>
+          <figcaption>Every sum looks back one coin-width per coin value and keeps the cheapest.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>dp[left - c] != INF</code> is the sentinel guard; without it <code>INF + 1</code> just becomes a bigger INF here, but the explicit check keeps the intent unambiguous. Output maps INF back to &minus;1.</p>
+        <div class="src-meta"><span class="path">dp/Minimizing_Coins.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Minimizing Coins
+// Link: https://cses.fi/problemset/task/1634
+// Pattern: 1D bottom-up DP, unbounded reuse (min over all coin values per sum)
+// Time: O(n*x)  Space: O(x)
+//
+// Produce sum `x` from `n` coins (positive integer values, each reusable any
+// number of times) using the minimum number of coins. Print -1 if
+// impossible.
+//
+// Constraints: 1 &lt;= n &lt;= 100, 1 &lt;= x &lt;= 10^6, 1 &lt;= c_i &lt;= 10^6
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+const int INF = 1000000000;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n, x;
+    cin &gt;&gt; n &gt;&gt; x;
+
+    vector&lt;int&gt; coins(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; coins[i];
+
+    vector&lt;int&gt; dp(x + 1, INF);
+    dp[0] = 0;
+    for (int left = 1; left &lt;= x; left++) {
+        for (int c : coins) {
+            if (c &lt;= left &amp;&amp; dp[left - c] != INF) {
+                dp[left] = min(dp[left], dp[left - c] + 1);
+            }
+        }
+    }
+
+    cout &lt;&lt; (dp[x] == INF ? -1 : dp[x]) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 1000000000
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+    coins = [int(next(tok)) for _ in range(n)]
+    dp = [INF] * (x + 1)
+    dp[0] = 0
+    for left in range(1, x + 1):
+        for c in coins:
+            if c &lt;= left and dp[left - c] != INF:
+                dp[left] = min(dp[left], dp[left - c] + 1)
+    print(-1 if dp[x] == INF else dp[x])
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Base is <code>dp[0] = 0</code>, not 1 &mdash; this is a <em>min-count</em>, not a way-count. Same loop shape as Coin Combinations I, opposite identity.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"fewest items, any number of each, to hit an exact total" &rarr; 1-D <code>dp[sum]</code>, min over item sizes, INF sentinel.</div>
+    </article>
+    <article class="entry" id="removing-digits">
+      <div class="entry-head"><h3>Removing Digits</h3><span class="badge num">\(O(n \log n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an integer \(n\). In one step you may subtract one of its digits
+from it. What is the minimum number of steps to reach \(0\)?</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The minimum number of steps.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd>\(27\) → <code>5</code> (\(27 \to 20 \to 18 \to 10 \to 9 \to 0\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i]\) be the fewest steps from \(i\) to \(0\). From \(i\) you can move to \(i - d\) for any nonzero digit \(d\) of \(i\):</span>
+\[ dp[0] = 0, \qquad dp[i] = 1 + \min_{\substack{d \in \text{digits}(i) \\ d \ne 0}} dp[i - d] \]</li>
+<li><span class="why">Every step makes the number smaller, so \(dp[i]\) only needs smaller values. Fill \(i = 1..n\) in order.</span></li>
+<li><span class="why">Simplest form: each \(i\) has at most \(7\) digits, so the whole table costs \(O(7n)\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>It is Minimizing Coins where the coins depend on the current value: the digits of \(i\).</li>
+<li>Every step strictly decreases \(i\), so filling from \(0\) upwards is a valid order.</li>
+<li>A nonzero digit \(d\) of \(i\) always satisfies \(d \le i\), so \(dp[i - d]\) is in range.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Recursion over all digit choices from \(n\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span> without memoisation.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^6\): the same value is reached along a huge number of paths.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Store one answer per value: <span class="cost">\(O(n \cdot \text{digits})\)</span>, at most 7 digits each.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 80" role="img" aria-label="27 to 0 in five steps"><rect class="s-fill" x="10" y="20" width="64" height="28" rx="4"/><text class="s-t" x="42" y="38" text-anchor="middle">27</text><rect class="s-box" x="78" y="20" width="64" height="28" rx="4"/><text class="s-t" x="110" y="38" text-anchor="middle">20</text><rect class="s-box" x="146" y="20" width="64" height="28" rx="4"/><text class="s-t" x="178" y="38" text-anchor="middle">18</text><rect class="s-box" x="214" y="20" width="64" height="28" rx="4"/><text class="s-t" x="246" y="38" text-anchor="middle">10</text><rect class="s-box" x="282" y="20" width="64" height="28" rx="4"/><text class="s-t" x="314" y="38" text-anchor="middle">9</text><rect class="s-good" x="350" y="20" width="64" height="28" rx="4"/><text class="s-t" x="382" y="38" text-anchor="middle">0</text><text class="s-ta" x="84" y="70" text-anchor="middle">−7</text><text class="s-ta" x="152" y="70" text-anchor="middle">−2</text><text class="s-ta" x="220" y="70" text-anchor="middle">−8</text><text class="s-ta" x="288" y="70" text-anchor="middle">−1</text><text class="s-ta" x="356" y="70" text-anchor="middle">−9</text></svg>
+          <figcaption>Sample: dp[27] = 5 along 27 &rarr; 20 &rarr; 18 &rarr; 10 &rarr; 9 &rarr; 0.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>temp</code> peels digits with <code>% 10</code>; zero digits are skipped since subtracting 0 is not progress. <code>dp</code> starts at INF so the first digit always wins.</p>
+        <div class="src-meta"><span class="path">dp/Removing_Digits.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Removing Digits
+// Link: https://cses.fi/problemset/task/1637
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1)
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+
+void solve()
+{
+    ll n ;
+    cin &gt;&gt; n ;
+    vector&lt;ll&gt; dp(n + 1, INF) ;
+    for(ll i = 0 ; i &lt;= n ; i++)
+    {
+        if ( i == 0 ) dp[i] = 0 ;
+        else
+        {
+            ll temp = i ;
+            while (temp &gt; 0)
+            {
+                ll digit = temp % 10 ;
+                if (digit != 0)
+                {
+                    dp[i] = min(dp[i], dp[i - digit] + 1) ;
+                }
+                temp /= 10 ;
+            }
+        }
+    }
+    cout &lt;&lt; dp[n] &lt;&lt; endl ;
+}
+signed main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    solve() ;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n = int(next(tok))
+    dp = [INF] * (n + 1)
+    for i in range(n + 1):
+        if i == 0: dp[i] = 0
+        else:
+            temp = i
+            while temp &gt; 0:
+                digit = temp % 10
+                if digit != 0:
+                    dp[i] = min(dp[i], dp[i - digit] + 1)
+                temp //= 10                 # temp /= 10 on ints -&gt; //=
+    print(dp[n])
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The move set comes from <code>i</code>, not <code>n</code>: <code>temp = i</code>. Precomputing the digits of <code>n</code> once gives a different (wrong) problem.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"min operations to reduce a number, allowed moves derived from the number itself" &rarr; <code>dp[value]</code> over moves.</div>
+    </article>
+  </section>
+
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; Take / skip items</h2></div>
+    <p class="family-note">The state is (item index, budget). Each item is taken or skipped; whether "take" stays on the row or advances decides unbounded vs 0/1.</p>
+    <article class="entry" id="coin-combinations-ii">
+      <div class="entry-head"><h3>Coin Combinations II</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coin values \(c_1, \dots, c_n\), each usable any number of times.
+Count the ways to make the sum \(x\) where order does <em>not</em> matter (\(2{+}2{+}5\), \(2{+}5{+}2\)
+and \(5{+}2{+}2\) are the same way). Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>The number of unordered ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x \le 10^6,\ \ 1 \le c_i \le 10^6\)</dd>
+<dt>Sample</dt><dd>coins <code>2 3 5</code>, \(x = 9\) → <code>3</code> (\(2{+}2{+}5,\ 3{+}3{+}3,\ 2{+}2{+}2{+}3\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">To count each multiset once, decide the coins in a fixed order: first how many of coin \(i\), then move to coin \(i + 1\). Let \(dp[i][s]\) be the number of ways to make \(s\) using only coins \(i, \dots, n-1\).</span></li>
+<li><span class="why">Either take one more coin \(i\) (stay on coin \(i\), since it can be taken again) or move on to coin \(i + 1\):</span>
+\[ dp[i][s] = \underbrace{dp[i][s - c_i]}_{\text{take one more } c_i} + \underbrace{dp[i+1][s]}_{\text{done with } c_i} \]</li>
+<li><span class="why">Base cases: with no coins left, only sum \(0\) can be made:</span>
+\[ dp[n][0] = 1, \qquad dp[n][s] = 0 \ \ (s \gt 0), \qquad \text{ans} = dp[0][x] \]</li>
+<li><span class="why">Simplest form: row \(i\) reads only rows \(i\) and \(i + 1\), so two rows of length \(x + 1\) are enough.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Order does not matter, so fix one canonical order: decide coin \(i\) completely, then move on. Each multiset is then built exactly once.</li>
+<li>Taking coin \(i\) stays on row \(i\) (it may be taken again). Skipping moves to row \(i + 1\).</li>
+<li>Row \(i\) reads only rows \(i\) and \(i + 1\), so two rows are enough.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Reuse Coin Combinations I (sum loop outside).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot x)\)</span>, but the <em>wrong answer</em>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">It counts \(2{+}3\) and \(3{+}2\) separately: the sample gives \(8\), not \(3\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Put the coin index on the outside, with two rolling rows: <span class="cost">\(O(n \cdot x)\)</span> time, <span class="cost">\(O(x)\)</span> memory.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 150" role="img" aria-label="Coin combinations II table for 2 3 5"><text class="s-td" x="8" y="14">coins {2,3,5}, x = 9</text><text class="s-td" x="76" y="34" text-anchor="middle">0</text><text class="s-td" x="112" y="34" text-anchor="middle">1</text><text class="s-td" x="148" y="34" text-anchor="middle">2</text><text class="s-td" x="184" y="34" text-anchor="middle">3</text><text class="s-td" x="220" y="34" text-anchor="middle">4</text><text class="s-td" x="256" y="34" text-anchor="middle">5</text><text class="s-td" x="292" y="34" text-anchor="middle">6</text><text class="s-td" x="328" y="34" text-anchor="middle">7</text><text class="s-td" x="364" y="34" text-anchor="middle">8</text><text class="s-td" x="400" y="34" text-anchor="middle">9</text><text class="s-td" x="40" y="60" text-anchor="end">i=0</text><rect class="s-box" x="60" y="42" width="32" height="28" rx="4"/><text class="s-t" x="76" y="60" text-anchor="middle">1</text><rect class="s-box" x="96" y="42" width="32" height="28" rx="4"/><text class="s-t" x="112" y="60" text-anchor="middle">0</text><rect class="s-box" x="132" y="42" width="32" height="28" rx="4"/><text class="s-t" x="148" y="60" text-anchor="middle">1</text><rect class="s-box" x="168" y="42" width="32" height="28" rx="4"/><text class="s-t" x="184" y="60" text-anchor="middle">1</text><rect class="s-box" x="204" y="42" width="32" height="28" rx="4"/><text class="s-t" x="220" y="60" text-anchor="middle">1</text><rect class="s-box" x="240" y="42" width="32" height="28" rx="4"/><text class="s-t" x="256" y="60" text-anchor="middle">2</text><rect class="s-box" x="276" y="42" width="32" height="28" rx="4"/><text class="s-t" x="292" y="60" text-anchor="middle">2</text><rect class="s-fill" x="312" y="42" width="32" height="28" rx="4"/><text class="s-t" x="328" y="60" text-anchor="middle">2</text><rect class="s-box" x="348" y="42" width="32" height="28" rx="4"/><text class="s-t" x="364" y="60" text-anchor="middle">3</text><rect class="s-good" x="384" y="42" width="32" height="28" rx="4"/><text class="s-t" x="400" y="60" text-anchor="middle">3</text><text class="s-td" x="40" y="94" text-anchor="end">i=1</text><rect class="s-box" x="60" y="76" width="32" height="28" rx="4"/><text class="s-t" x="76" y="94" text-anchor="middle">1</text><rect class="s-box" x="96" y="76" width="32" height="28" rx="4"/><text class="s-t" x="112" y="94" text-anchor="middle">0</text><rect class="s-box" x="132" y="76" width="32" height="28" rx="4"/><text class="s-t" x="148" y="94" text-anchor="middle">0</text><rect class="s-box" x="168" y="76" width="32" height="28" rx="4"/><text class="s-t" x="184" y="94" text-anchor="middle">1</text><rect class="s-box" x="204" y="76" width="32" height="28" rx="4"/><text class="s-t" x="220" y="94" text-anchor="middle">0</text><rect class="s-box" x="240" y="76" width="32" height="28" rx="4"/><text class="s-t" x="256" y="94" text-anchor="middle">1</text><rect class="s-box" x="276" y="76" width="32" height="28" rx="4"/><text class="s-t" x="292" y="94" text-anchor="middle">1</text><rect class="s-box" x="312" y="76" width="32" height="28" rx="4"/><text class="s-t" x="328" y="94" text-anchor="middle">0</text><rect class="s-box" x="348" y="76" width="32" height="28" rx="4"/><text class="s-t" x="364" y="94" text-anchor="middle">1</text><rect class="s-fill" x="384" y="76" width="32" height="28" rx="4"/><text class="s-t" x="400" y="94" text-anchor="middle">1</text><text class="s-td" x="40" y="128" text-anchor="end">i=2</text><rect class="s-box" x="60" y="110" width="32" height="28" rx="4"/><text class="s-t" x="76" y="128" text-anchor="middle">1</text><rect class="s-box" x="96" y="110" width="32" height="28" rx="4"/><text class="s-t" x="112" y="128" text-anchor="middle">0</text><rect class="s-box" x="132" y="110" width="32" height="28" rx="4"/><text class="s-t" x="148" y="128" text-anchor="middle">0</text><rect class="s-box" x="168" y="110" width="32" height="28" rx="4"/><text class="s-t" x="184" y="128" text-anchor="middle">0</text><rect class="s-box" x="204" y="110" width="32" height="28" rx="4"/><text class="s-t" x="220" y="128" text-anchor="middle">0</text><rect class="s-box" x="240" y="110" width="32" height="28" rx="4"/><text class="s-t" x="256" y="128" text-anchor="middle">1</text><rect class="s-box" x="276" y="110" width="32" height="28" rx="4"/><text class="s-t" x="292" y="128" text-anchor="middle">0</text><rect class="s-box" x="312" y="110" width="32" height="28" rx="4"/><text class="s-t" x="328" y="128" text-anchor="middle">0</text><rect class="s-box" x="348" y="110" width="32" height="28" rx="4"/><text class="s-t" x="364" y="128" text-anchor="middle">0</text><rect class="s-box" x="384" y="110" width="32" height="28" rx="4"/><text class="s-t" x="400" y="128" text-anchor="middle">0</text></svg>
+          <figcaption>dp[0][9] = dp[0][7] (take a 2, stay) + dp[1][9] (never use 2 again) = 2 + 1 = 3.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>dp[i&amp;1]</code> is the row being written, <code>dp[(i+1)&amp;1]</code> the row below. The take term reads <code>dp[i&amp;1][left - coins[i]]</code> &mdash; the <em>current</em> row, already filled because <code>left</code> ascends. That same-row read is what "reusable" means.</p>
+        <div class="src-meta"><span class="path">dp/Coin_Combinations_II.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Coin Combinations II
+// Link: https://cses.fi/problemset/task/1636
+// Pattern: 1D bottom-up DP, order-doesn't-matter counting over unbounded coin set
+// Time: O(n*x)  Space: O(x)
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+typedef long long ll;
+const ll MOD = 1000000007;
+
+ll madd(ll a, ll b)
+{
+    ll s = a + b; 
+    return s &gt;= MOD ? s - MOD : s;
+}
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    ll  n, x;
+    cin &gt;&gt; n &gt;&gt; x;
+
+    vector&lt;ll&gt; coins(n);
+    for (ll i = 0; i &lt; n; i++) cin &gt;&gt; coins[i];
+
+    vector &lt; vector &lt; ll &gt; &gt; dp ( 2 , vector &lt; ll &gt; ( x + 1 , -1 ) ) ;
+    for ( ll i = n ; i &gt;= 0 ; i-- ) 
+    {
+        for ( ll left = 0 ; left &lt;= x ; left ++ ) 
+        {
+            if ( left == 0 ) dp [ (i&amp;1) ] [ left ] = 1 ;
+            else if ( i == n ) dp [ (i&amp;1) ] [ left ] = 0 ;
+            else 
+            {
+                ll ans = 0 ;
+                if ( left - coins [i] &gt;= 0 ) 
+                    ans = madd(ans , dp [ (i&amp;1) ] [ left - coins [ i ] ] ) ;
+                
+                
+                ans = madd(ans , dp [ ((i+1)&amp;1) ] [ left ] ) ;
+                dp [ (i % 2) ] [ left ] = ans ; 
+        }
+    } 
+    }
+
+    
+
+    cout &lt;&lt; dp[0][x] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    s = a + b
+    return s - MOD if s &gt;= MOD else s
+
+def main():
+    n, x = int(next(tok)), int(next(tok))
+    coins = [int(next(tok)) for _ in range(n)]
+    dp = [[-1] * (x + 1) for _ in range(2)]     # 2 rolling rows, indexed by i &amp; 1
+    for i in range(n, -1, -1):              # for (i = n; i &gt;= 0; i--)
+        for left in range(x + 1):
+            if left == 0: dp[i &amp; 1][left] = 1
+            elif i == n: dp[i &amp; 1][left] = 0
+            else:
+                ans = 0
+                if left - coins[i] &gt;= 0:
+                    ans = madd(ans, dp[i &amp; 1][left - coins[i]])
+                ans = madd(ans, dp[(i + 1) &amp; 1][left])
+                dp[i % 2][left] = ans
+    print(dp[0][x])
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Reading the take term from row <code>i+1</code> turns it into 0/1 knapsack (each coin once). The left-to-right fill direction of <code>left</code> is what makes the same-row read legal.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"distinct ways, order doesn't matter, unlimited supply" &rarr; items outside, take-stays-on-row.</div>
+    </article>
+    <article class="entry" id="book-shop">
+      <div class="entry-head"><h3>Book Shop</h3><span class="badge num">\(O(n\cdot x)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A shop sells \(n\) books. Book \(i\) costs \(h_i\) and has \(s_i\) pages. You can
+spend at most \(x\) in total and buy each book at most once. What is the maximum number of pages you can buy?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ x\); then \(h_1, \dots, h_n\); then \(s_1, \dots, s_n\).</dd>
+<dt>Output</dt><dd>One integer: the maximum total pages.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000,\ \ 1 \le x \le 10^5,\ \ 1 \le h_i, s_i \le 1000\)</dd>
+<dt>Sample</dt><dd>\(x = 10\), prices <code>4 8 5 3</code>, pages <code>5 12 8 1</code> → <code>13</code> (books 1 and 3)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \max_{T \subseteq \{1..n\}} \sum_{i \in T} s_i \quad \text{subject to} \quad \sum_{i \in T} h_i \le x \]</li>
+<li><span class="why">Let \(dp[i][b]\) be the most pages from books \(i, \dots, n-1\) with budget \(b\) left. Each book is skip or buy, and both move on to the next book:</span>
+\[ dp[i][b] = \max\Big( dp[i+1][b],\ \ dp[i+1][b - h_i] + s_i \ \ \big(\text{if } h_i \le b\big) \Big) \]</li>
+<li><span class="why">Base case: with no books left you get \(0\) pages, whatever money is left: \(dp[n][b] = 0\) for every \(b\).</span></li>
+<li><span class="why">Simplest form: \(\text{ans} = dp[0][x]\), computed with two rolling rows of length \(x + 1\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Each book can be bought once, so both choices (buy, skip) move to row \(i + 1\).</li>
+<li>The budget is "\(\le x\)", not "\(= x\)", so the base row is \(0\) for every leftover budget, not only for \(0\).</li>
+<li>Only rows \(i\) and \(i + 1\) are in use, so keep two rows and switch by parity.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try all \(2^n\) subsets.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000\) gives \(2^{1000}\) subsets.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">State = (next book, budget left): \(10^3 \cdot 10^5 =\) <span class="cost">\(10^8\)</span> cells; rolling rows keep memory at <span class="cost">\(O(x)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 120" role="img" aria-label="Book shop sample"><text class="s-td" x="8" y="14">budget x = 10</text><rect class="s-good" x="20" y="26" width="86" height="34" rx="4"/><text class="s-t" x="63" y="47" text-anchor="middle">4|5</text><rect class="s-box" x="110" y="26" width="86" height="34" rx="4"/><text class="s-t" x="153" y="47" text-anchor="middle">8|12</text><rect class="s-good" x="200" y="26" width="86" height="34" rx="4"/><text class="s-t" x="243" y="47" text-anchor="middle">5|8</text><rect class="s-box" x="290" y="26" width="86" height="34" rx="4"/><text class="s-t" x="333" y="47" text-anchor="middle">3|1</text><text class="s-td" x="20" y="80">price|pages per book</text><text class="s-td" x="8" y="108">take books 1 and 3: price 9 ≤ 10, pages 13</text></svg>
+          <figcaption>The 12-page book costs 8, leaving no room for anything useful; two cheaper books beat it.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Outer loop runs <code>i</code> from <code>n</code> down, so <code>dp[0][x]</code> is the answer. Inside <code>i == n</code> the <code>left &gt;= 0</code> test is always true &mdash; the <code>-INF</code> branch is dead code, the affordability check lives in the else branch.</p>
+        <div class="src-meta"><span class="path">dp/Book_Shop.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Book Shop
+// Link: https://cses.fi/problemset/task/1158
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+
+
+void solve() 
+{
+    ll n , x ;  
+    cin &gt;&gt; n &gt;&gt; x ;
+    vector&lt;ll&gt; h(n) , s(n) ;
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; h[i] ;
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; s[i] ; 
+    vector &lt;vector&lt;ll&gt;&gt; dp(2 , vector&lt;ll&gt;(x + 1 , -1)) ;
+    for(ll i = n ; i &gt;= 0 ; i--)
+    {
+        for(ll left = 0 ; left &lt;= x ; left++)
+        {
+            if ( i == n )
+            {
+                if ( left &gt;= 0 ) dp[(i) % 2][left] = 0 ;
+                else dp[(i) % 2][left] = -INF ;
+            }
+            else
+            {
+                ll ans = dp[(i + 1) % 2][left] ;
+                if ( left - h[i] &gt;= 0 ) ans = max(ans , dp[(i + 1) % 2][left - h[i]] + s[i]) ;
+                dp[(i) % 2][left] = ans ;
+            }
+        }
+    }
+    cout &lt;&lt; dp[0][x] &lt;&lt; endl ;
+}
+signed main() 
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+
+def solve():
+    n, x = int(next(tok)), int(next(tok))
+    h = [int(next(tok)) for _ in range(n)]
+    s = [int(next(tok)) for _ in range(n)]
+    dp = [[-1] * (x + 1) for _ in range(2)]
+    for i in range(n, -1, -1):
+        for left in range(x + 1):
+            if i == n:
+                if left &gt;= 0: dp[i % 2][left] = 0
+                else: dp[i % 2][left] = -INF
+            else:
+                ans = dp[(i + 1) % 2][left]
+                if left - h[i] &gt;= 0: ans = max(ans, dp[(i + 1) % 2][left - h[i]] + s[i])
+                dp[i % 2][left] = ans
+    print(dp[0][x])
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>vector&lt;vector&lt;ll&gt;&gt;</code> of size 1001 × \(10^{5}\) would be 800 MB; the parity trick is not an optimisation here, it is required.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"each item at most once, capacity ≤ C, maximise value" &rarr; 0/1 knapsack, both branches to i+1.</div>
+    </article>
+    <article class="entry" id="money-sums">
+      <div class="entry-head"><h3>Money Sums</h3><span class="badge num">\(O(n \cdot \sum x)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You have \(n\) coins with values \(x_1, \dots, x_n\) (each coin used at most once).
+Find every sum you can make using one or more of the coins. Print how many there are, then the sums
+in increasing order.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\).</dd>
+<dt>Output</dt><dd>The count \(k\), then the \(k\) sums in increasing order.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 100,\ \ 1 \le x_i \le 1000\)</dd>
+<dt>Sample</dt><dd><code>4 2 5 2</code> → <code>9</code>, then <code>2 4 5 6 7 8 9 11 13</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \Big\{\, \sum_{i \in T} x_i \;:\; \varnothing \ne T \subseteq \{1, \dots, n\} \,\Big\} \]</li>
+<li><span class="why">Let \(R_i(s)\) be true if some subset of coins \(i, \dots, n-1\) sums to \(s\). Each coin is skipped or used:</span>
+\[ R_n(s) = [s = 0], \qquad R_i(s) = R_{i+1}(s) \ \lor\ R_{i+1}(s - x_i) \]</li>
+<li><span class="why">Every sum is at most \(n \cdot \max x_i = 100 \cdot 1000 = 10^5\), so a table of width \(10^5 + 1\) covers everything.</span></li>
+<li><span class="why">Simplest form: print every \(s \ge 1\) with \(R_0(s)\) true.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>This is knapsack with a yes/no value: "can sum \(s\) be made from coins \(i..n-1\)?"</li>
+<li>A sum can never exceed \(n \cdot \max x = 100 \cdot 1000\), so a fixed bound of \(10^5\) columns is exact.</li>
+<li>Repeated coin values need no special handling: the set of reachable sums absorbs repeats.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">List all subsets and put their sums in a set.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 100\) gives \(2^{100}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Distinct sums are \(\le 10^5\), so use \((n + 1) \times 10^5\) booleans: <span class="cost">\(10^7\)</span> work.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 420 156" role="img" aria-label="Reachable sums grow coin by coin"><text class="s-td" x="8" y="14">coins 4 2 5 2 (processed right to left)</text><text class="s-td" x="71" y="32" text-anchor="middle">0</text><text class="s-td" x="97" y="32" text-anchor="middle">1</text><text class="s-td" x="123" y="32" text-anchor="middle">2</text><text class="s-td" x="149" y="32" text-anchor="middle">3</text><text class="s-td" x="175" y="32" text-anchor="middle">4</text><text class="s-td" x="201" y="32" text-anchor="middle">5</text><text class="s-td" x="227" y="32" text-anchor="middle">6</text><text class="s-td" x="253" y="32" text-anchor="middle">7</text><text class="s-td" x="279" y="32" text-anchor="middle">8</text><text class="s-td" x="305" y="32" text-anchor="middle">9</text><text class="s-td" x="331" y="32" text-anchor="middle">10</text><text class="s-td" x="357" y="32" text-anchor="middle">11</text><text class="s-td" x="383" y="32" text-anchor="middle">12</text><text class="s-td" x="409" y="32" text-anchor="middle">13</text><text class="s-td" x="50" y="56" text-anchor="end">{}</text><rect class="s-good" x="60" y="40" width="22" height="22" rx="4"/><text class="s-t" x="71" y="55" text-anchor="middle"></text><rect class="s-box" x="86" y="40" width="22" height="22" rx="4"/><text class="s-t" x="97" y="55" text-anchor="middle"></text><rect class="s-box" x="112" y="40" width="22" height="22" rx="4"/><text class="s-t" x="123" y="55" text-anchor="middle"></text><rect class="s-box" x="138" y="40" width="22" height="22" rx="4"/><text class="s-t" x="149" y="55" text-anchor="middle"></text><rect class="s-box" x="164" y="40" width="22" height="22" rx="4"/><text class="s-t" x="175" y="55" text-anchor="middle"></text><rect class="s-box" x="190" y="40" width="22" height="22" rx="4"/><text class="s-t" x="201" y="55" text-anchor="middle"></text><rect class="s-box" x="216" y="40" width="22" height="22" rx="4"/><text class="s-t" x="227" y="55" text-anchor="middle"></text><rect class="s-box" x="242" y="40" width="22" height="22" rx="4"/><text class="s-t" x="253" y="55" text-anchor="middle"></text><rect class="s-box" x="268" y="40" width="22" height="22" rx="4"/><text class="s-t" x="279" y="55" text-anchor="middle"></text><rect class="s-box" x="294" y="40" width="22" height="22" rx="4"/><text class="s-t" x="305" y="55" text-anchor="middle"></text><rect class="s-box" x="320" y="40" width="22" height="22" rx="4"/><text class="s-t" x="331" y="55" text-anchor="middle"></text><rect class="s-box" x="346" y="40" width="22" height="22" rx="4"/><text class="s-t" x="357" y="55" text-anchor="middle"></text><rect class="s-box" x="372" y="40" width="22" height="22" rx="4"/><text class="s-t" x="383" y="55" text-anchor="middle"></text><rect class="s-box" x="398" y="40" width="22" height="22" rx="4"/><text class="s-t" x="409" y="55" text-anchor="middle"></text><text class="s-td" x="50" y="84" text-anchor="end">+2</text><rect class="s-good" x="60" y="68" width="22" height="22" rx="4"/><text class="s-t" x="71" y="83" text-anchor="middle"></text><rect class="s-box" x="86" y="68" width="22" height="22" rx="4"/><text class="s-t" x="97" y="83" text-anchor="middle"></text><rect class="s-good" x="112" y="68" width="22" height="22" rx="4"/><text class="s-t" x="123" y="83" text-anchor="middle"></text><rect class="s-box" x="138" y="68" width="22" height="22" rx="4"/><text class="s-t" x="149" y="83" text-anchor="middle"></text><rect class="s-box" x="164" y="68" width="22" height="22" rx="4"/><text class="s-t" x="175" y="83" text-anchor="middle"></text><rect class="s-box" x="190" y="68" width="22" height="22" rx="4"/><text class="s-t" x="201" y="83" text-anchor="middle"></text><rect class="s-box" x="216" y="68" width="22" height="22" rx="4"/><text class="s-t" x="227" y="83" text-anchor="middle"></text><rect class="s-box" x="242" y="68" width="22" height="22" rx="4"/><text class="s-t" x="253" y="83" text-anchor="middle"></text><rect class="s-box" x="268" y="68" width="22" height="22" rx="4"/><text class="s-t" x="279" y="83" text-anchor="middle"></text><rect class="s-box" x="294" y="68" width="22" height="22" rx="4"/><text class="s-t" x="305" y="83" text-anchor="middle"></text><rect class="s-box" x="320" y="68" width="22" height="22" rx="4"/><text class="s-t" x="331" y="83" text-anchor="middle"></text><rect class="s-box" x="346" y="68" width="22" height="22" rx="4"/><text class="s-t" x="357" y="83" text-anchor="middle"></text><rect class="s-box" x="372" y="68" width="22" height="22" rx="4"/><text class="s-t" x="383" y="83" text-anchor="middle"></text><rect class="s-box" x="398" y="68" width="22" height="22" rx="4"/><text class="s-t" x="409" y="83" text-anchor="middle"></text><text class="s-td" x="50" y="112" text-anchor="end">+5</text><rect class="s-good" x="60" y="96" width="22" height="22" rx="4"/><text class="s-t" x="71" y="111" text-anchor="middle"></text><rect class="s-box" x="86" y="96" width="22" height="22" rx="4"/><text class="s-t" x="97" y="111" text-anchor="middle"></text><rect class="s-good" x="112" y="96" width="22" height="22" rx="4"/><text class="s-t" x="123" y="111" text-anchor="middle"></text><rect class="s-box" x="138" y="96" width="22" height="22" rx="4"/><text class="s-t" x="149" y="111" text-anchor="middle"></text><rect class="s-box" x="164" y="96" width="22" height="22" rx="4"/><text class="s-t" x="175" y="111" text-anchor="middle"></text><rect class="s-good" x="190" y="96" width="22" height="22" rx="4"/><text class="s-t" x="201" y="111" text-anchor="middle"></text><rect class="s-box" x="216" y="96" width="22" height="22" rx="4"/><text class="s-t" x="227" y="111" text-anchor="middle"></text><rect class="s-good" x="242" y="96" width="22" height="22" rx="4"/><text class="s-t" x="253" y="111" text-anchor="middle"></text><rect class="s-box" x="268" y="96" width="22" height="22" rx="4"/><text class="s-t" x="279" y="111" text-anchor="middle"></text><rect class="s-box" x="294" y="96" width="22" height="22" rx="4"/><text class="s-t" x="305" y="111" text-anchor="middle"></text><rect class="s-box" x="320" y="96" width="22" height="22" rx="4"/><text class="s-t" x="331" y="111" text-anchor="middle"></text><rect class="s-box" x="346" y="96" width="22" height="22" rx="4"/><text class="s-t" x="357" y="111" text-anchor="middle"></text><rect class="s-box" x="372" y="96" width="22" height="22" rx="4"/><text class="s-t" x="383" y="111" text-anchor="middle"></text><rect class="s-box" x="398" y="96" width="22" height="22" rx="4"/><text class="s-t" x="409" y="111" text-anchor="middle"></text><text class="s-td" x="50" y="140" text-anchor="end">+2,+4</text><rect class="s-good" x="60" y="124" width="22" height="22" rx="4"/><text class="s-t" x="71" y="139" text-anchor="middle"></text><rect class="s-box" x="86" y="124" width="22" height="22" rx="4"/><text class="s-t" x="97" y="139" text-anchor="middle"></text><rect class="s-good" x="112" y="124" width="22" height="22" rx="4"/><text class="s-t" x="123" y="139" text-anchor="middle"></text><rect class="s-box" x="138" y="124" width="22" height="22" rx="4"/><text class="s-t" x="149" y="139" text-anchor="middle"></text><rect class="s-good" x="164" y="124" width="22" height="22" rx="4"/><text class="s-t" x="175" y="139" text-anchor="middle"></text><rect class="s-good" x="190" y="124" width="22" height="22" rx="4"/><text class="s-t" x="201" y="139" text-anchor="middle"></text><rect class="s-good" x="216" y="124" width="22" height="22" rx="4"/><text class="s-t" x="227" y="139" text-anchor="middle"></text><rect class="s-good" x="242" y="124" width="22" height="22" rx="4"/><text class="s-t" x="253" y="139" text-anchor="middle"></text><rect class="s-good" x="268" y="124" width="22" height="22" rx="4"/><text class="s-t" x="279" y="139" text-anchor="middle"></text><rect class="s-good" x="294" y="124" width="22" height="22" rx="4"/><text class="s-t" x="305" y="139" text-anchor="middle"></text><rect class="s-box" x="320" y="124" width="22" height="22" rx="4"/><text class="s-t" x="331" y="139" text-anchor="middle"></text><rect class="s-good" x="346" y="124" width="22" height="22" rx="4"/><text class="s-t" x="357" y="139" text-anchor="middle"></text><rect class="s-box" x="372" y="124" width="22" height="22" rx="4"/><text class="s-t" x="383" y="139" text-anchor="middle"></text><rect class="s-good" x="398" y="124" width="22" height="22" rx="4"/><text class="s-t" x="409" y="139" text-anchor="middle"></text></svg>
+          <figcaption>Each coin ORs a shifted copy of the row onto itself. Final row minus 0: 9 sums.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>vector&lt;bool&gt;</code> keeps the \(10^{7}\) cells at ~1.2 MB. Column 0 is <code>true</code> in every row (the empty subset), and the output loop starts at <code>s = 1</code> to exclude it.</p>
+        <div class="src-meta"><span class="path">dp/Money_Sums.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+bool rec( ll i , ll s  )
+{
+    // // this retuns true if we can make a sum of s from the the coin i to the last coin
+    // if ( s == 0 ) return true ;
+    // if ( i == n ) return false ;
+    // if ( dp[i][s] != -1 ) return dp[i][s] ;
+    // bool ans = rec(i + 1 , s) ;
+    // if ( s &gt;= coins[i] ) ans = ans || rec(i + 1 , s - coins[i]) ;
+    // return dp[i][s] = ans ;
+    
+
+    
+}
+void solve() 
+{
+    ll n ; 
+    cin &gt;&gt; n ;
+    vector&lt;ll&gt; x(n) ;
+    for ( ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; x[i] ;
+    vector &lt;vector&lt;bool&gt;&gt; dp(n + 1 , vector&lt;bool&gt;(100001 , false)) ;
+    for ( ll i = n ; i &gt;= 0 ; i--)
+    {
+        for ( ll s = 0 ; s &lt;= 100000 ; s++)
+        {
+            if ( s == 0 ) dp[i][s] = true ;
+            else if ( i == n ) dp[i][s] = false ;
+            else 
+            {
+                bool ans = dp[i + 1][s] ;
+                if ( s &gt;= x[i] ) ans = ans || dp[i + 1][s - x[i]] ;
+                dp[i][s] = ans ;
+            }
+        }
+    }
+    vector&lt;ll&gt; ans ;
+    for ( ll s = 1 ; s &lt;= 100000 ; s++)
+    {
+        if ( dp[0][s] ) ans.push_back(s) ;
+    }
+    cout &lt;&lt; ans.size() &lt;&lt; endl ;
+    for ( ll i = 0 ; i &lt; ans.size() ; i++) cout &lt;&lt; ans[i] &lt;&lt; " " ;
+    cout &lt;&lt; endl ;
+    
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def rec(i, s):
+    # # this retuns true if we can make a sum of s from the the coin i to the last coin
+    # if s == 0: return True
+    # if i == n: return False
+    # if dp[i][s] != -1: return dp[i][s]
+    # ans = rec(i + 1, s)
+    # if s &gt;= coins[i]: ans = ans or rec(i + 1, s - coins[i])
+    # dp[i][s] = ans; return ans       (no "return a = b" in Python: assign, then return)
+    pass                                    # an empty body needs "pass"
+
+def solve():
+    n = int(next(tok))
+    x = [int(next(tok)) for _ in range(n)]
+    dp = [[False] * 100001 for _ in range(n + 1)]
+    for i in range(n, -1, -1):
+        for s in range(100001):
+            if s == 0: dp[i][s] = True
+            elif i == n: dp[i][s] = False
+            else:
+                ans = dp[i + 1][s]
+                if s &gt;= x[i]: ans = ans or dp[i + 1][s - x[i]]
+                dp[i][s] = ans
+    ans = []
+    for s in range(1, 100001):
+        if dp[0][s]: ans.append(s)
+    print(len(ans))
+    print(' '.join(map(str, ans)))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The dead <code>bool rec</code> stub above <code>solve</code> falls off the end without returning &mdash; harmless only because it is never called.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"all achievable totals" with small value × count &rarr; boolean subset-sum over a bounded range.</div>
+    </article>
+    <article class="entry" id="two-sets-ii">
+      <div class="entry-head"><h3>Two Sets II</h3><span class="badge num">\(O(n^{3})\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> Count the ways to split the numbers \(1, 2, \dots, n\) into two sets with equal
+sums. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>The number of ways \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 500\)</dd>
+<dt>Sample</dt><dd>\(n = 7\) → <code>4</code> (for example \(\{1,3,4,6\}\) and \(\{2,5,7\}\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">The total is \(T = 1 + 2 + \dots + n = \frac{n(n+1)}{2}\). Each set must sum to \(T/2\), so if \(T\) is odd the answer is \(0\).</span></li>
+<li><span class="why">A split is fixed by choosing one set \(A\). Count subsets with sum \(T/2\), using \(dp[i][s]\) = number of subsets of \(\{1..i\}\) with sum \(s\):</span>
+\[ dp[0][0] = 1, \qquad dp[i][s] = dp[i-1][s] + dp[i-1][s - i] \]</li>
+<li><span class="why">Each split \(\{A, B\}\) is counted twice, once as \(A\) and once as \(B\). So divide by \(2\). Modulo a prime, dividing by \(2\) means multiplying by the inverse of \(2\):</span>
+\[ \text{ans} = dp[n][T/2] \cdot 2^{-1} \bmod p, \qquad 2^{-1} \equiv \frac{p+1}{2} = 500000004 \pmod{p} \]</li>
+<li><span class="why">Simplest form: \(T/2 \le 62625\), so the table is about \(500 \times 62625 \approx 3\cdot 10^7\) cells.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>If \(T\) is odd, the answer is \(0\) immediately.</li>
+<li>A split is fixed by choosing \(A\), so count subsets with sum \(T/2\).</li>
+<li>Each split is counted twice (\(A\) and its complement), so divide by \(2\). Modulo \(p\) that means multiplying by \(2^{-1}\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">List all subsets of \(1..n\).</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 500\) gives \(2^{500}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Subset-sum counting up to \(T/2 \le 62625\): <span class="cost">\(n \cdot T/2 \approx 3\cdot 10^7\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 340 150" role="img" aria-label="Four splits for n = 7"><text class="s-td" x="8" y="14">n = 7, T = 28, target 14 — splits containing 7</text><rect class="s-good" x="20" y="24" width="26" height="24" rx="4"/><text class="s-t" x="33" y="40" text-anchor="middle">1</text><rect class="s-box" x="50" y="24" width="26" height="24" rx="4"/><text class="s-t" x="63" y="40" text-anchor="middle">2</text><rect class="s-box" x="80" y="24" width="26" height="24" rx="4"/><text class="s-t" x="93" y="40" text-anchor="middle">3</text><rect class="s-box" x="110" y="24" width="26" height="24" rx="4"/><text class="s-t" x="123" y="40" text-anchor="middle">4</text><rect class="s-box" x="140" y="24" width="26" height="24" rx="4"/><text class="s-t" x="153" y="40" text-anchor="middle">5</text><rect class="s-good" x="170" y="24" width="26" height="24" rx="4"/><text class="s-t" x="183" y="40" text-anchor="middle">6</text><rect class="s-good" x="200" y="24" width="26" height="24" rx="4"/><text class="s-t" x="213" y="40" text-anchor="middle">7</text><rect class="s-box" x="20" y="54" width="26" height="24" rx="4"/><text class="s-t" x="33" y="70" text-anchor="middle">1</text><rect class="s-good" x="50" y="54" width="26" height="24" rx="4"/><text class="s-t" x="63" y="70" text-anchor="middle">2</text><rect class="s-box" x="80" y="54" width="26" height="24" rx="4"/><text class="s-t" x="93" y="70" text-anchor="middle">3</text><rect class="s-box" x="110" y="54" width="26" height="24" rx="4"/><text class="s-t" x="123" y="70" text-anchor="middle">4</text><rect class="s-good" x="140" y="54" width="26" height="24" rx="4"/><text class="s-t" x="153" y="70" text-anchor="middle">5</text><rect class="s-box" x="170" y="54" width="26" height="24" rx="4"/><text class="s-t" x="183" y="70" text-anchor="middle">6</text><rect class="s-good" x="200" y="54" width="26" height="24" rx="4"/><text class="s-t" x="213" y="70" text-anchor="middle">7</text><rect class="s-box" x="20" y="84" width="26" height="24" rx="4"/><text class="s-t" x="33" y="100" text-anchor="middle">1</text><rect class="s-box" x="50" y="84" width="26" height="24" rx="4"/><text class="s-t" x="63" y="100" text-anchor="middle">2</text><rect class="s-good" x="80" y="84" width="26" height="24" rx="4"/><text class="s-t" x="93" y="100" text-anchor="middle">3</text><rect class="s-good" x="110" y="84" width="26" height="24" rx="4"/><text class="s-t" x="123" y="100" text-anchor="middle">4</text><rect class="s-box" x="140" y="84" width="26" height="24" rx="4"/><text class="s-t" x="153" y="100" text-anchor="middle">5</text><rect class="s-box" x="170" y="84" width="26" height="24" rx="4"/><text class="s-t" x="183" y="100" text-anchor="middle">6</text><rect class="s-good" x="200" y="84" width="26" height="24" rx="4"/><text class="s-t" x="213" y="100" text-anchor="middle">7</text><rect class="s-good" x="20" y="114" width="26" height="24" rx="4"/><text class="s-t" x="33" y="130" text-anchor="middle">1</text><rect class="s-good" x="50" y="114" width="26" height="24" rx="4"/><text class="s-t" x="63" y="130" text-anchor="middle">2</text><rect class="s-box" x="80" y="114" width="26" height="24" rx="4"/><text class="s-t" x="93" y="130" text-anchor="middle">3</text><rect class="s-good" x="110" y="114" width="26" height="24" rx="4"/><text class="s-t" x="123" y="130" text-anchor="middle">4</text><rect class="s-box" x="140" y="114" width="26" height="24" rx="4"/><text class="s-t" x="153" y="130" text-anchor="middle">5</text><rect class="s-box" x="170" y="114" width="26" height="24" rx="4"/><text class="s-t" x="183" y="130" text-anchor="middle">6</text><rect class="s-good" x="200" y="114" width="26" height="24" rx="4"/><text class="s-t" x="213" y="130" text-anchor="middle">7</text></svg>
+          <figcaption>dp[7][14] = 8 counts each of these and its complement; 8 / 2 = 4.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Forward table: row <code>i</code> uses numbers 1..i and reads row \(i-1\). The inner loop variable <code>sum</code> shadows the outer total, harmlessly since the total is no longer used.</p>
+        <div class="src-meta"><span class="path">dp/Two_Sets_II.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll madd(ll a, ll b) 
+{
+    return (a + b) % MOD;
+}
+ll mmul(ll a, ll b) 
+{
+    return (a * b) % MOD;
+}
+ll mpow(ll a , ll b)
+{
+    ll res = 1 ; 
+    while(b)
+    {
+        if(b &amp; 1) res = mmul(res , a ) ;
+        a = mmul(a , a ) ;
+        b &gt;&gt;= 1 ; 
+    }
+    return res ;
+}
+ll minv(ll a)
+{
+    return mpow(a , MOD - 2 ) ;
+}
+ll mdiv(ll a , ll b)
+{
+    return mmul(a , minv(b) ) ;
+}
+
+
+// ll rec(ll i , ll sum )
+// {
+//     // this returns the nnumber of ways to pick elements form 1 .. i such that it sums to sum
+//     if (sum == 0) return 1 ;
+//     if (i == 0) return 0 ;
+//     ll ans = 0 ; 
+//     ll take = rec(i - 1 , sum - i ) ;
+//     ll nottake = rec(i - 1 , sum ) ;
+//     ans = madd(take , nottake ) ;
+//     return ans ; 
+// }
+    
+
+void solve() 
+{
+    ll n ; 
+    cin &gt;&gt; n ;
+    ll sum = n * (n + 1) / 2 ;
+    if (sum % 2 != 0)
+    {
+        cout &lt;&lt; 0 &lt;&lt; endl;
+        return ;
+    }
+    ll ts = sum / 2 ;
+    vector &lt;vector&lt;ll&gt;&gt; dp(n + 1 , vector&lt;ll&gt;(ts + 1 , 0 )) ;
+    for(ll i = 0 ; i &lt;= n ; i++)
+    {
+        for(ll sum = 0 ; sum &lt;= ts ; sum++)
+        {
+            if(sum == 0) dp[i][sum] = 1 ;
+            else if (i == 0) dp[i][sum] = 0 ;
+            else 
+            {
+                ll take = 0 , nottake = 0 ; 
+                if (sum - i &gt;= 0) take = dp[i - 1][sum - i] ;
+                nottake = dp[i - 1][sum] ;
+                dp[i][sum] = madd(take , nottake ) ;
+            }
+        }
+    }
+    ll ans = mdiv(dp[n][ts] , 2 ) ;
+
+    cout &lt;&lt; ans &lt;&lt; endl ;
+    
+
+
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a + b) % MOD
+
+def mmul(a, b):
+    return (a * b) % MOD
+
+def mpow(a, b):
+    res = 1
+    while b:
+        if b &amp; 1: res = mmul(res, a)
+        a = mmul(a, a)
+        b &gt;&gt;= 1
+    return res                              # built-in shortcut: pow(a, b, MOD)
+
+def minv(a):
+    return mpow(a, MOD - 2)
+
+def mdiv(a, b):
+    return mmul(a, minv(b))
+
+# def rec(i, sum):
+#     ...
+
+def solve():
+    n = int(next(tok))
+    sum_ = n * (n + 1) // 2
+    if sum_ % 2 != 0:
+        print(0)
+        return
+    ts = sum_ // 2
+    dp = [[0] * (ts + 1) for _ in range(n + 1)]
+    for i in range(n + 1):
+        for sum_ in range(ts + 1):          # C++ shadows the outer sum; Python just reuses the name
+            if sum_ == 0: dp[i][sum_] = 1
+            elif i == 0: dp[i][sum_] = 0
+            else:
+                take, nottake = 0, 0
+                if sum_ - i &gt;= 0: take = dp[i - 1][sum_ - i]
+                nottake = dp[i - 1][sum_]
+                dp[i][sum_] = madd(take, nottake)
+    ans = mdiv(dp[n][ts], 2)
+    print(ans)
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>dp[n][ts] / 2</code> with integer division is wrong once the count is reduced mod p. Either use the inverse (as here) or count \(\text{dp}[n-1][\text{ts}]\) &mdash; pinning <code>n</code> to the other side halves it exactly.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"split into two equal halves, count ways" &rarr; subset-sum count to T/2, then halve for symmetry.</div>
+    </article>
+  </section>
+
+  <section class="family" id="f3">
+    <div class="family-head"><h2>3 &middot; Neighbour-constrained fill</h2></div>
+    <p class="family-note">Count fillings of a line or grid where each cell only depends on an adjacent cell. The state is the position plus whatever the neighbour pins down.</p>
+    <article class="entry" id="grid-paths-i">
+      <div class="entry-head"><h3>Grid Paths I</h3><span class="badge num">\(O(n^{2})\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an \(n \times n\) grid in which some squares are traps. Count the
+paths from the top-left square to the bottom-right square that move only right or down and never
+step on a trap. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines of \(n\) characters: <code>.</code> empty, <code>*</code> trap.</dd>
+<dt>Output</dt><dd>The number of paths \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(4 \times 4\) grid in the file → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(dp[i][j]\) be the number of paths from cell \((i, j)\) to the bottom-right cell.</span></li>
+<li><span class="why">A path from \((i, j)\) starts by going down or right. These are different paths, so the counts add. A trap has no paths:</span>
+\[ dp[i][j] = \begin{cases} 0 &amp; \text{if } (i, j) \text{ is a trap} \\ dp[i+1][j] + dp[i][j+1] &amp; \text{otherwise} \end{cases} \]</li>
+<li><span class="why">Base case: \(dp[n-1][n-1] = 1\) if it is not a trap. Cells outside the grid count as \(0\).</span></li>
+<li><span class="why">Simplest form: fill rows bottom to top and columns right to left, so both neighbours are ready. Answer \(dp[0][0]\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>A path from \((i, j)\) starts with either down or right. The two cases do not overlap, so the counts add.</li>
+<li>A trap has \(0\) paths. That one rule also covers a trapped start or end cell.</li>
+<li>Filling bottom-up, right to left, makes sure both neighbours are already computed.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">DFS over every right/down path.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O\big(\binom{2n}{n}\big)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 1000\): \(\binom{2000}{1000} \approx 10^{600}\) paths.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One count per cell: <span class="cost">\(O(n^2) = 10^6\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 260 190" role="img" aria-label="Grid paths sample dp table"><rect class="s-good" x="40" y="20" width="40" height="34" rx="4"/><text class="s-t" x="60" y="41" text-anchor="middle">3</text><rect class="s-box" x="84" y="20" width="40" height="34" rx="4"/><text class="s-t" x="104" y="41" text-anchor="middle">1</text><rect class="s-box" x="128" y="20" width="40" height="34" rx="4"/><text class="s-t" x="148" y="41" text-anchor="middle">1</text><rect class="s-box" x="172" y="20" width="40" height="34" rx="4"/><text class="s-t" x="192" y="41" text-anchor="middle">0</text><rect class="s-box" x="40" y="58" width="40" height="34" rx="4"/><text class="s-t" x="60" y="79" text-anchor="middle">2</text><rect class="s-warn" x="84" y="58" width="40" height="34" rx="4"/><text class="s-t" x="104" y="79" text-anchor="middle">*</text><rect class="s-box" x="128" y="58" width="40" height="34" rx="4"/><text class="s-t" x="148" y="79" text-anchor="middle">1</text><rect class="s-box" x="172" y="58" width="40" height="34" rx="4"/><text class="s-t" x="192" y="79" text-anchor="middle">0</text><rect class="s-box" x="40" y="96" width="40" height="34" rx="4"/><text class="s-t" x="60" y="117" text-anchor="middle">2</text><rect class="s-box" x="84" y="96" width="40" height="34" rx="4"/><text class="s-t" x="104" y="117" text-anchor="middle">2</text><rect class="s-box" x="128" y="96" width="40" height="34" rx="4"/><text class="s-t" x="148" y="117" text-anchor="middle">1</text><rect class="s-warn" x="172" y="96" width="40" height="34" rx="4"/><text class="s-t" x="192" y="117" text-anchor="middle">*</text><rect class="s-warn" x="40" y="134" width="40" height="34" rx="4"/><text class="s-t" x="60" y="155" text-anchor="middle">*</text><rect class="s-box" x="84" y="134" width="40" height="34" rx="4"/><text class="s-t" x="104" y="155" text-anchor="middle">1</text><rect class="s-box" x="128" y="134" width="40" height="34" rx="4"/><text class="s-t" x="148" y="155" text-anchor="middle">1</text><rect class="s-box" x="172" y="134" width="40" height="34" rx="4"/><text class="s-t" x="192" y="155" text-anchor="middle">1</text></svg>
+          <figcaption>Number in each cell = paths from there to the corner; top-left reads 2 (down) + 1 (right) = 3.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The <code>'*'</code> test comes before the destination test, so a trapped destination correctly yields 0 everywhere. <code>down</code>/<code>right</code> default to 0 at the borders.</p>
+        <div class="src-meta"><span class="path">dp/Grid_Paths_I.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Grid Paths I
+// Link: https://cses.fi/problemset/task/1638
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1)
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll madd(ll a , ll b)
+{
+    return (a + b) % MOD ;
+}
+void solve()
+{
+    ll n ;
+    cin &gt;&gt; n ;
+    vector&lt;string&gt; res(n) ;
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        string x ;
+        cin &gt;&gt; x ;
+        res[i] = x ;
+    }
+    vector&lt;vector&lt;ll&gt;&gt; dp(n , vector&lt;ll&gt;(n ,  0)) ;
+    for(ll i = n-1 ; i &gt;= 0 ; i--)
+    {
+        for(ll j = n-1 ; j &gt;= 0 ; j--)
+        {
+            if ( res[i][j] == '*' ) dp[i][j] = 0 ;
+            else if ( i == n-1 &amp;&amp; j == n-1 ) dp[i][j] = 1 ;
+            else
+            {
+                ll down = 0 , right = 0 ;
+                if ( i+1 &lt; n ) down = dp[i+1][j] ;
+                if ( j+1 &lt; n ) right = dp[i][j + 1] ;
+                dp[i][j] = madd(down , right) ;
+            }
+        }
+    }
+    cout &lt;&lt; dp[0][0] &lt;&lt; endl ;
+}
+signed main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    solve() ;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a + b) % MOD
+
+def solve():
+    n = int(next(tok))
+    res = [''] * n
+    for i in range(n):
+        x = next(tok)
+        res[i] = x
+    dp = [[0] * n for _ in range(n)]
+    for i in range(n - 1, -1, -1):
+        for j in range(n - 1, -1, -1):
+            if res[i][j] == '*': dp[i][j] = 0
+            elif i == n - 1 and j == n - 1: dp[i][j] = 1
+            else:
+                down, right = 0, 0
+                if i + 1 &lt; n: down = dp[i + 1][j]
+                if j + 1 &lt; n: right = dp[i][j + 1]
+                dp[i][j] = madd(down, right)
+    print(dp[0][0])
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Swap the first two branches and a trap on \((n-1, n-1)\) would still report 1.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"count monotone lattice paths with blocked cells" &rarr; <code>dp[cell] = dp[down] + dp[right]</code>, trap = 0.</div>
+    </article>
+    <article class="entry" id="array-description">
+      <div class="entry-head"><h3>Array Description</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> An array has \(n\) values, each between \(1\) and \(m\), and any two neighbouring
+values differ by at most \(1\). You are given the array with some values unknown (written as \(0\)).
+Count the arrays that match. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(x_1, \dots, x_n\) (\(0\) = unknown).</dd>
+<dt>Output</dt><dd>The number of matching arrays \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 100,\ \ 0 \le x_i \le m\)</dd>
+<dt>Sample</dt><dd>\(m = 5\), <code>2 0 2</code> → <code>3</code> (\([2,1,2], [2,2,2], [2,3,2]\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Value \(v\) is <em>allowed</em> at position \(i\) if \(1 \le v \le m\) and either \(x_i = 0\) or \(x_i = v\).</span></li>
+<li><span class="why">Let \(dp[i][p]\) be the number of ways to fill positions \(i, \dots, n-1\) when position \(i - 1\) holds \(p\). Only the previous value matters for the future:</span>
+\[ dp[i][p] = \sum_{\substack{v \text{ allowed at } i \\ |v - p| \le 1}} dp[i+1][v], \qquad dp[n][p] = 1 \]</li>
+<li><span class="why">Position \(0\) has no previous value, so:</span>
+\[ \text{ans} = \sum_{v \text{ allowed at } 0} dp[1][v] \]</li>
+<li><span class="why">Simplest form: each state tries at most \(3\) values \(p - 1, p, p + 1\), so about \(3 n m \approx 3\cdot 10^7\) steps with two rolling rows.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Position \(i\) needs only the previous value from the past, and there are \(m \le 100\) options for it.</li>
+<li>A known \(x_i\) gives one candidate, valid or not, so almost no work.</li>
+<li>An unknown \(x_i\) tries \(p - 1, p, p + 1\), kept inside \([1, m]\).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try every value for every unknown.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(m^k)\)</span> for \(k\) unknowns.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 100\): up to \(100^{100000}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">State = (position, previous value): <span class="cost">\(3 \cdot n \cdot m \approx 3\cdot 10^7\)</span>, two rolling rows.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 360 120" role="img" aria-label="Array description sample 2 0 2"><text class="s-td" x="8" y="14">m = 5, a = 2 0 2</text><rect class="s-box" x="20" y="26" width="40" height="30" rx="4"/><text class="s-t" x="40" y="45" text-anchor="middle">2</text><rect class="s-fill" x="64" y="26" width="40" height="30" rx="4"/><text class="s-t" x="84" y="45" text-anchor="middle">?</text><rect class="s-box" x="108" y="26" width="40" height="30" rx="4"/><text class="s-t" x="128" y="45" text-anchor="middle">2</text><rect class="s-good" x="160" y="26" width="32" height="30" rx="4"/><text class="s-t" x="176" y="45" text-anchor="middle">1</text><rect class="s-good" x="196" y="26" width="32" height="30" rx="4"/><text class="s-t" x="212" y="45" text-anchor="middle">2</text><rect class="s-good" x="232" y="26" width="32" height="30" rx="4"/><text class="s-t" x="248" y="45" text-anchor="middle">3</text><rect class="s-warn" x="268" y="26" width="32" height="30" rx="4"/><text class="s-t" x="284" y="45" text-anchor="middle">4</text><rect class="s-warn" x="304" y="26" width="32" height="30" rx="4"/><text class="s-t" x="320" y="45" text-anchor="middle">5</text><text class="s-td" x="160" y="76">candidates for ?</text><text class="s-td" x="8" y="108">|v−2| ≤ 1 on both sides → 3 fillings</text></svg>
+          <figcaption>The middle value must sit within 1 of both neighbours: 1, 2 or 3.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Rows are indexed by <code>i &amp; 1</code>, filled from <code>i = n</code> down. The final answer reads <code>dp[1][j]</code> when <code>a[0]</code> is free &mdash; that <code>1</code> is the parity slot holding row <code>i = 1</code>, not "value 1".</p>
+        <div class="src-meta"><span class="path">dp/Array_Description.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Array Description
+// Link: https://cses.fi/problemset/task/1746
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1)
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+
+ll madd(ll a , ll b)
+{
+    return (a + b) % MOD ;
+}
+ll mmul(ll a , ll b)
+{
+    return (a * b) % MOD ;
+}
+ll msub(ll a , ll b)
+{
+    return (a - b + MOD) % MOD ;
+}
+ll mpow(ll a , ll b)
+{
+    ll res = 1 ;
+    while (b &gt; 0)
+    {
+        if (b &amp; 1) res = mmul(res , a) ;
+        a = mmul(a , a) ;
+        b &gt;&gt;= 1 ;
+    }
+    return res ;
+}
+ll minv(ll a)
+{
+    return mpow(a , MOD - 2) ;
+}
+ll mdiv(ll a , ll b)
+{
+    return mmul(a , minv(b)) ;
+}
+ll mcorr(ll a)
+{
+    return (a % MOD + MOD) % MOD ;
+}
+
+void solve()
+{
+    ll n , m ;
+    cin &gt;&gt; n &gt;&gt; m ;
+    ll arr[n] ;
+    for(ll i = 0 ; i &lt; n ; i++) cin &gt;&gt; arr[i] ;
+    ll dp[2][m + 1] ;
+    for( ll i = n ; i &gt;= 0 ; i--)
+    {
+        for(ll prev = 1 ; prev &lt;= m ; prev++)
+        {
+            if ( i == n )
+            {
+                dp[(i &amp; 1)][prev] = 1 ;
+                continue ;
+            }
+            ll ans = 0 ;
+            if ( arr[i] != 0 )
+            {
+                if ( abs(arr[i] - prev) &lt;= 1 ) ans = dp[(i + 1) &amp; 1][arr[i]] ;
+                else ans = 0 ;
+            }
+            else
+            {
+                for(ll j = prev - 1 ; j &lt;= prev + 1 ; j++)
+                {
+                    if ( j &gt;= 1 &amp;&amp; j &lt;= m ) ans = madd(ans , dp[(i + 1) &amp; 1][j]) ;
+                }
+            }
+            dp[(i &amp; 1)][prev] = ans ;
+        }
+    }
+    if ( arr[0] != 0 )
+    {
+        cout &lt;&lt; dp[0][arr[0]] &lt;&lt; endl ;
+    }
+    else
+    {
+        ll ans = 0 ;
+        for(ll j = 1 ; j &lt;= m ; j++)
+        {
+            ans = madd(ans , dp[1][j]) ;
+        }
+        cout &lt;&lt; ans &lt;&lt; endl ;
+    }
+}
+signed main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    solve() ;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def madd(a, b):
+    return (a + b) % MOD
+
+def mmul(a, b):
+    return (a * b) % MOD
+
+def msub(a, b):
+    return (a - b + MOD) % MOD
+
+def mpow(a, b):
+    res = 1
+    while b &gt; 0:
+        if b &amp; 1: res = mmul(res, a)
+        a = mmul(a, a)
+        b &gt;&gt;= 1
+    return res
+
+def minv(a):
+    return mpow(a, MOD - 2)
+
+def mdiv(a, b):
+    return mmul(a, minv(b))
+
+def mcorr(a):
+    return (a % MOD + MOD) % MOD
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    arr = [int(next(tok)) for _ in range(n)]    # ll arr[n]
+    dp = [[0] * (m + 1) for _ in range(2)]      # ll dp[2][m + 1]
+    for i in range(n, -1, -1):
+        for prev in range(1, m + 1):
+            if i == n:
+                dp[i &amp; 1][prev] = 1
+                continue
+            ans = 0
+            if arr[i] != 0:
+                if abs(arr[i] - prev) &lt;= 1: ans = dp[(i + 1) &amp; 1][arr[i]]
+                else: ans = 0
+            else:
+                for j in range(prev - 1, prev + 2):     # j = prev-1 .. prev+1
+                    if j &gt;= 1 and j &lt;= m: ans = madd(ans, dp[(i + 1) &amp; 1][j])
+            dp[i &amp; 1][prev] = ans
+    if arr[0] != 0:
+        print(dp[0][arr[0]])
+    else:
+        ans = 0
+        for j in range(1, m + 1):
+            ans = madd(ans, dp[1][j])
+        print(ans)
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Position 0 has no real predecessor, so <code>dp[0][*]</code> is meaningless when <code>a[0] = 0</code>; the code sidesteps it by summing row 1 directly. When <code>a[0]</code> is fixed, <code>dp[0][a[0]]</code> works because a value is always within 1 of itself.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"fill unknowns, adjacent elements constrained, small value range" &rarr; <code>dp[i][previous value]</code>.</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+  <div class="excluded">
+    <h4>Excluded from this ledger</h4>
+    <ul>
+      <li><code>dp/Counting_Towers.cpp</code> &mdash; does not compile. <code>g++ -O2 -std=c++17 dp/Counting_Towers.cpp</code> &rarr; <code>fatal error: 'algodebug.h' file not found</code> (the header was removed from <code>templates/</code> in b26f0ca). With the old header restored from git, it still fails: <code>error: use of undeclared identifier 'madd'</code> at lines 97, 98, 102.</li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/dp_1_sums_knapsack.js"></script>
+</body>
+</html>

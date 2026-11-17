@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traversal &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<body data-base=".." data-slug="graphs_1_traversal">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; Graphs</div>
+  <h1>Traversal</h1>
+  <p class="dek">Plain BFS and DFS over explicit or implicit graphs. BFS when the question is distance in edges; DFS when it is structure (components, colours, cycles). Most of the work is in what is stored per vertex.</p>
+  <p class="stats"><b>9</b> problems &middot; <b>3</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Flood fill</a></div>
+  <div class="toc-fam"><a href="#f2">2 &middot; BFS + parent</a></div>
+  <div class="toc-fam"><a href="#f3">3 &middot; DFS colouring / cycles</a></div>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.</p></div>
+    <div class="rules">
+      <div class="rule"><span class="n">1</span>
+        <p>Question asks for a count of regions or pieces &rarr; count flood-fill launches: Counting Rooms, Building Roads.</p></div>
+      <div class="rule"><span class="n">2</span>
+        <p>Unweighted "fewest steps" &rarr; BFS; "print the route" &rarr; parent array + reverse: Message Route, Labyrinth, Monsters.</p></div>
+      <div class="rule"><span class="n">3</span>
+        <p>Several simultaneous starts &rarr; one BFS seeded with all of them: Monsters (all <code>M</code>); Frog Minimum Jumps replaces the queue entirely because layers are intervals.</p></div>
+      <div class="rule"><span class="n">4</span>
+        <p>Undirected cycle &rarr; skip the parent; directed cycle &rarr; gray/black states, and do <em>not</em> skip the parent: Round Trip vs Round Trip II.</p></div>
+      <div class="rule"><span class="n">5</span>
+        <p>Constraint between endpoints of every edge &rarr; propagate a label along DFS and fail on contradiction: Building Teams (colours), Round Trip (open/closed).</p></div>
+    </div>
+  </section>
+
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Flood fill</h2></div>
+    <p class="family-note">Label connected components; the answer is a count or a function of the count.</p>
+    <article class="entry" id="counting-rooms">
+      <div class="entry-head"><h3>Counting Rooms</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given a map of a building, \(n \times m\) squares, where each square is
+floor (<code>.</code>) or wall (<code>#</code>). You can walk left, right, up and down through floor
+squares. A room is a group of floor squares you can walk between. How many rooms are there?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(n\) lines of \(m\) characters.</dd>
+<dt>Output</dt><dd>One integer: the number of rooms.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(5 \times 8\) map in the file → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Make a graph: each floor square is a vertex, and two floor squares sharing a side are joined by an edge.</span></li>
+<li><span class="why">A room is exactly a connected component of this graph:</span>
+\[ \text{ans} = \#\{\text{connected components of the floor graph}\} \]</li>
+<li><span class="why">Simplest form: scan all squares. Each time you meet an unvisited floor square, add \(1\) and flood-fill (DFS/BFS) its whole room. Every square is visited once, so \(O(nm)\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>A room is a connected component of the grid graph.</li>
+<li>Each DFS started from an unvisited floor square marks exactly one whole room.</li>
+<li>Every square is visited once, so the work is linear in the grid size.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For every pair of floor squares, test whether they are connected.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O((nm)^2)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 1000\) gives \(10^6\) squares and \(10^{12}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One flood fill per room, marking as you go: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 220 130" role="img" aria-label="Counting rooms sample"><rect class="s-fill" x="20" y="10" width="18" height="18" rx="4"/><text class="s-t" x="29" y="23" text-anchor="middle">#</text><rect class="s-fill" x="42" y="10" width="18" height="18" rx="4"/><text class="s-t" x="51" y="23" text-anchor="middle">#</text><rect class="s-fill" x="64" y="10" width="18" height="18" rx="4"/><text class="s-t" x="73" y="23" text-anchor="middle">#</text><rect class="s-fill" x="86" y="10" width="18" height="18" rx="4"/><text class="s-t" x="95" y="23" text-anchor="middle">#</text><rect class="s-fill" x="108" y="10" width="18" height="18" rx="4"/><text class="s-t" x="117" y="23" text-anchor="middle">#</text><rect class="s-fill" x="130" y="10" width="18" height="18" rx="4"/><text class="s-t" x="139" y="23" text-anchor="middle">#</text><rect class="s-fill" x="152" y="10" width="18" height="18" rx="4"/><text class="s-t" x="161" y="23" text-anchor="middle">#</text><rect class="s-fill" x="174" y="10" width="18" height="18" rx="4"/><text class="s-t" x="183" y="23" text-anchor="middle">#</text><rect class="s-fill" x="20" y="32" width="18" height="18" rx="4"/><text class="s-t" x="29" y="45" text-anchor="middle">#</text><rect class="s-good" x="42" y="32" width="18" height="18" rx="4"/><text class="s-t" x="51" y="45" text-anchor="middle"></text><rect class="s-good" x="64" y="32" width="18" height="18" rx="4"/><text class="s-t" x="73" y="45" text-anchor="middle"></text><rect class="s-fill" x="86" y="32" width="18" height="18" rx="4"/><text class="s-t" x="95" y="45" text-anchor="middle">#</text><rect class="s-hi" x="108" y="32" width="18" height="18" rx="4"/><text class="s-t" x="117" y="45" text-anchor="middle"></text><rect class="s-hi" x="130" y="32" width="18" height="18" rx="4"/><text class="s-t" x="139" y="45" text-anchor="middle"></text><rect class="s-hi" x="152" y="32" width="18" height="18" rx="4"/><text class="s-t" x="161" y="45" text-anchor="middle"></text><rect class="s-fill" x="174" y="32" width="18" height="18" rx="4"/><text class="s-t" x="183" y="45" text-anchor="middle">#</text><rect class="s-fill" x="20" y="54" width="18" height="18" rx="4"/><text class="s-t" x="29" y="67" text-anchor="middle">#</text><rect class="s-fill" x="42" y="54" width="18" height="18" rx="4"/><text class="s-t" x="51" y="67" text-anchor="middle">#</text><rect class="s-fill" x="64" y="54" width="18" height="18" rx="4"/><text class="s-t" x="73" y="67" text-anchor="middle">#</text><rect class="s-fill" x="86" y="54" width="18" height="18" rx="4"/><text class="s-t" x="95" y="67" text-anchor="middle">#</text><rect class="s-hi" x="108" y="54" width="18" height="18" rx="4"/><text class="s-t" x="117" y="67" text-anchor="middle"></text><rect class="s-fill" x="130" y="54" width="18" height="18" rx="4"/><text class="s-t" x="139" y="67" text-anchor="middle">#</text><rect class="s-hi" x="152" y="54" width="18" height="18" rx="4"/><text class="s-t" x="161" y="67" text-anchor="middle"></text><rect class="s-fill" x="174" y="54" width="18" height="18" rx="4"/><text class="s-t" x="183" y="67" text-anchor="middle">#</text><rect class="s-fill" x="20" y="76" width="18" height="18" rx="4"/><text class="s-t" x="29" y="89" text-anchor="middle">#</text><rect class="s-warn" x="42" y="76" width="18" height="18" rx="4"/><text class="s-t" x="51" y="89" text-anchor="middle"></text><rect class="s-warn" x="64" y="76" width="18" height="18" rx="4"/><text class="s-t" x="73" y="89" text-anchor="middle"></text><rect class="s-fill" x="86" y="76" width="18" height="18" rx="4"/><text class="s-t" x="95" y="89" text-anchor="middle">#</text><rect class="s-hi" x="108" y="76" width="18" height="18" rx="4"/><text class="s-t" x="117" y="89" text-anchor="middle"></text><rect class="s-hi" x="130" y="76" width="18" height="18" rx="4"/><text class="s-t" x="139" y="89" text-anchor="middle"></text><rect class="s-hi" x="152" y="76" width="18" height="18" rx="4"/><text class="s-t" x="161" y="89" text-anchor="middle"></text><rect class="s-fill" x="174" y="76" width="18" height="18" rx="4"/><text class="s-t" x="183" y="89" text-anchor="middle">#</text><rect class="s-fill" x="20" y="98" width="18" height="18" rx="4"/><text class="s-t" x="29" y="111" text-anchor="middle">#</text><rect class="s-fill" x="42" y="98" width="18" height="18" rx="4"/><text class="s-t" x="51" y="111" text-anchor="middle">#</text><rect class="s-fill" x="64" y="98" width="18" height="18" rx="4"/><text class="s-t" x="73" y="111" text-anchor="middle">#</text><rect class="s-fill" x="86" y="98" width="18" height="18" rx="4"/><text class="s-t" x="95" y="111" text-anchor="middle">#</text><rect class="s-fill" x="108" y="98" width="18" height="18" rx="4"/><text class="s-t" x="117" y="111" text-anchor="middle">#</text><rect class="s-fill" x="130" y="98" width="18" height="18" rx="4"/><text class="s-t" x="139" y="111" text-anchor="middle">#</text><rect class="s-fill" x="152" y="98" width="18" height="18" rx="4"/><text class="s-t" x="161" y="111" text-anchor="middle">#</text><rect class="s-fill" x="174" y="98" width="18" height="18" rx="4"/><text class="s-t" x="183" y="111" text-anchor="middle">#</text></svg>
+          <figcaption>Sample: three rooms (two highlighted shades plus the ring on the right).</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>vis[x][y]</code> stores the room id <code>c</code>, and the answer is read back as the maximum id &mdash; equivalent to just printing <code>c</code>. Neighbours are pruned on bounds, visited and wall before recursing.</p>
+        <div class="src-meta"><span class="path">graphs/Counting_Rooms.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll dx[] = {0, 0, 1, -1};
+ll dy[] = {1, -1, 0, 0};
+vector&lt;vector&lt;ll&gt;&gt; vis;
+vector&lt;string&gt; v;
+ll c = 0 ; 
+void dfs(ll x, ll y, ll n, ll m)
+{
+    vis[x][y] = c;
+    for(ll i = 0 ; i &lt; 4 ; i++)
+    {
+        ll nx = x + dx[i];
+        ll ny = y + dy[i];
+        if(nx &gt;= 0 &amp;&amp; nx &lt; n &amp;&amp; ny &gt;= 0 &amp;&amp; ny &lt; m &amp;&amp; !vis[nx][ny] &amp;&amp; v[nx][ny] == '.')
+        {
+            dfs(nx, ny, n, m);
+        }
+    }
+}
+void solve() 
+{
+    ll n ,m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vis.resize(n, vector&lt;ll&gt;(m, 0));
+    v.resize(n);
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        cin &gt;&gt; v[i];
+    }
+
+    for (ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = 0 ; j &lt; m ; j++)
+        {
+            if(!vis[i][j] &amp;&amp; v[i][j] == '.')
+            {
+                c++;
+                dfs(i, j, n, m);
+            }
+        }
+    }
+    ll maxi = 0 ;
+    for (ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = 0 ; j &lt; m ; j++)
+        {
+            maxi = max(maxi, vis[i][j]);
+        }
+    }
+    cout &lt;&lt; maxi &lt;&lt; endl;
+
+
+
+   
+
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**7)                # recursive dfs over up to n*m cells
+tok = iter(sys.stdin.read().split())
+
+dx = [0, 0, 1, -1]
+dy = [1, -1, 0, 0]
+vis = []
+v = []
+c = 0
+
+def dfs(x, y, n, m):
+    vis[x][y] = c
+    for i in range(4):
+        nx = x + dx[i]
+        ny = y + dy[i]
+        if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and not vis[nx][ny] and v[nx][ny] == '.':
+            dfs(nx, ny, n, m)
+
+def solve():
+    global vis, v, c
+    n, m = int(next(tok)), int(next(tok))
+    vis = [[0] * m for _ in range(n)]       # vis.resize(n, vector&lt;ll&gt;(m, 0))
+    v = [next(tok) for _ in range(n)]
+    for i in range(n):
+        for j in range(m):
+            if not vis[i][j] and v[i][j] == '.':
+                c += 1
+                dfs(i, j, n, m)
+    maxi = 0
+    for i in range(n):
+        for j in range(m):
+            maxi = max(maxi, vis[i][j])
+    print(maxi)
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Recursive DFS on a 1000 × 1000 open floor goes \(\approx 10^{6}\) frames deep. It passes CSES's stack, but a BFS queue is the safe default elsewhere.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"count regions / islands / rooms in a grid" &rarr; flood fill, count launches.</div>
+    </article>
+    <article class="entry" id="building-roads">
+      <div class="entry-head"><h3>Building Roads</h3><span class="badge num">\(O(n+m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) two-way roads. Build the fewest new roads so that
+every city can reach every other city, and print which roads to build.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of new roads \(k\), then \(k\) lines \(a\ b\). Any valid answer is accepted.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 4\), roads \((1,2), (3,4)\) → <code>1</code>, road <code>2 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(c\) be the number of connected components. A new road joins at most two components, so it lowers \(c\) by at most \(1\). Getting to \(c = 1\) needs:</span>
+\[ k \ge c - 1 \]</li>
+<li><span class="why">\(c - 1\) roads are enough: pick one city \(r_1, \dots, r_c\) from each component and join neighbours in that list:</span>
+\[ (r_1, r_2),\ (r_2, r_3),\ \dots,\ (r_{c-1}, r_c) \]</li>
+<li><span class="why">Simplest form: \(k = c - 1\). Find components with one DFS pass, keep the first city of each.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Each new road merges at most two components, so at least \(c - 1\) roads are needed.</li>
+<li>\(c - 1\) are enough: chain one city from each component to the next.</li>
+<li>Any city of a component works as its representative.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Keep adding roads between pairs and re-checking connectivity.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n^2)\)</span> candidate pairs.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\) gives \(10^{10}\) pairs.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Label components once, chain the representatives: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 300 90" role="img" aria-label="Building roads sample"><path class="s-edge" d="M54 30 L96 30"/><path class="s-edge" d="M204 30 L246 30"/><path class="s-hi" d="M54 30 L176 30"/><circle class="s-box" cx="40" cy="30" r="14"/><text class="s-t" x="40" y="34" text-anchor="middle">1</text><circle class="s-box" cx="110" cy="30" r="14"/><text class="s-t" x="110" y="34" text-anchor="middle">2</text><circle class="s-box" cx="190" cy="30" r="14"/><text class="s-t" x="190" y="34" text-anchor="middle">3</text><circle class="s-box" cx="260" cy="30" r="14"/><text class="s-t" x="260" y="34" text-anchor="middle">4</text><text class="s-ta" x="150" y="78" text-anchor="middle">add 1–3</text></svg>
+          <figcaption>Two components; one road joining any vertex of each is enough.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">DFS labels every vertex with component id <code>col</code>. <code>comp[c][0]</code> is the smallest vertex of component <code>c</code>, and consecutive components are linked.</p>
+        <div class="src-meta"><span class="path">graphs/Building_Roads.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+vector&lt;vector&lt;ll&gt;&gt; g ; 
+vector&lt;ll&gt; vis ;
+ll n , m ;
+ll col = 0 ; 
+void dfs(ll node)
+{
+    vis[node] = col ;
+    for(auto child : g[node])
+    {
+        if(!vis[child] )
+        {
+            dfs(child) ;
+        }
+    }
+}
+void solve() 
+{
+    cin &gt;&gt; n &gt;&gt; m ;
+    g.resize(n + 1) ;
+    vis.resize(n + 1, 0) ;
+    for(ll i = 0 ; i &lt; m ; i++)
+    {
+        ll x , y ;
+        cin &gt;&gt; x &gt;&gt; y ;
+        g[x].push_back(y) ;
+        g[y].push_back(x) ;
+    } 
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        if(vis[i] == 0)
+        {
+            col++ ; 
+            dfs(i) ;
+        }
+    }
+    cout &lt;&lt; col - 1 &lt;&lt; endl ;
+    vector &lt; vector &lt; ll &gt; &gt; comp(col+1) ; 
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        comp[vis[i]].push_back(i) ;
+    }
+    for(ll i = 1 ; i &lt; col ; i++)
+    {
+        cout &lt;&lt; comp[i][0] &lt;&lt; " " &lt;&lt; comp[i+1][0] &lt;&lt; endl ;
+    }
+
+
+
+
+
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+g = []
+vis = []
+n, m = 0, 0
+col = 0
+
+def dfs(node):
+    vis[node] = col
+    for child in g[node]:                   # for (auto child : g[node])
+        if not vis[child]:
+            dfs(child)
+
+def solve():
+    global n, m, g, vis, col
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]          # adjacency list: one empty list per node
+    vis = [0] * (n + 1)
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    for i in range(1, n + 1):
+        if vis[i] == 0:
+            col += 1
+            dfs(i)
+    out = [col - 1]
+    comp = [[] for _ in range(col + 1)]
+    for i in range(1, n + 1):
+        comp[vis[i]].append(i)
+    for i in range(1, col):
+        out.append(f"{comp[i][0]} {comp[i + 1][0]}")
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Output differs from the CSES sample (<code>1 3</code> vs <code>2 3</code>) and is still accepted &mdash; any representative works. Don't "fix" it to match.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"minimum edges to make connected" &rarr; count components, answer k &minus; 1.</div>
+    </article>
+  </section>
+
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; BFS + parent</h2></div>
+    <p class="family-note">Shortest path in edges, with a parent pointer per vertex to rebuild the route.</p>
+    <article class="entry" id="message-route">
+      <div class="entry-head"><h3>Message Route</h3><span class="badge num">\(O(n+m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A network has \(n\) computers and \(m\) two-way connections. Can computer \(1\)
+send a message to computer \(n\)? If yes, find a route that passes through the fewest computers, and
+print it. Otherwise print <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of computers \(k\) on the route, then the route; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(2 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>edges \((1,2)(1,3)(1,4)(2,3)(5,4)\) → <code>3</code>, route <code>1 4 5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Every connection has the same cost, so we want the fewest edges from \(1\) to \(n\). Let \(d(v)\) be that number for vertex \(v\).</span></li>
+<li><span class="why">BFS visits vertices in order of \(d\): first \(d = 0\), then all with \(d = 1\), and so on. When \(v\) is first reached from \(u\):</span>
+\[ d(v) = d(u) + 1, \qquad \text{par}(v) = u \]</li>
+<li><span class="why">Simplest form: \(k = d(n) + 1\) computers. The route is \(n,\ \text{par}(n),\ \text{par}(\text{par}(n)), \dots, 1\), printed in reverse.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>All edges cost the same, so BFS layers are distances.</li>
+<li>The first time a vertex is reached is along a shortest path. Record that parent.</li>
+<li>Walk <code>par</code> back from \(n\) and reverse.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">DFS over all simple paths, keep the shortest.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">BFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 300 130" role="img" aria-label="Message route sample"><path class="s-edge" d="M53 54 L107 26"/><path class="s-edge" d="M53 66 L107 94"/><path class="s-hi" d="M54 60 L176 60"/><path class="s-edge" d="M120 34 L120 86"/><path class="s-hi" d="M246 60 L204 60"/><circle class="s-good" cx="40" cy="60" r="14"/><text class="s-t" x="40" y="64" text-anchor="middle">1</text><circle class="s-box" cx="120" cy="20" r="14"/><text class="s-t" x="120" y="24" text-anchor="middle">2</text><circle class="s-box" cx="120" cy="100" r="14"/><text class="s-t" x="120" y="104" text-anchor="middle">3</text><circle class="s-box" cx="190" cy="60" r="14"/><text class="s-t" x="190" y="64" text-anchor="middle">4</text><circle class="s-good" cx="260" cy="60" r="14"/><text class="s-t" x="260" y="64" text-anchor="middle">5</text></svg>
+          <figcaption>1 &rarr; 4 &rarr; 5: three computers.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>vis</code> is set on push, not pop, so each vertex enters the queue once. <code>par[1] = -1</code> terminates the reconstruction loop.</p>
+        <div class="src-meta"><span class="path">graphs/Message_Route.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "IMPOSSIBLE" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+void solve() 
+{
+    ll n , m ;
+    cin &gt;&gt; n &gt;&gt; m ;
+    vector&lt;vector&lt;ll&gt;&gt; g(n + 1) ; 
+    for(ll i = 0 ; i &lt; m ; i++)
+    {
+        ll x , y ;
+        cin &gt;&gt; x &gt;&gt; y ;
+        g[x].push_back(y) ;
+        g[y].push_back(x) ;
+    }
+    vector&lt;ll&gt; vis(n + 1, 0) ; 
+    vector&lt;ll&gt; par(n + 1, -1) ; 
+    queue&lt;ll&gt; q ; 
+    q.push(1) ; 
+    vis[1] = 1 ;
+    while(!q.empty())
+    {
+        ll node = q.front() ; 
+        q.pop() ; 
+        
+        for(auto child : g[node])
+        {
+            if(!vis[child])
+            {
+                vis[child] = 1 ;
+                par[child] = node ; 
+                q.push(child) ; 
+
+            }
+        }
+    }
+    if(!vis[n])
+    {
+        pn ; 
+        return ;    
+    }
+    else 
+    {
+        vector&lt;ll&gt; ans ; 
+        ll node = n ; 
+        while(node != -1)
+        {
+            ans.push_back(node) ; 
+            node = par[node] ; 
+        }
+        reverse(ans.begin(), ans.end()) ; 
+        cout &lt;&lt; ans.size() &lt;&lt; endl ; 
+        for(auto x : ans)
+        {
+            cout &lt;&lt; x &lt;&lt; " " ; 
+        }
+        cout &lt;&lt; endl ;
+    }
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    vis = [0] * (n + 1)
+    par = [-1] * (n + 1)
+    q = deque()                             # queue&lt;ll&gt;: deque, push = append, front+pop = popleft()
+    q.append(1)
+    vis[1] = 1
+    while q:
+        node = q.popleft()                  # q.front(); q.pop();
+        for child in g[node]:
+            if not vis[child]:
+                vis[child] = 1
+                par[child] = node
+                q.append(child)
+    if not vis[n]:
+        print("IMPOSSIBLE")                 # this file redefines pn as IMPOSSIBLE
+        return
+    else:
+        ans = []
+        node = n
+        while node != -1:
+            ans.append(node)
+            node = par[node]
+        ans.reverse()                       # reverse(ans.begin(), ans.end())
+        print(len(ans))
+        print(' '.join(map(str, ans)))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Marking visited on pop lets a vertex be queued many times; the path is still shortest but the queue can blow up to O(m).</div>
+      <div class="callout trigger"><strong>Recognize</strong>"fewest hops / minimum stops, print the route" &rarr; BFS with parent array.</div>
+    </article>
+    <article class="entry" id="labyrinth">
+      <div class="entry-head"><h3>Labyrinth</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an \(n \times m\) labyrinth of floor (<code>.</code>) and wall
+(<code>#</code>) squares, with one start <code>A</code> and one end <code>B</code>. You can move left,
+right, up and down. Is there a path from <code>A</code> to <code>B</code>? If yes, print the length of
+a shortest one and its moves as letters <code>L R U D</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(n\) lines of \(m\) characters.</dd>
+<dt>Output</dt><dd><code>YES</code>, the length, and the move string; or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(5 \times 8\) map in the file → <code>YES</code>, <code>9</code>, <code>LDDRRRRRU</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Squares are vertices; neighbouring non-wall squares are joined. Every move costs \(1\), so BFS from <code>A</code> gives the shortest distance \(d(v)\) to every square.</span></li>
+<li><span class="why">When BFS first reaches square \(v\) from \(u\), store \(\text{par}(v) = u\). The move from \(u\) to \(v\) is fixed by the difference \(v - u\):</span>
+\[ (0, -1) \to \texttt{L}, \quad (0, +1) \to \texttt{R}, \quad (-1, 0) \to \texttt{U}, \quad (+1, 0) \to \texttt{D} \]</li>
+<li><span class="why">Simplest form: walk \(\text{par}\) from <code>B</code> back to <code>A</code>, collect the letters, and reverse. The length is \(d(\texttt{B})\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Grid BFS: squares are vertices and the 4 neighbours are edges.</li>
+<li>Store each square's parent. The move letter is the difference between the square and its parent.</li>
+<li>Rebuilding runs from <code>B</code> to <code>A</code>, so the string must be reversed.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">DFS over all paths.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">exponential</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 1000\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">BFS with parents: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 220 130" role="img" aria-label="Labyrinth sample"><rect class="s-fill" x="20" y="10" width="18" height="18" rx="4"/><text class="s-t" x="29" y="23" text-anchor="middle">#</text><rect class="s-fill" x="42" y="10" width="18" height="18" rx="4"/><text class="s-t" x="51" y="23" text-anchor="middle">#</text><rect class="s-fill" x="64" y="10" width="18" height="18" rx="4"/><text class="s-t" x="73" y="23" text-anchor="middle">#</text><rect class="s-fill" x="86" y="10" width="18" height="18" rx="4"/><text class="s-t" x="95" y="23" text-anchor="middle">#</text><rect class="s-fill" x="108" y="10" width="18" height="18" rx="4"/><text class="s-t" x="117" y="23" text-anchor="middle">#</text><rect class="s-fill" x="130" y="10" width="18" height="18" rx="4"/><text class="s-t" x="139" y="23" text-anchor="middle">#</text><rect class="s-fill" x="152" y="10" width="18" height="18" rx="4"/><text class="s-t" x="161" y="23" text-anchor="middle">#</text><rect class="s-fill" x="174" y="10" width="18" height="18" rx="4"/><text class="s-t" x="183" y="23" text-anchor="middle">#</text><rect class="s-fill" x="20" y="32" width="18" height="18" rx="4"/><text class="s-t" x="29" y="45" text-anchor="middle">#</text><rect class="s-good" x="42" y="32" width="18" height="18" rx="4"/><text class="s-t" x="51" y="45" text-anchor="middle"></text><rect class="s-box" x="64" y="32" width="18" height="18" rx="4"/><text class="s-t" x="73" y="45" text-anchor="middle">A</text><rect class="s-fill" x="86" y="32" width="18" height="18" rx="4"/><text class="s-t" x="95" y="45" text-anchor="middle">#</text><rect class="s-box" x="108" y="32" width="18" height="18" rx="4"/><text class="s-t" x="117" y="45" text-anchor="middle"></text><rect class="s-box" x="130" y="32" width="18" height="18" rx="4"/><text class="s-t" x="139" y="45" text-anchor="middle"></text><rect class="s-box" x="152" y="32" width="18" height="18" rx="4"/><text class="s-t" x="161" y="45" text-anchor="middle"></text><rect class="s-fill" x="174" y="32" width="18" height="18" rx="4"/><text class="s-t" x="183" y="45" text-anchor="middle">#</text><rect class="s-fill" x="20" y="54" width="18" height="18" rx="4"/><text class="s-t" x="29" y="67" text-anchor="middle">#</text><rect class="s-good" x="42" y="54" width="18" height="18" rx="4"/><text class="s-t" x="51" y="67" text-anchor="middle"></text><rect class="s-fill" x="64" y="54" width="18" height="18" rx="4"/><text class="s-t" x="73" y="67" text-anchor="middle">#</text><rect class="s-fill" x="86" y="54" width="18" height="18" rx="4"/><text class="s-t" x="95" y="67" text-anchor="middle">#</text><rect class="s-box" x="108" y="54" width="18" height="18" rx="4"/><text class="s-t" x="117" y="67" text-anchor="middle"></text><rect class="s-fill" x="130" y="54" width="18" height="18" rx="4"/><text class="s-t" x="139" y="67" text-anchor="middle">#</text><rect class="s-good" x="152" y="54" width="18" height="18" rx="4"/><text class="s-t" x="161" y="67" text-anchor="middle">B</text><rect class="s-fill" x="174" y="54" width="18" height="18" rx="4"/><text class="s-t" x="183" y="67" text-anchor="middle">#</text><rect class="s-fill" x="20" y="76" width="18" height="18" rx="4"/><text class="s-t" x="29" y="89" text-anchor="middle">#</text><rect class="s-good" x="42" y="76" width="18" height="18" rx="4"/><text class="s-t" x="51" y="89" text-anchor="middle"></text><rect class="s-good" x="64" y="76" width="18" height="18" rx="4"/><text class="s-t" x="73" y="89" text-anchor="middle"></text><rect class="s-good" x="86" y="76" width="18" height="18" rx="4"/><text class="s-t" x="95" y="89" text-anchor="middle"></text><rect class="s-good" x="108" y="76" width="18" height="18" rx="4"/><text class="s-t" x="117" y="89" text-anchor="middle"></text><rect class="s-good" x="130" y="76" width="18" height="18" rx="4"/><text class="s-t" x="139" y="89" text-anchor="middle"></text><rect class="s-good" x="152" y="76" width="18" height="18" rx="4"/><text class="s-t" x="161" y="89" text-anchor="middle"></text><rect class="s-fill" x="174" y="76" width="18" height="18" rx="4"/><text class="s-t" x="183" y="89" text-anchor="middle">#</text><rect class="s-fill" x="20" y="98" width="18" height="18" rx="4"/><text class="s-t" x="29" y="111" text-anchor="middle">#</text><rect class="s-fill" x="42" y="98" width="18" height="18" rx="4"/><text class="s-t" x="51" y="111" text-anchor="middle">#</text><rect class="s-fill" x="64" y="98" width="18" height="18" rx="4"/><text class="s-t" x="73" y="111" text-anchor="middle">#</text><rect class="s-fill" x="86" y="98" width="18" height="18" rx="4"/><text class="s-t" x="95" y="111" text-anchor="middle">#</text><rect class="s-fill" x="108" y="98" width="18" height="18" rx="4"/><text class="s-t" x="117" y="111" text-anchor="middle">#</text><rect class="s-fill" x="130" y="98" width="18" height="18" rx="4"/><text class="s-t" x="139" y="111" text-anchor="middle">#</text><rect class="s-fill" x="152" y="98" width="18" height="18" rx="4"/><text class="s-t" x="161" y="111" text-anchor="middle">#</text><rect class="s-fill" x="174" y="98" width="18" height="18" rx="4"/><text class="s-t" x="183" y="111" text-anchor="middle">#</text></svg>
+          <figcaption>Sample path LDDRRRRRU, length 9.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>dist = -INF</code> doubles as the unvisited marker. The letter is chosen by comparing parent to child: parent left of the cell &rArr; the move was <code>R</code>.</p>
+        <div class="src-meta"><span class="path">graphs/Labyrinth.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll dx[] = {0, 0, 1, -1};
+ll dy[] = {1, -1, 0, 0};
+void solve() 
+{
+    ll n , m ;
+    cin &gt;&gt; n &gt;&gt; m ; 
+    vector&lt;vector&lt;ll&gt;&gt; dist(n, vector&lt;ll&gt;(m, -INF));
+    vector&lt;vector&lt;pll&gt;&gt; par(n, vector&lt;pll&gt;(m, mp(-1, -1)));
+    vector&lt;string&gt; a(n);
+
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        cin &gt;&gt; a[i];
+    }
+    for (ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = 0 ; j &lt; m ; j++)
+        {
+            if(a[i][j] == 'A')
+            {
+                queue&lt;pll&gt; q ;
+                q.push(mp(i, j));
+                dist[i][j] =  0; 
+                par[i][j] = mp(-1, -1) ;
+                while(!q.empty())
+                {
+                    pll p = q.front() ;
+                    q.pop() ;
+                    ll x = p.fr ;
+                    ll y = p.sc ;
+                    for(ll k = 0 ; k &lt; 4 ; k++)
+                    {
+                        ll nx = x + dx[k];
+                        ll ny = y + dy[k];
+                        if(nx &gt;= 0 &amp;&amp; nx &lt; n &amp;&amp; ny &gt;= 0 &amp;&amp; ny &lt; m &amp;&amp; dist[nx][ny] == -INF &amp;&amp; a[nx][ny] != '#')
+                        {
+                            dist[nx][ny] = dist[x][y] + 1;
+                            par[nx][ny] = mp(x, y) ; 
+                            q.push(mp(nx, ny));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = 0 ; j &lt; m ; j++)
+        {
+            if(a[i][j] == 'B')
+            {
+                if(dist[i][j] == -INF)
+                {
+                    pn ; 
+                    return ;
+                }
+                else
+                {
+                    py ; 
+                    cout &lt;&lt; dist[i][j] &lt;&lt; endl ;
+                    ll cx = i ;
+                    ll cy = j ;
+                    string ans = "" ;
+
+                    while (a[cx][cy] != 'A')
+                    {
+                        ll parx = par[cx][cy].fr ;
+                        ll pary = par[cx][cy].sc ;
+                        if(parx == cx)
+                        {
+                            if(pary &lt; cy)
+                            {
+                                ans += 'R' ; 
+                            }
+                            else
+                            {
+                                ans += 'L' ; 
+                            }
+                        }
+                        else
+                        {
+                            if(parx &lt; cx)
+                            {
+                                ans += 'D' ; 
+                            }
+                            else
+                            {
+                                ans += 'U' ; 
+                            }
+                        }
+                        cx = parx ;
+                        cy = pary ;
+                    }
+
+                    reverse(ans.begin(), ans.end()) ;
+                    cout &lt;&lt; ans &lt;&lt; endl ;
+                }
+            }
+        }
+    }
+
+    
+
+
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+dx = [0, 0, 1, -1]
+dy = [1, -1, 0, 0]
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    dist = [[-INF] * m for _ in range(n)]
+    par = [[(-1, -1)] * m for _ in range(n)]
+    a = [next(tok) for _ in range(n)]
+    for i in range(n):
+        for j in range(m):
+            if a[i][j] == 'A':
+                q = deque()
+                q.append((i, j))
+                dist[i][j] = 0
+                par[i][j] = (-1, -1)
+                while q:
+                    x, y = q.popleft()      # p = front; x = p.fr; y = p.sc
+                    for k in range(4):
+                        nx = x + dx[k]
+                        ny = y + dy[k]
+                        if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and dist[nx][ny] == -INF and a[nx][ny] != '#':
+                            dist[nx][ny] = dist[x][y] + 1
+                            par[nx][ny] = (x, y)
+                            q.append((nx, ny))
+    for i in range(n):
+        for j in range(m):
+            if a[i][j] == 'B':
+                if dist[i][j] == -INF:
+                    print("NO")
+                    return
+                else:
+                    print("YES")
+                    print(dist[i][j])
+                    cx = i
+                    cy = j
+                    ans = []                # build a list of chars, join at the end (string += in a loop is slow)
+                    while a[cx][cy] != 'A':
+                        parx, pary = par[cx][cy]
+                        if parx == cx:
+                            if pary &lt; cy:
+                                ans.append('R')
+                            else:
+                                ans.append('L')
+                        else:
+                            if parx &lt; cx:
+                                ans.append('D')
+                            else:
+                                ans.append('U')
+                        cx = parx
+                        cy = pary
+                    ans.reverse()
+                    print(''.join(ans))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The direction is from parent to child. Reading it child-to-parent flips every letter (L↔R, U↔D).</div>
+      <div class="callout trigger"><strong>Recognize</strong>"shortest path in a maze, print the moves" &rarr; grid BFS with parent cells.</div>
+    </article>
+    <article class="entry" id="monsters">
+      <div class="entry-head"><h3>Monsters</h3><span class="badge num">\(O(n\cdot m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You (<code>A</code>) and some monsters (<code>M</code>) are in an \(n \times m\)
+labyrinth. Each time you take a step, every monster may also take a step. You win by reaching any
+square on the border without ever sharing a square with a monster. The plan must work even if the
+monsters know your path in advance. Is it possible? If yes, print a path.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then the map: <code>.</code> floor, <code>#</code> wall, <code>A</code> you, <code>M</code> monster.</dd>
+<dt>Output</dt><dd><code>YES</code>, the path length, and the moves (<code>L R U D</code>); or <code>NO</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 1000\)</dd>
+<dt>Sample</dt><dd>the \(5 \times 8\) map in the file → <code>YES</code>, <code>5</code>, <code>RRDDR</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(d_M(v)\) be the fewest steps for the nearest monster to reach square \(v\), and \(d_A(v)\) the same for you. A monster that knows your path just walks to the square first. So you are safe on \(v\) only if:</span>
+\[ d_A(v) \lt d_M(v) \]</li>
+<li><span class="why">\(d_M\) for all monsters at once is one BFS that starts with every monster in the queue (a multi-source BFS).</span></li>
+<li><span class="why">If a border square \(b\) is safe, so is every square \(u\) on your shortest path to it. If \(u\) is \(k\) steps before \(b\), a monster reaching \(u\) could then reach \(b\) in \(k\) more steps, so \(d_M(b) \le d_M(u) + k\):</span>
+\[ d_M(u) \ge d_M(b) - k \gt d_A(b) - k = d_A(u) \]</li>
+<li><span class="why">Simplest form: run both BFS, find any border square with \(d_A \lt d_M\), and print your BFS path to it.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Monsters move optimally towards you, so a square is safe iff you arrive strictly before the nearest monster could: \(d_A(v) \lt d_M(v)\).</li>
+<li>All monsters at once is one multi-source BFS.</li>
+<li>If the final border square is safe, every earlier square on your shortest path is safe too (see step 3 of the breakdown).</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Simulate every step of every monster.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O((nm)^2)\)</span> or worse.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 1000\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Two BFS (monsters from all sources, you from one), then scan the border: <span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 220 130" role="img" aria-label="Monsters sample"><rect class="s-fill" x="20" y="10" width="18" height="18" rx="4"/><text class="s-t" x="29" y="23" text-anchor="middle">#</text><rect class="s-fill" x="42" y="10" width="18" height="18" rx="4"/><text class="s-t" x="51" y="23" text-anchor="middle">#</text><rect class="s-fill" x="64" y="10" width="18" height="18" rx="4"/><text class="s-t" x="73" y="23" text-anchor="middle">#</text><rect class="s-fill" x="86" y="10" width="18" height="18" rx="4"/><text class="s-t" x="95" y="23" text-anchor="middle">#</text><rect class="s-fill" x="108" y="10" width="18" height="18" rx="4"/><text class="s-t" x="117" y="23" text-anchor="middle">#</text><rect class="s-fill" x="130" y="10" width="18" height="18" rx="4"/><text class="s-t" x="139" y="23" text-anchor="middle">#</text><rect class="s-fill" x="152" y="10" width="18" height="18" rx="4"/><text class="s-t" x="161" y="23" text-anchor="middle">#</text><rect class="s-fill" x="174" y="10" width="18" height="18" rx="4"/><text class="s-t" x="183" y="23" text-anchor="middle">#</text><rect class="s-fill" x="20" y="32" width="18" height="18" rx="4"/><text class="s-t" x="29" y="45" text-anchor="middle">#</text><rect class="s-warn" x="42" y="32" width="18" height="18" rx="4"/><text class="s-t" x="51" y="45" text-anchor="middle">M</text><rect class="s-box" x="64" y="32" width="18" height="18" rx="4"/><text class="s-t" x="73" y="45" text-anchor="middle"></text><rect class="s-box" x="86" y="32" width="18" height="18" rx="4"/><text class="s-t" x="95" y="45" text-anchor="middle"></text><rect class="s-good" x="108" y="32" width="18" height="18" rx="4"/><text class="s-t" x="117" y="45" text-anchor="middle">A</text><rect class="s-good" x="130" y="32" width="18" height="18" rx="4"/><text class="s-t" x="139" y="45" text-anchor="middle"></text><rect class="s-good" x="152" y="32" width="18" height="18" rx="4"/><text class="s-t" x="161" y="45" text-anchor="middle"></text><rect class="s-fill" x="174" y="32" width="18" height="18" rx="4"/><text class="s-t" x="183" y="45" text-anchor="middle">#</text><rect class="s-fill" x="20" y="54" width="18" height="18" rx="4"/><text class="s-t" x="29" y="67" text-anchor="middle">#</text><rect class="s-box" x="42" y="54" width="18" height="18" rx="4"/><text class="s-t" x="51" y="67" text-anchor="middle"></text><rect class="s-fill" x="64" y="54" width="18" height="18" rx="4"/><text class="s-t" x="73" y="67" text-anchor="middle">#</text><rect class="s-box" x="86" y="54" width="18" height="18" rx="4"/><text class="s-t" x="95" y="67" text-anchor="middle"></text><rect class="s-warn" x="108" y="54" width="18" height="18" rx="4"/><text class="s-t" x="117" y="67" text-anchor="middle">M</text><rect class="s-fill" x="130" y="54" width="18" height="18" rx="4"/><text class="s-t" x="139" y="67" text-anchor="middle">#</text><rect class="s-good" x="152" y="54" width="18" height="18" rx="4"/><text class="s-t" x="161" y="67" text-anchor="middle"></text><rect class="s-fill" x="174" y="54" width="18" height="18" rx="4"/><text class="s-t" x="183" y="67" text-anchor="middle">#</text><rect class="s-fill" x="20" y="76" width="18" height="18" rx="4"/><text class="s-t" x="29" y="89" text-anchor="middle">#</text><rect class="s-warn" x="42" y="76" width="18" height="18" rx="4"/><text class="s-t" x="51" y="89" text-anchor="middle">M</text><rect class="s-fill" x="64" y="76" width="18" height="18" rx="4"/><text class="s-t" x="73" y="89" text-anchor="middle">#</text><rect class="s-box" x="86" y="76" width="18" height="18" rx="4"/><text class="s-t" x="95" y="89" text-anchor="middle"></text><rect class="s-box" x="108" y="76" width="18" height="18" rx="4"/><text class="s-t" x="117" y="89" text-anchor="middle"></text><rect class="s-fill" x="130" y="76" width="18" height="18" rx="4"/><text class="s-t" x="139" y="89" text-anchor="middle">#</text><rect class="s-good" x="152" y="76" width="18" height="18" rx="4"/><text class="s-t" x="161" y="89" text-anchor="middle"></text><rect class="s-good" x="174" y="76" width="18" height="18" rx="4"/><text class="s-t" x="183" y="89" text-anchor="middle"></text><rect class="s-fill" x="20" y="98" width="18" height="18" rx="4"/><text class="s-t" x="29" y="111" text-anchor="middle">#</text><rect class="s-box" x="42" y="98" width="18" height="18" rx="4"/><text class="s-t" x="51" y="111" text-anchor="middle"></text><rect class="s-fill" x="64" y="98" width="18" height="18" rx="4"/><text class="s-t" x="73" y="111" text-anchor="middle">#</text><rect class="s-fill" x="86" y="98" width="18" height="18" rx="4"/><text class="s-t" x="95" y="111" text-anchor="middle">#</text><rect class="s-fill" x="108" y="98" width="18" height="18" rx="4"/><text class="s-t" x="117" y="111" text-anchor="middle">#</text><rect class="s-fill" x="130" y="98" width="18" height="18" rx="4"/><text class="s-t" x="139" y="111" text-anchor="middle">#</text><rect class="s-fill" x="152" y="98" width="18" height="18" rx="4"/><text class="s-t" x="161" y="111" text-anchor="middle">#</text><rect class="s-fill" x="174" y="98" width="18" height="18" rx="4"/><text class="s-t" x="183" y="111" text-anchor="middle">#</text></svg>
+          <figcaption>RRDDR reaches the border at distance 5; every monster is farther from that exit.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Monster BFS is seeded with every <code>M</code> at distance 0. The border check requires <code>distA &lt; distM</code> strictly (or no monster reaches it). Path letters come from the parent offset.</p>
+        <div class="src-meta"><span class="path">graphs/Monsters.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll dx[] = {0, 0, 1, -1};
+ll dy[] = {1, -1, 0, 0};
+
+void solve() 
+{
+    ll n , m ;
+    cin &gt;&gt; n &gt;&gt; m ;
+    vector&lt;vector&lt;char&gt;&gt; grid(n, vector&lt;char&gt;(m));
+    vector&lt;vector&lt;ll&gt;&gt; distM(n, vector&lt;ll&gt;(m, -INF));
+    vector&lt;vector&lt;ll&gt;&gt; distA(n, vector&lt;ll&gt;(m, -INF));
+    vector&lt;vector&lt;pll&gt;&gt; par(n, vector&lt;pll&gt;(m, {-1, -1}));
+    queue &lt;pll &gt; qm ; 
+    queue &lt;pll &gt; qa ;
+    for (ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = 0 ; j &lt; m ; j++)
+        {
+            cin &gt;&gt; grid[i][j] ;
+            if (grid[i][j] == 'M')
+            {
+                distM[i][j] = 0 ;
+                qm.push({i, j}) ;
+            }
+            else if (grid[i][j] == 'A')
+            {
+                distA[i][j] = 0 ;
+                qa.push({i, j}) ;
+                par[i][j] = {-1, -1} ;
+            }
+
+        }
+    }
+    while(!qm.empty())
+    {
+        pll node = qm.front() ;
+        qm.pop() ;
+        for (ll i = 0 ; i &lt; 4 ; i++)
+        {
+            ll nx = node.fr + dx[i] ;
+            ll ny = node.sc + dy[i] ;
+            if(nx &gt;= 0 &amp;&amp; nx &lt; n &amp;&amp; ny &gt;= 0 &amp;&amp; ny &lt; m &amp;&amp; grid[nx][ny] != '#' &amp;&amp; distM[nx][ny] == -INF)
+            {
+                distM[nx][ny] = distM[node.fr][node.sc] + 1 ;
+                qm.push({nx, ny}) ;
+            }
+        }
+    }
+    while(!qa.empty())
+    {
+        pll node = qa.front() ;
+        qa.pop() ;
+        for (ll i = 0 ; i &lt; 4 ; i++)
+        {
+            ll nx = node.fr + dx[i] ;
+            ll ny = node.sc + dy[i] ;
+            if(nx &gt;= 0 &amp;&amp; nx &lt; n &amp;&amp; ny &gt;= 0 &amp;&amp; ny &lt; m &amp;&amp; grid[nx][ny] != '#' &amp;&amp; distA[nx][ny] == -INF)
+            {
+                par[nx][ny] = {node.fr, node.sc} ;
+                distA[nx][ny] = distA[node.fr][node.sc] + 1 ;
+                qa.push({nx, ny}) ;
+            }
+        }
+    }
+    for (ll i = 0 ; i &lt; n ; i++)
+    {
+        for(ll j = 0 ; j &lt; m ; j++)
+        {
+            if(i == 0 || i == n - 1 || j == 0 || j == m - 1)
+            {
+                if(distA[i][j] != -INF &amp;&amp; (distM[i][j] == -INF || distA[i][j] &lt; distM[i][j]))
+                {
+                    py ; 
+                    vector&lt;char&gt; ans ;
+                    pll node = {i, j} ;
+                    while(node.fr != -1 &amp;&amp; node.sc != -1)
+                    {
+                        pll pnode = par[node.fr][node.sc] ;
+                        if(pnode.fr != -1 &amp;&amp; pnode.sc != -1)
+                        {
+                            if(pnode.fr == node.fr + 1)
+                            {
+                                ans.push_back('U') ;
+                            }
+                            else if(pnode.fr == node.fr - 1)
+                            {
+                                ans.push_back('D') ;
+                            }
+                            else if(pnode.sc == node.sc + 1)
+                            {
+                                ans.push_back('L') ;
+                            }
+                            else if(pnode.sc == node.sc - 1)
+                            {
+                                ans.push_back('R') ;
+                            }
+                        }
+                        node = pnode ;
+                    }
+                    reverse(ans.begin(), ans.end()) ;
+                    cout &lt;&lt; ans.size() &lt;&lt; endl ;
+                    for(auto x : ans)
+                    {
+                        cout &lt;&lt; x ;
+                    }
+                    cout &lt;&lt; endl ;
+                    return ; 
+                }
+            }
+        }
+    }
+    pn ; 
+
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+from collections import deque
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18
+dx = [0, 0, 1, -1]
+dy = [1, -1, 0, 0]
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    grid = [[''] * m for _ in range(n)]
+    distM = [[-INF] * m for _ in range(n)]
+    distA = [[-INF] * m for _ in range(n)]
+    par = [[(-1, -1)] * m for _ in range(n)]
+    qm = deque()
+    qa = deque()
+    for i in range(n):
+        row = next(tok)                     # cin &gt;&gt; char reads one char; our tokens are whole rows
+        for j in range(m):
+            grid[i][j] = row[j]
+            if grid[i][j] == 'M':
+                distM[i][j] = 0
+                qm.append((i, j))
+            elif grid[i][j] == 'A':
+                distA[i][j] = 0
+                qa.append((i, j))
+                par[i][j] = (-1, -1)
+    while qm:
+        node = qm.popleft()
+        for i in range(4):
+            nx = node[0] + dx[i]
+            ny = node[1] + dy[i]
+            if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and grid[nx][ny] != '#' and distM[nx][ny] == -INF:
+                distM[nx][ny] = distM[node[0]][node[1]] + 1
+                qm.append((nx, ny))
+    while qa:
+        node = qa.popleft()
+        for i in range(4):
+            nx = node[0] + dx[i]
+            ny = node[1] + dy[i]
+            if nx &gt;= 0 and nx &lt; n and ny &gt;= 0 and ny &lt; m and grid[nx][ny] != '#' and distA[nx][ny] == -INF:
+                par[nx][ny] = (node[0], node[1])
+                distA[nx][ny] = distA[node[0]][node[1]] + 1
+                qa.append((nx, ny))
+    for i in range(n):
+        for j in range(m):
+            if i == 0 or i == n - 1 or j == 0 or j == m - 1:
+                if distA[i][j] != -INF and (distM[i][j] == -INF or distA[i][j] &lt; distM[i][j]):
+                    print("YES")
+                    ans = []
+                    node = (i, j)
+                    while node[0] != -1 and node[1] != -1:
+                        pnode = par[node[0]][node[1]]
+                        if pnode[0] != -1 and pnode[1] != -1:
+                            if pnode[0] == node[0] + 1:
+                                ans.append('U')
+                            elif pnode[0] == node[0] - 1:
+                                ans.append('D')
+                            elif pnode[1] == node[1] + 1:
+                                ans.append('L')
+                            elif pnode[1] == node[1] - 1:
+                                ans.append('R')
+                        node = pnode
+                    ans.reverse()
+                    print(len(ans))
+                    print(''.join(ans))
+                    return
+    print("NO")
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Only the exit cell is compared, not the whole path. It is sufficient because a monster that could intercept earlier could also reach the exit in time.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"escape before chasers, all move simultaneously" &rarr; multi-source BFS for chasers, compare arrival times.</div>
+    </article>
+    <article class="entry" id="frog-minimum-jumps">
+      <div class="entry-head"><h3>Frog Minimum Jumps</h3><span class="badge num">\(O(n+q)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(N\) stones in a row, numbered from \(1\). A frog starts on stone \(1\).
+From stone \(i\) it can jump forward to any stone in \([i+1,\ i + p_i]\), where \(p_i\) is that stone's
+jump power. Answer \(Q\) queries: for target stone \(x\), what is the minimum number of jumps from
+stone \(1\)? (Stone \(1\) itself needs \(0\).)</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\); \(p_1, \dots, p_N\); \(Q\); then \(Q\) targets.</dd>
+<dt>Output</dt><dd>For each query, the minimum number of jumps.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd>\(p = [1, 2, 4, 5, 3]\): query \(3 \to 2\), query \(1 \to 0\), query \(5 \to 3\)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(J(x)\) be the fewest jumps to stone \(x\). The stones reachable in at most \(k\) jumps always form a prefix \([1, R_k]\), because every jump range is an unbroken interval going right:</span>
+\[ R_0 = 1, \qquad R_{k+1} = \max_{1 \le i \le R_k} \big(i + p_i\big) \]</li>
+<li><span class="why">So the stones needing exactly \(k\) jumps are the block \((R_{k-1}, R_k]\):</span>
+\[ J(x) = \min \{\, k : x \le R_k \,\} \]</li>
+<li><span class="why">Simplest form: one left-to-right sweep. Keep <code>curEnd</code> \(= R_k\) and <code>farthest</code> \(= \max (i + p_i)\) so far. When \(i\) passes <code>curEnd</code>, start the next layer. Store \(J(i)\) for every stone; each query is a lookup.</span>
+<span class="why">Sample: \(R_0 = 1,\ R_1 = 2,\ R_2 = 4,\ R_3 \ge 5\), so \(J(3) = 2,\ J(5) = 3\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>BFS layers here are unbroken ranges of stones, because reach only grows to the right.</li>
+<li><code>curEnd</code> closes the current layer; <code>farthest</code> builds the next one.</li>
+<li>Work out every stone once; each query is then a lookup.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">BFS that adds every stone in \([i+1, i+p_i]\) as a separate edge.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(N^2)\)</span> edges.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">every \(p_i = N\) gives \(N^2\) edge checks.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Sweep the layer boundaries instead of using a queue: <span class="cost">\(O(N + Q)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 320 100" role="img" aria-label="Frog jumps layers"><rect class="s-good" x="20" y="20" width="52" height="30" rx="4"/><text class="s-t" x="46" y="39" text-anchor="middle">1</text><rect class="s-fill" x="76" y="20" width="52" height="30" rx="4"/><text class="s-t" x="102" y="39" text-anchor="middle">2</text><rect class="s-box" x="132" y="20" width="52" height="30" rx="4"/><text class="s-t" x="158" y="39" text-anchor="middle">4</text><rect class="s-box" x="188" y="20" width="52" height="30" rx="4"/><text class="s-t" x="214" y="39" text-anchor="middle">5</text><rect class="s-warn" x="244" y="20" width="52" height="30" rx="4"/><text class="s-t" x="270" y="39" text-anchor="middle">3</text><text class="s-ta" x="46" y="70" text-anchor="middle">0</text><text class="s-ta" x="102" y="70" text-anchor="middle">1</text><text class="s-ta" x="158" y="70" text-anchor="middle">2</text><text class="s-ta" x="214" y="70" text-anchor="middle">2</text><text class="s-ta" x="270" y="70" text-anchor="middle">3</text><text class="s-td" x="8" y="92">power per stone; min jumps below</text></svg>
+          <figcaption>Layers: {1}, {2}, {3,4}, {5}.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>curEnd = farthest = 1</code> and <code>jumps = 0</code> make stone 1 come out as 0 with no special case. <code>farthest</code> is updated <em>after</em> recording <code>dp[i]</code>, so stone <code>i</code> only extends the next layer.</p>
+        <div class="src-meta"><span class="path">graphs/Frog_Minimum_Jumps.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Frog Minimum Jumps (multi-query)
+// Pattern: monotonic-reach BFS collapsed into a single sweep — "Jump Game II"
+//          boundary/farthest technique
+// Time: O(N + Q)  Space: O(N)
+//
+// N stones, 1-indexed. Frog starts at stone 1. Stone i has a Jump Power
+// p[i] — from stone i the frog can jump forward to any stone in
+// [i+1, i+p[i]]. Given Q queries, each a target stone, output the minimum
+// number of jumps from stone 1 to reach it (0 if the target is stone 1).
+//
+// Example:
+//     N=5, power=[1,2,4,5,3]
+//         query 3 -&gt; 2   (1 -&gt; 2 -&gt; 3)
+//         query 1 -&gt; 0
+//         query 5 -&gt; 3   (1 -&gt; 2 -&gt; 4 -&gt; 5)
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n; cin &gt;&gt; n;
+    vector&lt;int&gt; power(n + 1);
+    for (int i = 1; i &lt;= n; i++) cin &gt;&gt; power[i];
+
+    // dp[i] = min jumps from stone 1 to stone i
+    vector&lt;int&gt; dp(n + 1, 0);
+    int jumps = 0, curEnd = 1, farthest = 1;
+
+    for (int i = 1; i &lt;= n; i++) {
+        if (i &gt; curEnd) {
+            jumps++;
+            curEnd = farthest;
+        }
+        dp[i] = jumps;
+        farthest = max(farthest, i + power[i]);
+    }
+
+    int q; cin &gt;&gt; q;
+    while (q--) {
+        int x; cin &gt;&gt; x;
+        cout &lt;&lt; dp[x] &lt;&lt; "\n";
+    }
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    power = [0] * (n + 1)
+    for i in range(1, n + 1): power[i] = int(next(tok))
+    # dp[i] = min jumps from stone 1 to stone i
+    dp = [0] * (n + 1)
+    jumps, curEnd, farthest = 0, 1, 1
+    for i in range(1, n + 1):
+        if i &gt; curEnd:
+            jumps += 1
+            curEnd = farthest
+        dp[i] = jumps
+        farthest = max(farthest, i + power[i])
+    q = int(next(tok))
+    out = []
+    for _ in range(q):
+        x = int(next(tok))
+        out.append(dp[x])
+    print('\n'.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Looking back with stone <code>i</code>'s own power is wrong: what reaches <code>i</code> is an earlier stone's power.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"min jumps, each position reaches a forward range" &rarr; Jump Game II boundary sweep.</div>
+    </article>
+  </section>
+
+  <section class="family" id="f3">
+    <div class="family-head"><h2>3 &middot; DFS colouring / cycles</h2></div>
+    <p class="family-note">DFS that carries a per-vertex state (colour, on-stack) and stops at the first contradiction.</p>
+    <article class="entry" id="building-teams">
+      <div class="entry-head"><h3>Building Teams</h3><span class="badge num">\(O(n+m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) pupils and \(m\) friendships between them. Split the pupils into two
+teams so that no two friends are on the same team. Print a team (1 or 2) for each pupil, or
+<code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>\(n\) numbers (each <code>1</code> or <code>2</code>), or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>\(n = 5\), friendships \((1,2)(1,3)(4,5)\) → <code>1 2 2 1 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: find a colouring \(c : \{1..n\} \to \{1, 2\}\) with</span>
+\[ c(u) \ne c(v) \quad \text{for every friendship } (u, v) \]</li>
+<li><span class="why">Inside one component, choosing the colour of one pupil forces every other colour: a friend of a pupil with colour \(c\) gets \(3 - c\).</span></li>
+<li><span class="why">This fails exactly when some friendship joins two pupils that were forced to the same colour. That happens iff the component has a cycle of odd length.</span></li>
+<li><span class="why">Simplest form: DFS from each uncoloured pupil with colour \(1\), give each neighbour \(3 - c\), and stop with <code>IMPOSSIBLE</code> if an edge has equal colours.</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>This is a bipartite check: every edge must join different colours.</li>
+<li>In a component, colouring the first pupil forces everything else.</li>
+<li>An edge between equal colours means an odd cycle, so it is impossible.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try all \(2^n\) team assignments.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(2^n \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Spread the colours with a DFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 300 110" role="img" aria-label="Building teams sample"><path class="s-edge" d="M63 49 L107 31"/><path class="s-edge" d="M63 61 L107 79"/><path class="s-edge" d="M224 55 L256 55"/><circle class="s-good" cx="50" cy="55" r="14"/><text class="s-t" x="50" y="59" text-anchor="middle">1</text><circle class="s-warn" cx="120" cy="25" r="14"/><text class="s-t" x="120" y="29" text-anchor="middle">2</text><circle class="s-warn" cx="120" cy="85" r="14"/><text class="s-t" x="120" y="89" text-anchor="middle">3</text><circle class="s-good" cx="210" cy="55" r="14"/><text class="s-t" x="210" y="59" text-anchor="middle">4</text><circle class="s-warn" cx="270" cy="55" r="14"/><text class="s-t" x="270" y="59" text-anchor="middle">5</text></svg>
+          <figcaption>1 2 2 1 2.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>3 - col</code> flips between 1 and 2. A conflict prints <code>NO</code> via the macro and calls <code>exit(0)</code> straight out of the recursion.</p>
+        <div class="src-meta"><span class="path">graphs/Building_Teams.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "IMPOSSIBLE" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+ll n , m ;
+vector&lt;vector&lt;ll&gt;&gt; g ;
+vector&lt;ll&gt; vis ;
+void dfs(ll node , ll col)
+{
+    vis[node] = col ;
+    for(auto child : g[node])
+    {
+        if(!vis[child])
+        {
+            dfs(child, 3 - col) ;
+        }
+        else if(vis[child] == col)
+        {
+            pn ; 
+            exit(0) ;
+        }
+
+
+    }
+}
+void solve() 
+{
+    cin &gt;&gt; n &gt;&gt; m ;
+    g.resize(n + 1) ;
+    vis.resize(n + 1, 0) ;
+    for(ll i = 0 ; i &lt; m ; i++)
+    {
+        ll x , y ;
+        cin &gt;&gt; x &gt;&gt; y ;
+        g[x].push_back(y) ;
+        g[y].push_back(x) ;
+
+    }
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        if(!vis[i])
+        {
+            dfs(i, 1) ;
+        }
+    }
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        cout &lt;&lt; vis[i] &lt;&lt; " " ;
+    }
+    cout &lt;&lt; endl ; 
+
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+n, m = 0, 0
+g = []
+vis = []
+
+def dfs(node, col):
+    vis[node] = col
+    for child in g[node]:
+        if not vis[child]:
+            dfs(child, 3 - col)
+        elif vis[child] == col:
+            print("IMPOSSIBLE")             # pn (redefined as IMPOSSIBLE here); then exit(0)
+            sys.exit(0)
+
+def solve():
+    global n, m, g, vis
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    for i in range(m):
+        x, y = int(next(tok)), int(next(tok))
+        g[x].append(y)
+        g[y].append(x)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs(i, 1)
+    print(' '.join(str(vis[i]) for i in range(1, n + 1)))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The DFS never checks the parent specially &mdash; the parent always has the opposite colour, so the <code>vis[child] == col</code> test can only fire on a real odd cycle. <code>pn</code> is redefined in this file to print <code>IMPOSSIBLE</code>.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"split into two groups, no conflicting pair together" &rarr; bipartite 2-colouring.</div>
+    </article>
+    <article class="entry" id="round-trip">
+      <div class="entry-head"><h3>Round Trip</h3><span class="badge num">\(O(n+m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) two-way roads. Find a round trip that starts in a
+city, visits two or more other cities, and returns to the start, with no city repeated in between.
+Print it, or <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\).</dd>
+<dt>Output</dt><dd>The number of cities \(k\) on the trip (start counted twice), then the cities; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>edges \((1,3)(1,2)(5,3)(1,5)(2,4)(4,5)\) → <code>4</code>, <code>3 5 1 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">We need a cycle of length \(\ge 3\) in an undirected graph.</span></li>
+<li><span class="why">Run DFS. Every edge from the current vertex \(u\) goes either to an unvisited vertex (a tree edge) or to a vertex \(v\) that is still open (an ancestor). If \(v\) is an open ancestor and \(v \ne \text{par}(u)\), then</span>
+\[ v \to \dots \to \text{par}(u) \to u \to v \]
+<span class="why">is a cycle with at least \(3\) cities.</span></li>
+<li><span class="why">Skipping \(v = \text{par}(u)\) is what rules out the fake cycle \(u \to v \to u\) along one road.</span></li>
+<li><span class="why">Simplest form: on finding such an edge, walk \(\text{par}\) from \(u\) up to \(v\), then print \(v, \dots, u, v\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>In an undirected DFS, any edge to an already-open vertex other than the parent closes a cycle.</li>
+<li>Skipping the parent is what excludes the trivial \(a \to b \to a\).</li>
+<li>Walk <code>par</code> from the current vertex back to the open one.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Search from every vertex for a path back to itself.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">One DFS with states 0/1/2 and parents: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 300 120" role="img" aria-label="Round trip sample"><path class="s-hi" d="M74 30 L136 30"/><path class="s-edge" d="M60 44 L60 81"/><path class="s-hi" d="M150 81 L150 44"/><path class="s-hi" d="M71 38 L139 87"/><path class="s-edge" d="M74 95 L226 95"/><path class="s-edge" d="M226 95 L164 95"/><circle class="s-box" cx="60" cy="30" r="14"/><text class="s-t" x="60" y="34" text-anchor="middle">1</text><circle class="s-box" cx="150" cy="30" r="14"/><text class="s-t" x="150" y="34" text-anchor="middle">3</text><circle class="s-box" cx="150" cy="95" r="14"/><text class="s-t" x="150" y="99" text-anchor="middle">5</text><circle class="s-box" cx="60" cy="95" r="14"/><text class="s-t" x="60" y="99" text-anchor="middle">2</text><circle class="s-box" cx="240" cy="95" r="14"/><text class="s-t" x="240" y="99" text-anchor="middle">4</text></svg>
+          <figcaption>5 1 3 5 &mdash; any cycle is accepted.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>vis</code> is 0 unseen, 1 on the stack, 2 finished. On a back edge to <code>child</code>, walk <code>temp</code> up from <code>node</code>, then append <code>node</code> again to close the loop.</p>
+        <div class="src-meta"><span class="path">graphs/Round_Trip.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+
+ll n , m ;
+vector&lt;vector&lt;ll&gt;&gt; g ;
+vector&lt;ll&gt; vis ;
+vector&lt;ll&gt; par ;
+
+void dfs(ll node , ll parent)
+{
+    vis[node] = 1 ;
+    par[node] = parent ;
+    for(auto child : g[node])
+    {
+        if(child == parent)
+        {
+            continue ; 
+        }
+        if(vis[child] == 0 )
+        {
+            dfs(child, node) ;
+        }
+        else if( vis[child] == 1 )
+        {
+            ll temp = node ; 
+            vector &lt;ll&gt; ans ;
+            while (temp != child)
+            {
+                ans.push_back(temp) ;
+                temp = par[temp] ;
+            }
+            ans.push_back(temp) ; 
+            ans.push_back(node) ;
+            reverse(ans.begin(), ans.end()) ;
+            cout &lt;&lt; ans.size() &lt;&lt; endl ;
+            for (auto&amp; x : ans)
+            {
+                cout &lt;&lt; x &lt;&lt; " " ;
+            }
+            cout &lt;&lt; endl ; 
+            exit(0) ;
+        }
+        else 
+        {
+            continue ; 
+        }
+
+    }
+    vis[node] = 2 ;
+
+}
+void solve() 
+{
+    cin &gt;&gt; n &gt;&gt; m ;
+    g.resize(n + 1) ;
+    vis.resize(n + 1, 0) ;
+    par.resize(n + 1, 0) ;
+    for(ll i = 0 ; i &lt; m ; i++)
+    {
+        ll a , b ;
+        cin &gt;&gt; a &gt;&gt; b ;
+        g[a].push_back(b) ;
+        g[b].push_back(a) ;
+    }
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        if(!vis[i])
+        {
+            dfs(i, 0) ;
+                
+        }
+    }
+    cout &lt;&lt; "IMPOSSIBLE" &lt;&lt; endl ;
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+n, m = 0, 0
+g = []
+vis = []
+par = []
+
+def dfs(node, parent):
+    vis[node] = 1
+    par[node] = parent
+    for child in g[node]:
+        if child == parent:
+            continue
+        if vis[child] == 0:
+            dfs(child, node)
+        elif vis[child] == 1:
+            temp = node
+            ans = []
+            while temp != child:
+                ans.append(temp)
+                temp = par[temp]
+            ans.append(temp)
+            ans.append(node)
+            ans.reverse()
+            print(len(ans))
+            print(' '.join(map(str, ans)))
+            sys.exit(0)                     # exit(0)
+        else:
+            continue
+    vis[node] = 2
+
+def solve():
+    global n, m, g, vis, par
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    par = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+        g[b].append(a)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs(i, 0)
+    print("IMPOSSIBLE")
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>Skipping by parent <em>vertex</em> is fine only because CSES has no multi-edges; with a doubled edge <code>a&ndash;b</code> it would miss that 2-cycle (which is not a valid answer here anyway).</div>
+      <div class="callout trigger"><strong>Recognize</strong>"find any cycle in an undirected graph" &rarr; DFS, back edge to a non-parent.</div>
+    </article>
+    <article class="entry" id="round-trip-ii">
+      <div class="entry-head"><h3>Round Trip II</h3><span class="badge num">\(O(n+m)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) cities and \(m\) one-way flights. Find a round trip that starts in a
+city, visits one or more other cities, and returns to the start, with no city repeated in between.
+Print it, or <code>IMPOSSIBLE</code>.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\), then \(m\) lines \(a\ b\) (a flight from \(a\) to \(b\)).</dd>
+<dt>Output</dt><dd>The number of cities \(k\) on the trip (start counted twice), then the cities; or <code>IMPOSSIBLE</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^5,\ \ 1 \le m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd>flights \(1{\to}3,\ 2{\to}1,\ 2{\to}4,\ 3{\to}2,\ 3{\to}4\) → <code>4</code>, <code>2 1 3 2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">We need a directed cycle. Run DFS and give each vertex a state: \(0\) unvisited, \(1\) on the current DFS path, \(2\) finished.</span></li>
+<li><span class="why">A directed cycle exists iff DFS finds an edge \(u \to v\) with \(v\) in state \(1\). Then \(v\) is on the current path, so</span>
+\[ v \to \dots \to u \to v \]
+<span class="why">is a cycle.</span></li>
+<li><span class="why">An edge into a state-\(2\) vertex is not a cycle: everything reachable from it is already finished and none of it leads back.</span></li>
+<li><span class="why">Simplest form: on finding the edge, walk \(\text{par}\) from \(u\) back to \(v\) and print \(v, \dots, u, v\).</span></li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>A directed cycle exists iff DFS finds an edge into a vertex still on the recursion stack (state 1, "gray").</li>
+<li>Edges into finished (state 2, "black") vertices are not cycles. That is why three states are needed.</li>
+<li>The cycle is the part of the stack from that vertex to the current one.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">From every vertex, search for a path back to itself.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot (n + m))\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = 10^5\), \(m = 2\cdot 10^5\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Three-state DFS: <span class="cost">\(O(n + m)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 300 120" role="img" aria-label="Round trip II sample"><path class="s-hi" d="M74 30 L156 30"/><path class="s-arrow" d="M156 30 L148 34 L148 26 Z"/><path class="s-hi" d="M106 84 L69 41"/><path class="s-arrow" d="M69 41 L77 44 L71 49 Z"/><path class="s-edge" d="M129 95 L226 95"/><path class="s-arrow" d="M226 95 L218 99 L218 91 Z"/><path class="s-hi" d="M161 41 L124 84"/><path class="s-arrow" d="M124 84 L126 76 L132 81 Z"/><path class="s-edge" d="M180 40 L230 85"/><path class="s-arrow" d="M230 85 L221 83 L227 77 Z"/><circle class="s-box" cx="60" cy="30" r="14"/><text class="s-t" x="60" y="34" text-anchor="middle">1</text><circle class="s-box" cx="170" cy="30" r="14"/><text class="s-t" x="170" y="34" text-anchor="middle">3</text><circle class="s-box" cx="115" cy="95" r="14"/><text class="s-t" x="115" y="99" text-anchor="middle">2</text><circle class="s-box" cx="240" cy="95" r="14"/><text class="s-t" x="240" y="99" text-anchor="middle">4</text></svg>
+          <figcaption>1 &rarr; 3 &rarr; 2 &rarr; 1.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Same skeleton as Round Trip, but the edge list is one-directional. <code>vis == 2</code> edges are skipped explicitly.</p>
+        <div class="src-meta"><span class="path">graphs/Round_Trip_II.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+vector&lt;vector&lt;ll&gt;&gt; g ;
+vector&lt;ll&gt; vis ;
+vector &lt; ll &gt; par ;
+void dfs(ll node , ll parent)
+{
+    vis[node] = 1 ;
+    par[node] = parent ;
+    for(auto child : g[node])
+    {
+        if(child == parent)
+        {
+            continue ; 
+        }
+        if(vis[child] == 0 )
+        {
+            dfs(child, node) ;
+        }
+        else if( vis[child] == 1 )
+        {
+            vector &lt;ll&gt; ans ;
+            ans.push_back(child) ; 
+            ll temp = node ; 
+            while (temp != child)
+            {
+                ans.push_back(temp) ;
+                temp = par[temp] ;
+            }
+            ans.push_back(child) ;
+            reverse(ans.begin(), ans.end()) ;
+            cout &lt;&lt; ans.size() &lt;&lt; endl ;
+            for (auto&amp; x : ans)
+            {
+                cout &lt;&lt; x &lt;&lt; " " ;
+            }
+            cout &lt;&lt; endl ; 
+            exit(0) ;
+        }
+        else 
+        {
+            continue ; 
+        }
+
+    }
+    vis[node] = 2 ;
+
+}
+void solve() 
+{
+    ll n , m ;
+    cin &gt;&gt; n &gt;&gt; m ;
+    g.resize(n + 1) ;
+    vis.resize(n + 1, 0) ;
+    par.resize(n + 1, 0) ;
+    for (ll i = 0 ; i &lt; m ; i++)
+    {
+        ll a , b ; 
+        cin &gt;&gt; a &gt;&gt; b ;
+        g[a].push_back(b) ;
+
+    }
+    for(ll i = 1 ; i &lt;= n ; i++)
+    {
+        if(!vis[i])
+        {
+            dfs(i, 0) ;
+        }
+    }
+    cout &lt;&lt; "IMPOSSIBLE" &lt;&lt; endl ;
+
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+sys.setrecursionlimit(10**6)
+tok = iter(sys.stdin.read().split())
+
+g = []
+vis = []
+par = []
+
+def dfs(node, parent):
+    vis[node] = 1
+    par[node] = parent
+    for child in g[node]:
+        if child == parent:
+            continue
+        if vis[child] == 0:
+            dfs(child, node)
+        elif vis[child] == 1:
+            ans = []
+            ans.append(child)
+            temp = node
+            while temp != child:
+                ans.append(temp)
+                temp = par[temp]
+            ans.append(child)
+            ans.reverse()
+            print(len(ans))
+            print(' '.join(map(str, ans)))
+            sys.exit(0)
+        else:
+            continue
+    vis[node] = 2
+
+def solve():
+    global g, vis, par
+    n, m = int(next(tok)), int(next(tok))
+    g = [[] for _ in range(n + 1)]
+    vis = [0] * (n + 1)
+    par = [0] * (n + 1)
+    for i in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        g[a].append(b)
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs(i, 0)
+    print("IMPOSSIBLE")
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong>The <code>child == parent</code> skip was carried over from the undirected version and is wrong here: input <code>2 2 / 1 2 / 2 1</code> prints <code>IMPOSSIBLE</code>, but <code>1 2 1</code> is a valid directed round trip.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"cycle in a directed graph / dependency loop" &rarr; three-colour DFS.</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+  <div class="excluded">
+    <h4>Excluded from this ledger</h4>
+    <ul>
+      <li><code>graphs/Nested_Ranges_Count.cpp</code> &mdash; compiles, but on its own sample (<code>4 / 1 6 / 2 4 / 4 8 / 3 6</code>) prints nothing; expected <code>2 0 0 0 / 0 1 0 1</code>. Also not a graph problem (arrays sweep).</li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/graphs_1_traversal.js"></script>
+</body>
+</html>

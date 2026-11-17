@@ -1,0 +1,49 @@
+/* ledger/data/graphs_2_shortest_paths.js — index rows for one child ledger.
+ * Adding a problem: append one object to the array. Nothing else to update. */
+LEDGER.add(
+  { slug: 'graphs_2_shortest_paths',
+    topic: 'graphs',
+    title: "Shortest Paths",
+    file: 'Graph_Ledger_2_Shortest_Paths.html',
+    part: 2 },
+  [
+    { name: "Shortest Routes I",
+      anchor: 'shortest-routes-i',
+      fam: "Dijkstra and variants",
+      inv: 'pop min; skip if done; \\(\\text{dist}(v) \\leftarrow \\min(\\text{dist}(v), \\text{dist}(u) + c)\\)',
+      time: '\\(O((n+m) \\log m)\\)' },
+    { name: "Flight Discount",
+      anchor: 'flight-discount',
+      fam: "Dijkstra and variants",
+      inv: 'state \\((v, u)\\): \\((a,0) \\xrightarrow{c} (b,0)\\), \\((a,0) \\xrightarrow{\\lfloor c/2 \\rfloor} (b,1)\\), \\((a,1) \\xrightarrow{c} (b,1)\\)',
+      time: '\\(O((n+m) \\log m)\\)' },
+    { name: "Flight Routes",
+      anchor: 'flight-routes',
+      fam: "Dijkstra and variants",
+      inv: 'each city popped up to \\(k\\) times; the first \\(k\\) pops of \\(n\\) are the answers',
+      time: '\\(O(k \\cdot (n+m) \\log (km))\\)' },
+    { name: "Investigation",
+      anchor: 'investigation',
+      fam: "Dijkstra and variants",
+      inv: '\\(d + c \\lt \\text{dist}\\): reset \\((W, F_{\\min}, F_{\\max})\\); \\(d + c = \\text{dist}\\): merge',
+      time: '\\(O((n+m) \\log m)\\)' },
+    { name: "High Score",
+      anchor: 'high-score',
+      fam: "Bellman-Ford",
+      inv: '\\(w = -x\\); relaxable in round \\(n\\) on a \\(1 \\leadsto u,\\ v \\leadsto n\\) edge ⇒ \\(-1\\)',
+      time: '\\(O(n\\cdot m)\\)' },
+    { name: "Cycle Finding",
+      anchor: 'cycle-finding',
+      fam: "Bellman-Ford",
+      inv: '\\(\\text{dist} \\equiv 0\\); node improved in round \\(n\\); walk \\(\\text{par}\\) \\(n\\) times, then collect',
+      time: '\\(O(n\\cdot m)\\)' },
+    { name: "Shortest Routes II",
+      anchor: 'shortest-routes-ii',
+      fam: "Floyd\u2013Warshall",
+      inv: '\\(g_{ij} \\leftarrow \\min(g_{ij},\\ g_{ik} + g_{kj})\\), \\(k\\) outermost',
+      time: '\\(O(n^{3} + q)\\)' }
+  ],
+  [
+
+  ]
+);

@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweep &amp; Ordered Set &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<!-- data-base = path back to repo root; data-slug = this child's slug -->
+<body data-base=".." data-slug="arrays_4_sweep_ordered">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; Arrays</div>
+  <h1>Sweep &amp; Ordered Set</h1>
+  <p class="dek">Every problem here arrives as a list of intervals or a stream of
+  points. Two answers follow. Either you sort once and sweep, carrying one or two
+  scalars past every endpoint &mdash; or the structure has to stay sorted <em>while
+  it is edited</em>, and a <code>set</code>/<code>multiset</code> does the work a
+  hand-shifted array cannot. Reach for this page when the input is
+  <code>(start, end)</code> pairs, or when the question is asked again after every
+  insertion.</p>
+  <p class="stats"><b>7</b> problems &middot; <b>3</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Interval sweep &amp; containment</a></div>
+  <a href="#restaurant-customers">Restaurant Customers</a>
+  <a href="#union-of-painted-bricks">Union of Painted Bricks</a>
+  <a href="#nested-ranges-check">Nested Ranges Check</a>
+  <div class="toc-fam"><a href="#f2">2 &middot; Heap-backed interval assignment</a></div>
+  <a href="#room-allocation">Room Allocation</a>
+  <div class="toc-fam"><a href="#f3">3 &middot; Ordered-set greedy maintenance</a></div>
+  <a href="#tower-of-cubes">Tower of Cubes</a>
+  <a href="#traffic-lights">Traffic Lights</a>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.
+      Every rule must be demonstrated by at least two entries on this page.</p></div>
+    <div class="rules">
+
+      <div class="rule"><span class="n num">01</span>
+        <p>Identical input, different aggregate, different sweep. Restaurant
+        Customers and Union of Painted Bricks both read <span class="rule-code">n</span>
+        pairs <span class="rule-code">(l, r)</span>. &ldquo;How many at once&rdquo;
+        &rarr; split each pair into \(+1/-1\)
+        events and sweep a counter. &ldquo;How much is covered in total&rdquo; &rarr;
+        sort by <span class="rule-code">l</span> and merge into one open block. Decide
+        which one from the <em>question</em>; the data cannot tell you.</p></div>
+
+      <div class="rule"><span class="n num">02</span>
+        <p>When the swept counter returns to its starting value, the answer must be
+        latched mid-sweep. Restaurant Customers' <span class="rule-code">running</span>
+        and Room Allocation's <span class="rule-code">c</span> are both 0 at the last
+        event &mdash; every arrival is matched by a departure. Both carry a separate
+        <span class="rule-code">best</span>/<span class="rule-code">k</span> updated
+        inside the loop. Reading the final state gives 0, every time.</p></div>
+
+      <div class="rule"><span class="n num">03</span>
+        <p>The comparator's tie-break <em>is</em> the problem's inequality &mdash; it is
+        never cosmetic. Room Allocation sorts <span class="rule-code">+1</span> before
+        \(-1\) at equal time because a departure on day
+        <span class="rule-code">t</span> does <em>not</em> free the room for an arrival
+        on day <span class="rule-code">t</span>. Nested Ranges Check sorts
+        <span class="rule-code">r</span> descending on equal <span class="rule-code">l</span>
+        so the wider range is seen first. Flip either one and the code still compiles,
+        still runs, and is wrong.</p></div>
+
+      <div class="rule"><span class="n num">04</span>
+        <p>Use <span class="rule-code">multiset</span>, not <span class="rule-code">set</span>,
+        whenever the stored values are distinct entities that may legitimately collide:
+        Tower of Cubes' tower tops (two towers can share a top height), Traffic Lights'
+        gap lengths (two gaps can share a length). Corollary, in both: remove the one
+        instance that changed with <span class="rule-code">s.erase(s.find(x))</span>,
+        never <span class="rule-code">s.erase(x)</span> &mdash; the value form erases
+        every match.</p></div>
+
+      <div class="rule"><span class="n num">05</span>
+        <p>Sort once, sweep twice. Nested Ranges Check runs the same sorted array
+        forward with a running <span class="rule-code">max r</span> and backward with a
+        running <span class="rule-code">min r</span>, answering the two symmetric halves
+        of the question; Room Allocation sweeps its event array once to size
+        <span class="rule-code">k</span> and again to assign rooms. A second pass over
+        sorted data is free next to a second data structure.</p></div>
+
+      <div class="rule"><span class="n num">06</span>
+        <p>Sentinels and pre-sized pools beat boundary special-cases. Traffic Lights
+        seeds <span class="rule-code">positions</span> with <span class="rule-code">{0, x}</span>
+        so the very first light already has a predecessor and a successor; Room
+        Allocation fills the free pool with all <span class="rule-code">k</span> rooms
+        before assigning any, so an arrival never has to invent one. Both turn an
+        &ldquo;is it empty?&rdquo; branch into no branch at all.</p></div>
+
+      <div class="rule"><span class="n num">07</span>
+        <p>A running extremum certifies <em>existence</em>, never <em>multiplicity</em>.
+        Nested Ranges Check gets its 0/1 answer from a single scalar per pass, and Union
+        of Painted Bricks' <span class="rule-code">(curL, curR)</span> knows how far the
+        block reaches but not how many segments painted any brick. The moment the
+        question becomes &ldquo;how many&rdquo;, one scalar touched once per index cannot
+        exceed 1 and the family needs a Fenwick/segment tree over compressed endpoints
+        instead &mdash; which is exactly why
+        <span class="rule-code">Nested_Ranges_Count.cpp</span> is in the excluded box
+        at the foot of this page.</p></div>
+
+    </div>
+  </section>
+
+  <!-- ===================== FAMILY 1 ===================== -->
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Interval sweep &amp; containment</h2></div>
+    <p class="family-note">All three sort the intervals first and then make a single
+    pass carrying one or two scalars &mdash; a running count, an open block, or the
+    extreme endpoint seen so far. The input shape is the same every time; what changes
+    is which scalar you carry, and that is chosen by the question. The sort key, and
+    especially its tie-break, is where these problems actually go wrong.</p>
+
+<!-- ============ ENTRY ============ -->
+    <article class="entry" id="restaurant-customers">
+      <div class="entry-head"><h3>Restaurant Customers</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <!-- 1 ................................................ THE ASK -->
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You know the arrival time \(a_i\) and leaving time \(b_i\) of each of \(n\)
+customers. What is the largest number of customers in the restaurant at the same time?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ b_i\).</dd>
+<dt>Output</dt><dd>One integer: the maximum number of customers present at once.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \lt b_i \le 10^9\); all \(2n\) times are different.</dd>
+<dt>Sample</dt><dd><code>(5,8) (2,4) (3,9)</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \max_{t} \; \#\{\, i : a_i \le t \le b_i \,\} \]</li>
+<li><span class="why">The count only changes at an arrival or a departure. So only the \(2n\) event times need checking.</span></li>
+<li><span class="why">Turn each customer into two events, \(+1\) at \(a_i\) and \(-1\) at \(b_i\). Sort all events by time. The count just after event \(e\) is a prefix sum:</span>
+\[ c_e = \sum_{e' \le e} \delta_{e'}, \qquad \delta \in \{+1, -1\} \]</li>
+<li><span class="why">Simplest form:</span>
+\[ \text{ans} = \max_{e} \; c_e \]
+<span class="why">Sample: events \(2{+}, 3{+}, 4{-}, 5{+}, 8{-}, 9{-}\) give counts \(1, 2, 1, 2, 1, 0\), so the answer is \(2\).</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <!-- 2 ....................................... KEY OBSERVATIONS -->
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The count only changes at an endpoint, so the maximum is reached at some arrival \(a_i\). Only
+the \(2n\) endpoints matter, not the \(10^9\) moments between them.</li>
+<li><em>Who</em> is inside never matters, only <em>how many</em>. So each interval can be split into
+two independent events, \(a_i \to +1\) and \(b_i \to -1\), and the pairing forgotten.</li>
+<li>Sorted by time, the count at any moment is the prefix sum of those \(\pm 1\) values. One pass, one running total.</li>
+<li>Every \(+1\) has a matching \(-1\), so the running total ends at \(0\). The answer must be
+recorded during the sweep, not read at the end.</li>
+<li>CSES guarantees all \(2n\) times are different, so an arrival and a departure never tie. That
+is the only reason the default <code>pair</code> ordering is safe here (see the Gotcha).</li>
+</ol>
+      </div>
+
+      <!-- 3 ..................................... BRUTE FORCE -->
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For each of the \(2n\) event
+times, scan all \(n\) intervals and count those covering it.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> time, <span class="cost">\(O(n)\)</span> space.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(2n \cdot n = 8\cdot 10^{10}\) checks. An array over all moments is
+worse still, since \(t \le 10^9\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Replace the intervals by \(2n\) signed events and sort them. The count becomes one prefix sum:
+<span class="cost">\(O(n \log n)\)</span> time (the sort), <span class="cost">\(O(n)\)</span> space.</span></div>
+</div>
+      </div>
+
+      <!-- 4 ................................................ DIAGRAM -->
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 232" role="img" aria-label="Three intervals shredded into plus-one minus-one events and swept">
+  <text class="s-td" x="8" y="14">(5,8) (2,4) (3,9)</text>
+
+  <!-- interval bars -->
+  <rect class="s-box" x="280" y="26" width="144" height="20" rx="3"/>
+  <text class="s-tm" x="288" y="41">[5, 8]</text>
+  <rect class="s-box" x="136" y="52" width="96" height="20" rx="3"/>
+  <text class="s-tm" x="144" y="67">[2, 4]</text>
+  <rect class="s-box" x="184" y="78" width="288" height="20" rx="3"/>
+  <text class="s-tm" x="192" y="93">[3, 9]</text>
+
+  <!-- time axis -->
+  <path class="s-line" d="M32 116 H536"/>
+  <g class="s-td">
+    <text x="133" y="130">2</text><text x="181" y="130">3</text>
+    <text x="229" y="130">4</text><text x="277" y="130">5</text>
+    <text x="421" y="130">8</text><text x="469" y="130">9</text>
+  </g>
+
+  <!-- events -->
+  <g>
+    <rect class="s-fill" x="120" y="140" width="32" height="20" rx="3"/>
+    <rect class="s-fill" x="168" y="140" width="32" height="20" rx="3"/>
+    <rect class="s-box"  x="216" y="140" width="32" height="20" rx="3"/>
+    <rect class="s-fill" x="264" y="140" width="32" height="20" rx="3"/>
+    <rect class="s-box"  x="408" y="140" width="32" height="20" rx="3"/>
+    <rect class="s-box"  x="456" y="140" width="32" height="20" rx="3"/>
+    <g class="s-tm">
+      <text x="126" y="155">+1</text><text x="174" y="155">+1</text>
+      <text x="224" y="155">&#8722;1</text><text x="270" y="155">+1</text>
+      <text x="414" y="155">&#8722;1</text><text x="462" y="155">&#8722;1</text>
+    </g>
+  </g>
+  <text class="s-td" x="8" y="155">events</text>
+
+  <!-- running total -->
+  <rect class="s-good" x="168" y="172" width="32" height="22" rx="3"/>
+  <rect class="s-good" x="264" y="172" width="32" height="22" rx="3"/>
+  <g class="s-t">
+    <text x="130" y="188">1</text><text x="178" y="188">2</text>
+    <text x="226" y="188">1</text><text x="274" y="188">2</text>
+    <text x="418" y="188">1</text><text x="466" y="188">0</text>
+  </g>
+  <text class="s-td" x="8" y="188">running</text>
+
+  <text class="s-ta" x="8" y="216">best = 2, latched at t = 3 and t = 5 &#8212; the final running total is 0</text>
+</svg>
+          <figcaption>Each interval becomes two independent events. The running total is
+          a prefix sum over the sorted events; the answer is the highlighted peak, which
+          is gone by the time the sweep ends.</figcaption>
+        </figure>
+      </div>
+
+      <!-- 5 ......................................... IMPLEMENTATION -->
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Events are <code>pair&lt;long long, int&gt;</code>, so the
+        plain <code>sort</code> sorts by time and then by delta with no comparator.
+        The line to read carefully is that one: \(-1 \lt +1\), so at an
+        equal timestamp a departure would be processed <em>before</em> an arrival. That
+        is the opposite of what Room Allocation needs, and it is only harmless here
+        because the statement guarantees distinct times. <code>best</code> is updated
+        every iteration, not after the loop.</p>
+        <div class="src-meta"><span class="path">arrays/Restaurant_Customers.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Restaurant Customers
+// Link: CSES 1619
+// Pattern: sweep line — split each interval into +1/-1 events, sort by
+// time, track running total and its max
+// Time: O(n log n)  Space: O(n)
+//
+// Given n (arrival, leaving) intervals, find the max number simultaneously
+// present.
+//
+// Example:
+//     (5,8) (2,4) (3,9) -&gt; 2
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    vector&lt;pair&lt;long long, int&gt;&gt; events;
+    events.reserve(2 * n);
+    for (int i = 0; i &lt; n; i++) {
+        long long a, b;
+        cin &gt;&gt; a &gt;&gt; b;
+        events.push_back({a, 1});
+        events.push_back({b, -1});
+    }
+
+    sort(events.begin(), events.end());
+
+    int running = 0, best = 0;
+    for (auto&amp; [time, delta] : events) {
+        running += delta;
+        best = max(best, running);
+    }
+
+    cout &lt;&lt; best &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    events = []                             # vector&lt;pair&lt;ll,int&gt;&gt;; reserve() not needed
+    for i in range(n):
+        a, b = int(next(tok)), int(next(tok))
+        events.append((a, 1))
+        events.append((b, -1))
+    events.sort()                           # tuples sort like pairs: by [0], then [1]
+    running, best = 0, 0
+    for time, delta in events:              # for (auto&amp; [time, delta] : events)
+        running += delta
+        best = max(best, running)
+    print(best)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>The running total is
+      <code>0</code> at the last event &mdash; capture <code>best</code> inside the loop
+      or the answer is always zero. And the default <code>pair</code> sort orders
+      \(-1\) before \(+1\) on a tie, i.e. it assumes a customer
+      who leaves at <code>t</code> frees the table for one arriving at <code>t</code>.
+      That holds here only because all times are distinct; do not copy this comparator
+      into a problem that allows ties.</div>
+      <div class="callout trigger"><strong>Recognize</strong>&ldquo;maximum number of
+      intervals active at the same moment&rdquo; &rarr; shred into
+      <code>&plusmn;1</code> events, sort, prefix-sum, latch the max.</div>
+    </article>
+
+<!-- ============ ENTRY ============ -->
+    <article class="entry" id="union-of-painted-bricks">
+      <div class="entry-head"><h3>Union of Painted Bricks</h3><span class="badge num">\(O(N \log N)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> On each of \(N\) days, every brick numbered from \(L_i\) to \(R_i\) (inclusive)
+is painted. Painting a brick again changes nothing. How many different bricks are painted in the end?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\), then \(N\) pairs \(L_i\ R_i\).</dd>
+<dt>Output</dt><dd>One integer: the number of painted bricks.</dd>
+<dt>Limits</dt><dd>Brick numbers up to about \(10^9\) (from the file).</dd>
+<dt>Sample</dt><dd><code>(2,5) (10,10) (4,5) (3,7) (12,14)</code> → <code>10</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly: count the whole numbers in the union of the intervals:</span>
+\[ \text{ans} = \Big|\, \bigcup_{i=1}^{N} \{L_i, L_i + 1, \dots, R_i\} \,\Big| \]</li>
+<li><span class="why">The union is a set of separate blocks. Sort the intervals by \(L\). Keep the current open block \([c_L, c_R]\).</span></li>
+<li><span class="why">For the next interval \([l, r]\):</span>
+\[ l \le c_R \;\Rightarrow\; c_R \leftarrow \max(c_R, r), \qquad l \gt c_R \;\Rightarrow\; \text{close the block, start } [l, r] \]</li>
+<li><span class="why">Simplest form: add up the closed blocks (both ends count):</span>
+\[ \text{ans} = \sum_{\text{blocks}} (c_R - c_L + 1) \]
+<span class="why">Sample: blocks \([2,7], [10,10], [12,14]\) give \(6 + 1 + 3 = 10\).</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Brick numbers reach about \(10^9\), so the answer must come from the \(N\) intervals alone,
+never from an array with one cell per brick.</li>
+<li>The union of intervals is a set of separate maximal blocks, and sorting by \(L\) finds them
+from left to right.</li>
+<li>With the list sorted by \(L\), a new interval either starts inside the open block
+(\(l \le c_R\)), so extend \(c_R = \max(c_R, r)\), or starts after it, which proves the open block is finished.</li>
+<li>Both ends are included, so a finished block adds \(c_R - c_L + 1\), not \(c_R - c_L\).</li>
+<li>The last block has nothing after it to close it, so it is added once more after the loop.
+That line is not a duplicate.</li>
+<li>\(N \cdot 10^9\) can reach about \(10^{14}\), so the total needs <code>long long</code>.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">A
+<code>bool painted[]</code> over all bricks, set across each interval; or test every pair of intervals for overlap.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(\sum (R_i - L_i))\)</span> time and <span class="cost">\(O(\max R)\)</span> space for the array;
+<span class="cost">\(O(N^2)\)</span> for the pairwise version.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(R \le 10^9\) means a \(10^9\)-cell array (about 1 GB as <code>bool</code>), and a single interval can take \(10^9\) steps to fill.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Work with intervals, not bricks: sort by \(L\) and merge in one pass.
+<span class="cost">\(O(N \log N)\)</span> time, <span class="cost">\(O(N)\)</span> space, whatever the brick numbers are.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 250" role="img" aria-label="Five painted ranges sorted by left endpoint and merged into three blocks">
+  <text class="s-td" x="8" y="14">(2,5) (10,10) (4,5) (3,7) (12,14)  &#8594;  sorted by L</text>
+
+  <!-- brick ruler -->
+  <g class="s-td">
+    <text x="48" y="34">2</text><text x="84" y="34">3</text><text x="120" y="34">4</text>
+    <text x="156" y="34">5</text><text x="192" y="34">6</text><text x="228" y="34">7</text>
+    <text x="336" y="34">10</text><text x="408" y="34">12</text>
+    <text x="444" y="34">13</text><text x="480" y="34">14</text>
+  </g>
+
+  <!-- sorted segments -->
+  <rect class="s-box" x="44" y="42" width="144" height="18" rx="3"/><text class="s-tm" x="52" y="55">2&#8211;5</text>
+  <rect class="s-box" x="80" y="64" width="180" height="18" rx="3"/><text class="s-tm" x="88" y="77">3&#8211;7</text>
+  <rect class="s-box" x="116" y="86" width="72"  height="18" rx="3"/><text class="s-tm" x="124" y="99">4&#8211;5</text>
+  <rect class="s-box" x="332" y="108" width="36" height="18" rx="3"/><text class="s-tm" x="336" y="121">10</text>
+  <rect class="s-box" x="404" y="130" width="108" height="18" rx="3"/><text class="s-tm" x="412" y="143">12&#8211;14</text>
+
+  <path class="s-line" d="M32 160 H536"/>
+
+  <!-- merged blocks -->
+  <rect class="s-fill" x="44"  y="172" width="216" height="26" rx="4"/>
+  <text class="s-t" x="108" y="190">[2, 7]</text>
+  <rect class="s-fill" x="332" y="172" width="36"  height="26" rx="4"/>
+  <text class="s-t" x="334" y="190">[10]</text>
+  <rect class="s-fill" x="404" y="172" width="108" height="26" rx="4"/>
+  <text class="s-t" x="428" y="190">[12,14]</text>
+  <text class="s-td" x="8" y="190">merged</text>
+
+  <g class="s-ta">
+    <text x="44"  y="216">7&#8722;2+1 = 6</text>
+    <text x="300" y="216">10&#8722;10+1 = 1</text>
+    <text x="404" y="216">14&#8722;12+1 = 3</text>
+  </g>
+  <text class="s-ta" x="8" y="238">total = 6 + 1 + 3 = 10   (the last block is flushed after the loop)</text>
+</svg>
+          <figcaption>Sorted by <code>L</code>, the three overlapping segments collapse
+          into one open block that keeps extending; the gap at brick 8&ndash;9 is what
+          closes it. Each block's contribution is inclusive, hence the
+          <code>+1</code>.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Sorting a <code>vector&lt;pair&lt;ll,ll&gt;&gt;</code> orders
+        by <code>L</code> then <code>R</code> for free, and equal <code>L</code> needs no
+        tie-break here &mdash; <code>max(curR, r)</code> picks up the right end whichever
+        of them is processed first. <code>seg[0]</code> seeds the open block <em>before</em>
+        the loop, which is why the loop starts at <code>i = 1</code>. The
+        <code>total +=</code> after the loop is the second flush, for the block that never
+        met a segment far enough right to close it.</p>
+        <div class="src-meta"><span class="path">arrays/Union_Of_Painted_Bricks.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Union of Painted Bricks
+// Pattern: sort intervals by L, merge overlapping, sum merged lengths
+// Time: O(N log N)  Space: O(N)
+//
+// N days, each day Mantesh paints all bricks in [L_i, R_i] (repaint is a
+// no-op). Brick numbers can be up to ~1e9, so a per-brick boolean array
+// doesn't fit. Count total distinct bricks painted = size of the union of N
+// intervals.
+//
+// Example:
+//     (2,5),(10,10),(4,5),(3,7),(12,14) -&gt; 10
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n; cin &gt;&gt; n;
+    vector&lt;pair&lt;long long, long long&gt;&gt; seg(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; seg[i].first &gt;&gt; seg[i].second;
+
+    sort(seg.begin(), seg.end());
+
+    long long total = 0;
+    long long curL = seg[0].first, curR = seg[0].second;
+    for (int i = 1; i &lt; n; i++) {
+        long long l = seg[i].first, r = seg[i].second;
+        if (l &lt;= curR) {
+            curR = max(curR, r);
+        } else {
+            total += curR - curL + 1;
+            curL = l;
+            curR = r;
+        }
+    }
+    total += curR - curL + 1;
+
+    cout &lt;&lt; total &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    seg = [(int(next(tok)), int(next(tok))) for _ in range(n)]
+    seg.sort()
+    total = 0
+    curL, curR = seg[0]                     # .first, .second unpacked at once
+    for i in range(1, n):
+        l, r = seg[i]
+        if l &lt;= curR:
+            curR = max(curR, r)
+        else:
+            total += curR - curL + 1
+            curL = l
+            curR = r
+    total += curR - curL + 1
+    print(total)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>Two easy losses. The flush after
+      the loop is mandatory &mdash; drop it and the final block vanishes from the total.
+      And the contribution is \(\text{curR} - \text{curL} + 1\): these are inclusive
+      brick indices, not real-line coordinates, so every block is one brick short without
+      the <code>+1</code>. <code>long long</code> throughout; the total reaches
+      \(\approx 10^{14}\).</div>
+      <div class="callout trigger"><strong>Recognize</strong>&ldquo;how many distinct
+      positions are covered by these ranges, coordinates too large to mark&rdquo; &rarr;
+      sort by left endpoint, merge into one open block, sum inclusive lengths.</div>
+    </article>
+
+<!-- ============ ENTRY ============ -->
+    <article class="entry" id="nested-ranges-check">
+      <div class="entry-head"><h3>Nested Ranges Check</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given \(n\) different ranges \([x_i, y_i]\). Range \([a, b]\)
+<em>contains</em> range \([c, d]\) if \(a \le c\) and \(d \le b\). For each range, decide
+(1) whether it contains some other range, and (2) whether some other range contains it.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(x_i\ y_i\).</dd>
+<dt>Output</dt><dd>Line 1: for each range, <code>1</code> if it contains another, else <code>0</code>. Line 2: <code>1</code> if another contains it, else <code>0</code>. Input order.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \lt y_i \le 10^9\); no range appears twice.</dd>
+<dt>Sample</dt><dd><code>[1,6] [2,4] [4,8] [3,6]</code> → <code>1 0 0 0</code> / <code>0 1 0 1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State both questions exactly:</span>
+\[ \text{contains}_i = \big[\, \exists j \ne i : l_i \le l_j \text{ and } r_j \le r_i \,\big], \qquad \text{inside}_i = \big[\, \exists j \ne i : l_j \le l_i \text{ and } r_i \le r_j \,\big] \]</li>
+<li><span class="why">Sort by \(l\) ascending, and for equal \(l\) by \(r\) descending. Then every range before \(i\) has \(l_j \le l_i\), and every range after has \(l_j \ge l_i\). One of the two inequalities is now free.</span></li>
+<li><span class="why">Only the \(r\) test is left, and a running max or min answers "does one exist":</span>
+\[ \text{inside}_i = \big[\, r_i \le \max_{j \text{ before } i} r_j \,\big], \qquad \text{contains}_i = \big[\, r_i \ge \min_{j \text{ after } i} r_j \,\big] \]</li>
+<li><span class="why">Simplest form: one forward pass keeping <code>maxr</code>, one backward pass keeping <code>minr</code>, both on the same sorted order.</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Containment is two inequalities. Sorting by \(l\) ascending makes the first one automatic for
+every earlier range, so only \(r\) is left to test.</li>
+<li>Forward pass: range \(i\) is inside an earlier one iff \(r_i \le\) the largest \(r\) seen so far.
+One number replaces the whole prefix.</li>
+<li>The backward pass is the mirror image. Scanning right to left, every later range already has
+\(l \ge l_i\), so \(i\) contains something iff \(r_i \ge\) the smallest \(r\) seen so far.</li>
+<li>Equal \(l\) is the one case where "earlier in the array" stops meaning "starts no later". Break
+ties by \(r\) <strong>descending</strong>. The wider range then comes first, so it is already in
+<code>maxr</code> when the narrower one is tested, and the narrower one is already in <code>minr</code>
+when the backward pass reaches the wider one. One sort order serves both passes.</li>
+<li>Ranges are guaranteed different, so a range never counts as its own witness. No \(i \ne j\) check is needed.</li>
+<li>A running max or min answers "does one exist". It cannot answer "how many". See rule 07 and the excluded box.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Test every ordered pair \((i, j)\) against both inequalities.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> time, <span class="cost">\(O(n)\)</span> space.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(4\cdot 10^{10}\) pairs against a 1 s limit.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Sort by (\(l\) ascending, \(r\) descending) so one inequality is free, and turn the other into a
+running max or min. Two linear passes: <span class="cost">\(O(n \log n)\)</span> total, from the sort.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 262" role="img" aria-label="Why ties on the left endpoint must be sorted by right endpoint descending">
+  <text class="s-td" x="8" y="14">two ranges sharing l = 2:  [2,9] and [2,5]  &#8212; [2,9] contains [2,5]</text>
+
+  <!-- panel A -->
+  <text class="s-ta" x="8" y="42">r DESCENDING on ties  (this code)</text>
+  <rect class="s-box" x="24" y="52" width="216" height="20" rx="3"/>
+  <text class="s-tm" x="32" y="66">1st: [2, 9]</text>
+  <rect class="s-box" x="24" y="78" width="132" height="20" rx="3"/>
+  <text class="s-tm" x="32" y="92">2nd: [2, 5]</text>
+  <text class="s-tm" x="256" y="66">maxr := 9</text>
+  <rect class="s-good" x="250" y="78" width="200" height="20" rx="3"/>
+  <text class="s-tm" x="256" y="92">5 &#8804; 9  &#10003;  contained</text>
+
+  <path class="s-line" d="M8 116 H552"/>
+
+  <!-- panel B -->
+  <text class="s-ta" x="8" y="142">r ASCENDING on ties  (flip the tie-break)</text>
+  <rect class="s-box" x="24" y="152" width="132" height="20" rx="3"/>
+  <text class="s-tm" x="32" y="166">1st: [2, 5]</text>
+  <rect class="s-box" x="24" y="178" width="216" height="20" rx="3"/>
+  <text class="s-tm" x="32" y="192">2nd: [2, 9]</text>
+  <text class="s-tm" x="256" y="166">maxr := 5</text>
+  <rect class="s-warn" x="250" y="178" width="240" height="20" rx="3"/>
+  <text class="s-tm" x="256" y="192">9 &#8804; 5  &#10007;  containment lost</text>
+
+  <text class="s-td" x="8" y="226">the narrower range must be tested AFTER the wider one is folded into maxr;</text>
+  <text class="s-td" x="8" y="242">the same key also puts the narrower one into minr first for the backward pass.</text>
+</svg>
+          <figcaption>The tie-break direction is the whole problem. Equal
+          <code>l</code> makes array order the only thing deciding which range is folded
+          into the running extremum first &mdash; descending <code>r</code> puts the
+          container there before its contents are tested.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>v</code> is
+        <code>vector&lt;pair&lt;pll, ll&gt;&gt;</code>: the range in
+        <code>.fr</code> and its <em>original index</em> in <code>.sc</code>, which is
+        how answers get written back in input order after the sort scrambles it. The one
+        line a reader misreads is the output: <code>ans1</code> is built by the forward
+        <code>maxr</code> pass and means &ldquo;<em>is contained by</em> something&rdquo;,
+        <code>ans2</code> by the backward <code>minr</code> pass and means
+        &ldquo;<em>contains</em> something&rdquo; &mdash; and they are printed in the
+        reverse order to which they are computed, <code>ans2</code> first, because the
+        statement asks for &ldquo;contains&rdquo; on line one. <code>minr</code> is seeded
+        from the <code>INF</code> macro, a <code>double</code> <code>1e18</code>, which is
+        safe only because \(r \le 10^{9}\).</p>
+        <div class="src-meta"><span class="path">arrays/Nested_Ranges_Check.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+void solve() 
+{
+    ll n ; 
+    cin &gt;&gt; n ;
+    vector &lt; pair &lt; pll , ll &gt; &gt; v(n) ;
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        cin &gt;&gt; v[i].fr.fr &gt;&gt; v[i].fr.sc ;
+        v[i].sc = i ;
+    }
+    sort(v.begin() , v.end() , [&amp;](pair &lt; pll , ll &gt; a , pair &lt; pll , ll &gt; b)
+    {
+        if(a.fr.fr != b.fr.fr) return a.fr.fr &lt; b.fr.fr ;
+        return a.fr.sc &gt; b.fr.sc ;
+    });
+    ll maxr = -1 ;
+    vector &lt; ll &gt; ans1(n) ;
+    for(ll i = 0 ; i &lt; n ; i++)
+    {
+        ll curr = v[i].fr.sc ;
+        ll curridx = v[i].sc ;
+        if(curr &lt;= maxr) ans1[curridx] = 1 ;
+        maxr = max(maxr , curr) ;
+    }
+    vector &lt; ll &gt; ans2(n) ;
+    ll minr = INF ; 
+    for(ll i = n - 1 ; i &gt;= 0 ; i--)
+    {
+        ll curr = v[i].fr.sc ;
+        ll curridx = v[i].sc ;
+        if(curr &gt;= minr) ans2[curridx] = 1 ;
+        minr = min(minr , curr) ;
+    }
+
+    for(ll i = 0 ; i &lt; n ; i++) cout &lt;&lt; ans2[i] &lt;&lt; " " ;
+    cout &lt;&lt; endl ;
+    for(ll i = 0 ; i &lt; n ; i++) cout &lt;&lt; ans1[i] &lt;&lt; " " ;
+    cout &lt;&lt; endl ;  
+
+
+
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+INF = 10**18                                # 1e18 would be a float in Python; 10**18 is an int
+
+def solve():
+    n = int(next(tok))
+    v = []                                  # vector&lt;pair&lt;pll, ll&gt;&gt; -&gt; ((l, r), idx)
+    for i in range(n):
+        l, r = int(next(tok)), int(next(tok))
+        v.append(((l, r), i))
+    # comparator: l ascending, then r DESCENDING -&gt; key (l, -r)
+    v.sort(key=lambda a: (a[0][0], -a[0][1]))
+    maxr = -1
+    ans1 = [0] * n
+    for i in range(n):
+        curr = v[i][0][1]                   # .fr.sc
+        curridx = v[i][1]                   # .sc
+        if curr &lt;= maxr: ans1[curridx] = 1
+        maxr = max(maxr, curr)
+    ans2 = [0] * n
+    minr = INF
+    for i in range(n - 1, -1, -1):          # for (i = n-1; i &gt;= 0; i--): stop is -1, step -1
+        curr = v[i][0][1]
+        curridx = v[i][1]
+        if curr &gt;= minr: ans2[curridx] = 1
+        minr = min(minr, curr)
+    print(' '.join(map(str, ans2)))
+    print(' '.join(map(str, ans1)))
+
+solve()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>The comparator's second line is
+      <code>return a.fr.sc &gt; b.fr.sc</code> &mdash; strictly <em>descending</em>
+      <code>r</code> on equal <code>l</code>. Reverse it and every equal-<code>l</code>
+      containment is silently missed in both passes; nothing crashes, the answer is just
+      wrong. Second trap: <code>ans1</code> holds &ldquo;is contained&rdquo; but is printed
+      <em>second</em>. Swap the two <code>cout</code> loops and the two output lines
+      trade places.</div>
+      <div class="callout trigger"><strong>Recognize</strong>&ldquo;for every interval,
+      does another interval cover it / does it cover another&rdquo; &rarr; sort
+      <code>l</code>&nbsp;asc / <code>r</code>&nbsp;desc, one forward max-<code>r</code>
+      pass and one backward min-<code>r</code> pass.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 2 ===================== -->
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; Heap-backed interval assignment</h2></div>
+    <p class="family-note">The sweep still finds the number, but now it also has to hand
+    back an <em>assignment</em>. The textbook shape keeps a min-heap of
+    <code>(departure day, room)</code> and pops it when the next arrival clears the
+    earliest departure. This solution reaches the same
+    <code>O(n log n)</code> from the other side: sweep <code>&plusmn;1</code> events to
+    learn <code>k</code>, then keep the free rooms in a plain stack &mdash; once
+    <code>k</code> is fixed, every free room is interchangeable, so the heap's ordering
+    is work nobody reads.</p>
+
+<!-- ============ ENTRY ============ -->
+    <article class="entry" id="room-allocation">
+      <div class="entry-head"><h3>Room Allocation</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A hotel gets \(n\) customers. Customer \(i\) stays from day \(a_i\) to day
+\(b_i\) (inclusive) and needs one room. Two customers can use the same room only if the first one
+leaves <em>strictly before</em> the second one arrives. What is the minimum number of rooms, and
+which room does each customer get?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(n\) lines \(a_i\ b_i\).</dd>
+<dt>Output</dt><dd>The minimum number of rooms \(k\); then the room number (\(1..k\)) of each customer, in input order. Any valid assignment is accepted.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \le b_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>[1,2] [2,4] [4,4]</code> → <code>2</code> / <code>1 2 1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Sharing rule, exactly:</span>
+\[ i \text{ then } j \text{ can share a room} \iff b_i \lt a_j \]
+<span class="why">So two customers clash exactly when their closed intervals \([a_i, b_i]\) and \([a_j, b_j]\) overlap, touching ends included.</span></li>
+<li><span class="why">On any day \(t\), everyone present needs a different room. That gives a lower bound:</span>
+\[ k \ge \max_{t} \; \#\{\, i : a_i \le t \le b_i \,\} \]</li>
+<li><span class="why">The bound is reached. Process events in time order, with arrivals before departures on the same day. An arriving customer takes any free room. A leaving customer returns theirs.</span></li>
+<li><span class="why">Simplest form: \(k\) is the peak of the \(\pm 1\) sweep (as in Restaurant Customers, with ties broken \(+1\) first), and the free rooms are kept on a stack.</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>"Leaves strictly before the other arrives" means the closed intervals must not even touch. A
+room freed on day \(t\) is usable from day \(t + 1\), not day \(t\).</li>
+<li>So two customers clash exactly when their day intervals overlap, and the answer is the
+maximum number present at once, \(k\). It is the same \(\pm 1\) sweep as Restaurant Customers.</li>
+<li>\(k\) is a lower bound (that many people are present at once) and it can be reached, because
+handling events in time order never needs more rooms than the running peak.</li>
+<li><em>Which</em> free room a customer gets does not matter. The free rooms need no order at all:
+a stack is enough, no heap or priority queue.</li>
+<li>Sorting \(+1\) before \(-1\) at the same day handles the strictness with no extra code. On day
+\(t\), the arrivals take rooms before that day's departures give any back.</li>
+<li>The pool starts with all \(k\) rooms, and \(k\) came from this same sweep. So
+<code>rooms.back()</code> is never called on an empty vector.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Take customers by arrival; for
+each, scan every room opened so far for one whose last guest left before this arrival, else open a new room.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n \cdot k)\)</span>, which is <span class="cost">\(O(n^2)\)</span> when the intervals nest.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) with \(k\) up to \(n\) gives \(4\cdot 10^{10}\) room checks.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+One sorted event list, swept twice: once to find \(k\), once to assign rooms. The room scan
+becomes an <span class="cost">\(O(1)\)</span> <code>pop_back</code>/<code>push_back</code> on a
+stack of free rooms. <span class="cost">\(O(n \log n)\)</span> overall, all from the sort.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 300" role="img" aria-label="Three customers assigned to two rooms, with the free-room pool after each event">
+  <text class="s-td" x="8" y="14">customers: 1=(1,2)  2=(2,4)  3=(4,4)   &#8212;  answer k = 2, rooms 1 2 1</text>
+
+  <!-- day grid -->
+  <g class="s-td">
+    <text x="92" y="34">day 1</text><text x="192" y="34">day 2</text>
+    <text x="292" y="34">day 3</text><text x="392" y="34">day 4</text>
+  </g>
+  <path class="s-line" d="M80 40 V210 M180 40 V210 M280 40 V210 M380 40 V210 M480 40 V210"/>
+
+  <!-- room 1 -->
+  <text class="s-td" x="8" y="66">room 1</text>
+  <rect class="s-fill" x="80" y="50" width="200" height="26" rx="4"/>
+  <text class="s-t" x="150" y="68">cust 1</text>
+  <rect class="s-fill" x="380" y="50" width="100" height="26" rx="4"/>
+  <text class="s-t" x="400" y="68">cust 3</text>
+
+  <!-- room 2 -->
+  <text class="s-td" x="8" y="106">room 2</text>
+  <rect class="s-fill" x="180" y="90" width="300" height="26" rx="4"/>
+  <text class="s-t" x="300" y="108">cust 2</text>
+
+  <!-- the strict rule -->
+  <rect class="s-warn" x="128" y="130" width="276" height="40" rx="4"/>
+  <text class="s-tm" x="136" y="146">day 2: cust 1 leaves, cust 2 arrives.</text>
+  <text class="s-tm" x="136" y="162">+1 sorts first &#8594; room 1 is NOT free yet.</text>
+  <path class="s-hi" d="M180 186 V130"/>
+
+  <!-- event / pool table -->
+  <text class="s-td" x="8" y="230">event</text>
+  <text class="s-td" x="8" y="252">action</text>
+  <text class="s-td" x="8" y="274">pool after</text>
+  <g class="s-tm">
+    <text x="80"  y="230">d1 +1(c1)</text><text x="80"  y="252">take 1</text><text x="80"  y="274">[2]</text>
+    <text x="176" y="230">d2 +1(c2)</text><text x="176" y="252">take 2</text><text x="176" y="274">[ ]</text>
+    <text x="272" y="230">d2 &#8722;1(c1)</text><text x="272" y="252">give 1</text><text x="272" y="274">[1]</text>
+    <text x="368" y="230">d4 +1(c3)</text><text x="368" y="252">take 1</text><text x="368" y="274">[ ]</text>
+    <text x="464" y="230">d4 &#8722;1&#8901;2</text><text x="464" y="252">give 2,1</text><text x="464" y="274">[2,1]</text>
+  </g>
+</svg>
+          <figcaption>The pool starts as <code>[2, 1]</code> so <code>back()</code> hands
+          out room 1 first. At day 2 the arrival is processed before the departure, which
+          is what forces a second room; by day 4 room 1 is back in the pool and gets
+          reused.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Events are <code>array&lt;ll,3&gt;</code> of
+        <code>{time, &plusmn;1, customer index}</code>, and the comparator's second line,
+        <code>return a[1] &gt; b[1]</code>, is the entire strictness rule: <code>+1</code>
+        sorts ahead of \(-1\). The same sorted vector is then swept twice.
+        <code>rooms</code> is filled \(k, k-1, \dots , 1\) precisely so
+        that <code>back()</code> is room 1 &mdash; it is a stack, not a heap, and
+        <code>pop_back</code>/<code>push_back</code> are the whole allocator. Nothing
+        keys on departure order, because nothing needs to.</p>
+        <div class="src-meta"><span class="path">arrays/Room_Allocation.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+void solve() 
+{
+    ll n ; 
+    cin &gt;&gt; n ; 
+    vector &lt; array&lt;ll, 3&gt; &gt; v ; 
+    for( ll i = 0 ; i &lt; n ; i++ ) 
+    {
+        ll a , b ; 
+        cin &gt;&gt; a &gt;&gt; b ; 
+        v.push_back({a , 1, i }) ; 
+        v.push_back({b , -1, i }) ;
+        
+    }
+    sort( v.begin() , v.end() , [&amp;]( const array&lt;ll, 3&gt; &amp;a , const array&lt;ll, 3&gt; &amp;b ) 
+    {
+        if( a[0] != b[0] ) 
+            return a[0] &lt; b[0] ;
+        return a[1] &gt; b[1] ;
+    }) ;
+    ll c = 0 , k = 0 ;
+    for( const auto &amp;x : v)
+    {
+        c += x[1] ; 
+        k = max( k , c ) ;
+    }
+    cout &lt;&lt; k &lt;&lt; endl ;
+    vector &lt; ll &gt; ans(n) ;
+    vector &lt; ll &gt; rooms(k) ;
+    for( ll i = 0 ; i &lt; k ; i++ ) 
+        rooms[i] = k - i  ;
+    for(const auto &amp;x : v ) 
+    {
+        ll type = x[1] , idx = x[2] ;
+        if( type == 1 )
+        {
+            // it is the arrival 
+            ans[idx] = rooms.back() ;
+            // remove the room from the available rooms
+            rooms.pop_back() ;
+        }
+        else 
+        {
+            // it is the departure 
+            rooms.push_back(ans[idx]) ;
+        }
+    }
+    for (const auto &amp;x : ans ) 
+        cout &lt;&lt; x &lt;&lt; " " ;
+    cout &lt;&lt; endl ;
+    
+    
+
+    
+
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    v = []                                  # vector&lt;array&lt;ll,3&gt;&gt; -&gt; list of tuples
+    for i in range(n):
+        a, b = int(next(tok)), int(next(tok))
+        v.append((a, 1, i))
+        v.append((b, -1, i))
+    # comparator: time ascending, then type DESCENDING (arrival +1 before leave -1)
+    v.sort(key=lambda a: (a[0], -a[1]))
+    c, k = 0, 0
+    for x in v:
+        c += x[1]
+        k = max(k, c)
+    print(k)
+    ans = [0] * n
+    rooms = [0] * k
+    for i in range(k):
+        rooms[i] = k - i
+    for x in v:
+        type_, idx = x[1], x[2]             # "type" is a builtin, so type_
+        if type_ == 1:
+            # it is the arrival
+            ans[idx] = rooms[-1]            # rooms.back()
+            # remove the room from the available rooms
+            rooms.pop()                     # pop_back()
+        else:
+            # it is the departure
+            rooms.append(ans[idx])
+    print(' '.join(map(str, ans)))
+
+solve()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>The sharing rule is
+      <em>strict</em>: \(b_i \lt a_j\). A room whose guest departs on day
+      <code>t</code> is free for a guest arriving on day <code>t+1</code>, <b>not</b> day
+      <code>t</code> &mdash; so at an equal timestamp the arrival must be processed first,
+      which is what <code>return a[1] &gt; b[1]</code> buys. Flip that line (or fall back
+      on a default <code>pair</code>/<code>array</code> sort, which puts
+      \(-1\) first) and <code>k</code> comes out too small, the pool
+      underflows, and the assignment is rejected. Note this is the <em>opposite</em>
+      tie-break to Restaurant Customers'.</div>
+      <div class="callout trigger"><strong>Recognize</strong>&ldquo;minimum number of
+      rooms / machines / platforms, <em>and</em> print which one each job uses&rdquo;
+      &rarr; <code>&plusmn;1</code> sweep for <code>k</code>, then a free-ID pool popped
+      on arrival and pushed back on departure.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 3 ===================== -->
+  <section class="family" id="f3">
+    <div class="family-head"><h2>3 &middot; Ordered-set greedy maintenance</h2></div>
+    <p class="family-note">Here the sorted structure is not built once and read &mdash; it
+    is edited at every step. Each element arrives, a predecessor/successor lookup finds
+    the one place it interacts with, and one element is removed while one or two are
+    inserted. In every problem here the container must be a <code>multiset</code>, because the
+    values it stores are separate entities that can collide, and the answer is
+    read straight off the container (<code>size()</code>, <code>*rbegin()</code>) rather
+    than accumulated.</p>
+
+<!-- ============ ENTRY ============ -->
+    <article class="entry" id="tower-of-cubes">
+      <div class="entry-head"><h3>Tower of Cubes</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You get \(n\) cubes in a fixed order, with sizes \(c_1, \dots, c_n\). Each cube
+must either go on top of an existing tower whose top cube is <em>strictly larger</em>, or start a
+new tower. What is the minimum number of towers?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(c_1, \dots, c_n\).</dd>
+<dt>Output</dt><dd>One integer: the minimum number of towers.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le c_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 8 2 1 5</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Only the top of each tower matters. Keep the multiset \(T\) of tops. Cube \(c\) may go on a tower with top \(t\) iff:</span>
+\[ t \gt c, \qquad \text{after which that top becomes } c \]</li>
+<li><span class="why">Among the tops that fit, choose the smallest. Any later cube that fits under it also fits under the bigger tops, so this keeps the most options open:</span>
+\[ t^{*} = \min \{\, t \in T : t \gt c \,\} \]</li>
+<li><span class="why">Update the multiset:</span>
+\[ t^{*} \text{ exists} \;\Rightarrow\; T \leftarrow T - \{t^{*}\} + \{c\}, \qquad \text{otherwise} \;\Rightarrow\; T \leftarrow T + \{c\} \]</li>
+<li><span class="why">Simplest form: \(t^{*}\) is <code>upper_bound(c)</code>, and the answer is \(|T|\) at the end.</span>
+<span class="why">Sample: tops go \(\{3\}, \{3, 8\}, \{2, 8\}, \{1, 8\}, \{1, 5\}\), so \(2\) towers.</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>A tower's history does not matter; only its current top can accept a cube. The whole state is the multiset of tops.</li>
+<li>Two towers can have the same top, so use <code>multiset</code>, not <code>set</code>.</li>
+<li>Among all tops \(\gt c\), place the cube on the <em>smallest</em>. Every later cube that fits
+under it also fits under the larger tops, so it is the least useful one to keep. Tightest fit first is the key step.</li>
+<li>"Smallest top strictly greater than \(c\)" is exactly <code>upper_bound(c)</code>.
+<code>lower_bound</code> could return a top equal to \(c\), which cannot take it.</li>
+<li>Each cube inserts one value and erases at most one, so the multiset grows by one exactly when
+no tower fits. Its final <code>size()</code> <em>is</em> the number of towers.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Keep the tops in a vector; for
+each cube scan all towers for the tightest fit.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n \cdot \text{towers})\)</span>, which is <span class="cost">\(O(n^2)\)</span>
+when the input is increasing and every cube starts its own tower.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) checks. A sorted vector does not help, since
+each insert still shifts \(O(n)\) elements.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+A <code>multiset</code>: <code>upper_bound</code>, <code>erase</code> and <code>insert</code> are
+each <span class="cost">\(O(\log n)\)</span>, so <span class="cost">\(O(n \log n)\)</span> total.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 210" role="img" aria-label="The multiset of tower tops evolving over the cubes 3 8 2 1 5">
+  <text class="s-td" x="8" y="14">cubes 3 8 2 1 5, processed left to right</text>
+
+  <g class="s-td">
+    <text x="100"  y="40">c = 3</text><text x="200" y="40">c = 8</text>
+    <text x="300" y="40">c = 2</text><text x="400" y="40">c = 1</text>
+    <text x="500" y="40">c = 5</text>
+  </g>
+
+  <g class="s-tm">
+    <text x="8" y="66">upper_bound</text>
+    <text x="100"  y="66">end</text><text x="200" y="66">end</text>
+    <text x="300" y="66">3</text>  <text x="400" y="66">2</text>
+    <text x="500" y="66">8</text>
+  </g>
+
+  <g class="s-tm">
+    <text x="8" y="90">action</text>
+    <text x="100"  y="90">new</text><text x="200" y="90">new</text>
+    <text x="300" y="90">3&#8594;2</text><text x="400" y="90">2&#8594;1</text>
+    <text x="500" y="90">8&#8594;5</text>
+  </g>
+
+  <!-- multiset states -->
+  <text class="s-td" x="8" y="126">tops</text>
+  <rect class="s-box" x="88"  y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="98"  y="125">{3}</text>
+  <rect class="s-box" x="188" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="192" y="125">{3,8}</text>
+  <rect class="s-box" x="288" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="292" y="125">{2,8}</text>
+  <rect class="s-box" x="388" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="392" y="125">{1,8}</text>
+  <rect class="s-good" x="488" y="108" width="60" height="24" rx="4"/>
+  <text class="s-t" x="492" y="125">{1,5}</text>
+
+  <text class="s-ta" x="8" y="160">size grows only on &#8220;new&#8221; (c = 3, c = 8) &#8212; answer = |tops| = 2</text>
+  <text class="s-td" x="8" y="184">c = 5 takes the 8-tower, not a new one: 8 is the only top strictly above 5.</text>
+</svg>
+          <figcaption>The multiset never remembers a tower's height, only its top. Each
+          cube either replaces one top (tightest fit) or adds a new one, so the container's
+          size is the answer.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Three <code>multiset</code> calls per cube and no bookkeeping
+        at all. <code>tops.erase(it)</code> takes the <em>iterator</em>, which removes
+        exactly that one element &mdash; the value overload would remove every top of that
+        height. The <code>insert</code> is outside the <code>if</code> on purpose: both
+        branches end by putting <code>c</code> into the multiset, and the only difference
+        is whether an old top was erased first. The three
+        <code>// this takes O ( log n ) time</code> comments are the author's own.</p>
+        <div class="src-meta"><span class="path">arrays/Tower_Of_Cubes.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Tower of Cubes
+// Link: CSES 1073
+// Pattern: patience-sorting-style greedy — multiset of tower tops, place
+// each cube on the tightest-fitting tower (smallest top strictly &gt; cube)
+// Time: O(n log n)  Space: O(n)
+//
+// Process cubes in given order. Each cube either starts a new tower or goes
+// on top of an existing tower whose current top is strictly larger.
+// Minimize the number of towers.
+//
+// Example:
+//     3 8 2 1 5 -&gt; 2
+
+#include &lt;iostream&gt;
+#include &lt;set&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    multiset&lt;int&gt; tops;
+    for (int i = 0; i &lt; n; i++) {
+        int c;
+        cin &gt;&gt; c;
+        auto it = tops.upper_bound(c);
+        // this takes O ( log n ) time
+        if (it != tops.end()) {
+            tops.erase(it);
+            // this takes O ( log n ) time
+        }
+        tops.insert(c);
+        // this takes O ( log n ) time
+    }
+
+    cout &lt;&lt; tops.size() &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_right, insort
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+    tops = []                               # multiset&lt;int&gt; -&gt; a list kept sorted
+    for i in range(n):
+        c = int(next(tok))
+        j = bisect_right(tops, c)           # upper_bound(c): index of first element &gt; c
+        # this takes O ( log n ) time
+        if j != len(tops):                  # it != tops.end()
+            tops.pop(j)                     # erase(it)
+            # ponytail: list.pop(j) is O(n), not O(log n); fine to read, slow at n = 2e5
+        insort(tops, c)                     # insert(c), keeps the list sorted (also O(n))
+    print(len(tops))
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong><code>upper_bound</code>, not
+      <code>lower_bound</code> &mdash; the rule needs a top <em>strictly</em> greater, and
+      a top equal to <code>c</code> cannot take it. <code>multiset</code>, not
+      <code>set</code> &mdash; two towers may share a top. And
+      <code>erase(it)</code> by iterator, never <code>erase(value)</code>, which would
+      delete every tower with that top at once.</div>
+      <div class="callout trigger"><strong>Recognize</strong>&ldquo;minimum number of
+      piles / towers / sequences, each must stay monotonic, input order is fixed&rdquo;
+      &rarr; multiset of pile tops, tightest-fit placement, answer is
+      <code>size()</code>.</div>
+    </article>
+
+<!-- ============ ENTRY ============ -->
+    <article class="entry" id="traffic-lights">
+      <div class="entry-head"><h3>Traffic Lights</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A street runs from position \(0\) to position \(x\). Traffic lights are added
+one at a time, at \(n\) different positions \(p_1, \dots, p_n\). After each addition, print the
+length of the longest part of the street with no traffic light.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(x,\ n\), then \(p_1, \dots, p_n\).</dd>
+<dt>Output</dt><dd>\(n\) integers: the longest gap after each addition.</dd>
+<dt>Limits</dt><dd>\(1 \le x \le 10^9,\ \ 1 \le n \le 2\cdot 10^5,\ \ 0 \lt p_i \lt x\), all different.</dd>
+<dt>Sample</dt><dd>\(x = 8\), lights <code>3 6 2</code> → <code>5 3 3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(C = \{0, x\} \cup \{\text{lights so far}\}\), sorted as \(q_0 \lt q_1 \lt \dots \lt q_m\). The answer is the largest gap:</span>
+\[ \text{ans} = \max_{k} \big( q_{k+1} - q_k \big) \]</li>
+<li><span class="why">A new light \(p\) falls inside exactly one gap \((lo, hi)\), where \(lo\) and \(hi\) are its neighbours in \(C\). That gap is replaced by two:</span>
+\[ hi - lo \;\longrightarrow\; (p - lo) \;+\; (hi - p) \]</li>
+<li><span class="why">So keep two structures: the set \(C\) to find \(lo, hi\), and a multiset \(G\) of gap lengths.</span></li>
+<li><span class="why">Simplest form, for each new light:</span>
+\[ G \leftarrow G - \{hi - lo\} + \{p - lo,\ hi - p\}, \qquad \text{ans} = \max G \]
+<span class="why">Sample: gaps \(\{8\} \to \{3, 5\} \to \{3, 3, 2\} \to \{2, 1, 3, 2\}\), maxima \(5, 3, 3\).</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The lights cut the street into gaps between neighbouring cut points. Adding one light destroys exactly one gap and creates exactly two.</li>
+<li>The destroyed gap is the one around \(p\): from its predecessor \(lo\) to its successor \(hi\)
+among the current cut points. That is one <code>upper_bound</code> and one step back.</li>
+<li>Treating \(0\) and \(x\) as cut points from the start means every new light has both a
+predecessor and a successor. There is no first-light or last-light special case.</li>
+<li>The maximum gap never grows, but it cannot be kept as a single number. When the largest gap
+is split, the answer becomes the next largest, which only the full collection knows.</li>
+<li>Gap <em>lengths</em> can repeat even though positions cannot, so use a <code>multiset</code>. The
+current maximum is <code>*gaps.rbegin()</code>, found in \(O(1)\).</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Keep the positions in a vector;
+after each addition, re-sort (or rescan) and take the largest neighbouring difference.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> for the rescan, <span class="cost">\(O(n^2 \log n)\)</span> if re-sorting.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) differences recomputed, almost all unchanged.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Two ordered containers with separate jobs: a <code>set</code> of positions for
+<span class="cost">\(O(\log n)\)</span> neighbour lookup, and a <code>multiset</code> of lengths for
+<span class="cost">\(O(1)\)</span> max. <span class="cost">\(O(n \log n)\)</span> total.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 250" role="img" aria-label="Inserting lights at 3, 6 and 2 on a street of length 8, splitting one gap each time">
+  <text class="s-td" x="8" y="14">x = 8, lights 3 6 2  &#8594;  answers 5 3 3</text>
+
+  <g class="s-td">
+    <text x="36" y="34">0</text><text x="96" y="34">1</text><text x="156" y="34">2</text>
+    <text x="216" y="34">3</text><text x="276" y="34">4</text><text x="336" y="34">5</text>
+    <text x="396" y="34">6</text><text x="456" y="34">7</text><text x="516" y="34">8</text>
+  </g>
+
+  <!-- after 3 -->
+  <text class="s-td" x="8" y="62">+3</text>
+  <rect class="s-box"  x="40" y="46" width="180" height="22" rx="3"/><text class="s-tm" x="120" y="62">3</text>
+  <rect class="s-good" x="220" y="46" width="300" height="22" rx="3"/><text class="s-t" x="360" y="62">5</text>
+
+  <!-- after 6 -->
+  <text class="s-td" x="8" y="102">+6</text>
+  <rect class="s-good" x="40" y="86" width="180" height="22" rx="3"/><text class="s-t" x="120" y="102">3</text>
+  <rect class="s-good" x="220" y="86" width="180" height="22" rx="3"/><text class="s-t" x="300" y="102">3</text>
+  <rect class="s-box"  x="400" y="86" width="120" height="22" rx="3"/><text class="s-tm" x="450" y="102">2</text>
+
+  <!-- after 2 : the split -->
+  <text class="s-td" x="8" y="152">+2</text>
+  <rect class="s-warn" x="40" y="136" width="120" height="22" rx="3"/><text class="s-tm" x="90" y="152">2</text>
+  <rect class="s-warn" x="160" y="136" width="60"  height="22" rx="3"/><text class="s-tm" x="180" y="152">1</text>
+  <rect class="s-good" x="220" y="136" width="180" height="22" rx="3"/><text class="s-t" x="300" y="152">3</text>
+  <rect class="s-box"  x="400" y="136" width="120" height="22" rx="3"/><text class="s-tm" x="450" y="152">2</text>
+  <path class="s-hi" d="M160 132 V166"/>
+  <text class="s-ta" x="112" y="182">p = 2 splits gap (lo=0, hi=3)</text>
+
+  <text class="s-tm" x="8" y="212">gaps: erase(find(3&#8722;0)) &#8594; insert(2&#8722;0), insert(3&#8722;2)   {3,3,2} &#8594; {3,2,2,1}</text>
+  <text class="s-ta" x="8" y="234">answer = *gaps.rbegin() = 3 &#8212; the split gap was not the maximum, the other 3 was</text>
+</svg>
+          <figcaption>Each insertion destroys the one gap that brackets it and creates
+          two. The last step shows why a scalar maximum is not enough: the answer is still
+          3, but it now comes from a different gap.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>positions.upper_bound(p)</code> gives the first cut
+        point strictly above <code>p</code> &mdash; <code>hi</code> is read off it
+        <em>before</em> the iterator is stepped back to give <code>lo</code>, which is the
+        one line worth slowing down for. The <code>if (it != positions.begin())</code>
+        guard can never actually fire: <code>0</code> is always in the set and
+        <code>p &gt; 0</code>, so <code>upper_bound</code> is never
+        <code>begin()</code> &mdash; it is defensive, not load-bearing. The two containers
+        are updated in lockstep, and the answer is printed straight from
+        <code>*gaps.rbegin()</code> with no separate maximum tracked anywhere.</p>
+        <div class="src-meta"><span class="path">arrays/Traffic_Lights.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Traffic Lights
+// Link: CSES 1163
+// Pattern: set of boundary positions (with 0, x sentinels) for
+// predecessor/successor lookup, multiset of gap lengths for O(1) max
+// Time: O(n log n)  Space: O(n)
+//
+// Street 0..x, lights added one at a time at distinct positions. After
+// each addition, print the longest gap with no light.
+//
+// Example:
+//     x=8, lights 3 6 2 -&gt; 5 3 3
+
+#include &lt;iostream&gt;
+#include &lt;set&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    long long x;
+    int n;
+    cin &gt;&gt; x &gt;&gt; n;
+
+    set&lt;long long&gt; positions = {0, x};
+    multiset&lt;long long&gt; gaps = {x};
+
+    for (int i = 0; i &lt; n; i++) {
+        long long p;
+        cin &gt;&gt; p;
+
+        auto it = positions.upper_bound(p);
+        // this is the first element &gt; p, so the previous element is the largest &lt;= p
+
+        long long hi = *it ; 
+        
+        if (it != positions.begin()) {
+            it--;
+        }
+
+        long long lo = *it;
+
+        gaps.erase(gaps.find(hi - lo));
+        // all in O of log n time, since multiset is implemented as a balanced BST
+        gaps.insert(p - lo);
+        gaps.insert(hi - p);
+        positions.insert(p);
+
+        cout &lt;&lt; *gaps.rbegin() &lt;&lt; ' ';
+    }
+    cout &lt;&lt; '\n';
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_right, bisect_left, insort
+tok = iter(sys.stdin.read().split())
+
+def main():
+    x, n = int(next(tok)), int(next(tok))
+    positions = [0, x]                      # set&lt;ll&gt; -&gt; sorted list (Python has no ordered set)
+    gaps = [x]                              # multiset&lt;ll&gt; -&gt; sorted list
+    out = []
+    for i in range(n):
+        p = int(next(tok))
+        j = bisect_right(positions, p)
+        # this is the first element &gt; p, so the previous element is the largest &lt;= p
+        hi = positions[j]                   # *it
+        if j != 0:                          # it != positions.begin()
+            j -= 1                          # it--
+        lo = positions[j]
+        gaps.pop(bisect_left(gaps, hi - lo))    # gaps.erase(gaps.find(hi - lo)): remove ONE copy
+        # ponytail: sorted-list insert/erase is O(n), C++ multiset is O(log n)
+        insort(gaps, p - lo)
+        insort(gaps, hi - p)
+        insort(positions, p)
+        out.append(gaps[-1])                # *gaps.rbegin() = largest
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong><code>gaps.erase(gaps.find(hi - lo))</code>
+      removes one instance; <code>gaps.erase(hi - lo)</code> removes <em>every</em>
+      gap of that length and quietly destroys the answer &mdash; two gaps sharing a length
+      is the normal case, not a corner case. Also seed <code>positions</code> with
+      <code>{0, x}</code> and <code>gaps</code> with <code>{x}</code> up front; without the
+      sentinels the first light has no bracketing pair to look up. Note the local is named
+      <code>lo</code>, not <code>prev</code>, because <code>prev</code> collides with
+      <code>std::prev</code> under <code>using namespace std</code>.</div>
+      <div class="callout trigger"><strong>Recognize</strong>&ldquo;insert cut points one
+      at a time, report the longest remaining segment after each&rdquo; &rarr;
+      <code>set</code> of positions for predecessor/successor,
+      <code>multiset</code> of lengths for the max.</div>
+    </article>
+
+    <article class="entry" id="concert-tickets">
+      <div class="entry-head"><h3>Concert Tickets</h3><span class="badge num">\(O((n+m) \log n)\)</span></div>
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(n\) concert tickets with prices \(h_1, \dots, h_n\). Then \(m\)
+customers arrive one after another. Customer \(j\) will pay at most \(t_j\), and gets the most
+expensive remaining ticket whose price does not exceed \(t_j\). That ticket is then gone. Print what
+each customer pays, or \(-1\) if they get nothing.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n,\ m\); then \(h_1, \dots, h_n\); then \(t_1, \dots, t_m\).</dd>
+<dt>Output</dt><dd>\(m\) lines: the price paid, or <code>-1</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 2\cdot 10^5,\ \ 1 \le h_i, t_j \le 10^9\)</dd>
+<dt>Sample</dt><dd>prices <code>5 3 7 8 5</code>, customers <code>4 8 3</code> → <code>3 8 -1</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(H\) be the multiset of unsold prices. Customer \(j\) gets:</span>
+\[ \text{pay}_j = \max \{\, h \in H : h \le t_j \,\}, \qquad \text{or } -1 \text{ if no such } h \]</li>
+<li><span class="why">Then exactly one copy of that price is removed:</span>
+\[ H \leftarrow H - \{\text{pay}_j\} \]</li>
+<li><span class="why">Simplest form: "largest \(\le t\)" is the element just before the first one \(\gt t\):</span>
+\[ \text{pay}_j = \text{prev}\big(\text{upper\_bound}(t_j)\big) \]</li>
+</ol></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>"Largest value \(\le t\)" is a predecessor query: <code>upper_bound(t)</code>, then one step back.</li>
+<li>Tickets with equal prices are still different tickets, so use a <code>multiset</code>.</li>
+<li>Selling removes exactly one copy, so erase by iterator, not by value.</li>
+</ol>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Scan all unsold tickets for each customer.</span></div>
+<div class="row"><span class="k">cost</span><span class="v"><span class="cost">\(O(n \cdot m)\)</span></span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">\(n = m = 2\cdot 10^5\) gives \(4\cdot 10^{10}\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">Balanced search tree (<code>multiset</code>) with predecessor lookup and erase: <span class="cost">\(O((n+m) \log n)\)</span>.</span></div>
+</div>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 320 120" role="img" aria-label="Concert tickets sample"><text class="s-td" x="8" y="14">prices 3 5 5 7 8</text><rect class="s-good" x="20" y="24" width="40" height="28" rx="4"/><text class="s-t" x="40" y="42" text-anchor="middle">3</text><rect class="s-box" x="64" y="24" width="40" height="28" rx="4"/><text class="s-t" x="84" y="42" text-anchor="middle">5</text><rect class="s-box" x="108" y="24" width="40" height="28" rx="4"/><text class="s-t" x="128" y="42" text-anchor="middle">5</text><rect class="s-box" x="152" y="24" width="40" height="28" rx="4"/><text class="s-t" x="172" y="42" text-anchor="middle">7</text><rect class="s-good" x="196" y="24" width="40" height="28" rx="4"/><text class="s-t" x="216" y="42" text-anchor="middle">8</text><text class="s-td" x="8" y="76">max 4 → 3 · max 8 → 8 · max 3 → −1</text><text class="s-td" x="8" y="100">green = sold</text></svg>
+          <figcaption>Customer 3 finds nothing ≤ 3 left because the 3 was sold to customer 1.</figcaption>
+        </figure>
+      </div>
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>it == h.begin()</code> after <code>upper_bound</code> means every price exceeds <code>t</code>. Otherwise <code>it--</code> lands on the answer, and <code>h.erase(it)</code> removes that single element.</p>
+        <div class="src-meta"><span class="path">arrays/Concert_Tickets.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+void solve() 
+{
+    ll n , m ; 
+    cin &gt;&gt; n &gt;&gt; m ;
+    multiset &lt;ll&gt; h ; 
+    for (ll i = 0 ; i &lt; n ; i++)
+    {
+        ll x ; 
+        cin &gt;&gt; x ;
+        h.insert(x) ;
+    }
+    for (ll i = 0 ; i &lt; m ; i++)
+    {
+        ll x ; 
+        cin &gt;&gt; x ;
+        auto it = h.upper_bound(x) ;
+        // what does this do is that it finds the first element in the multiset that is greater than x. If there is no such element, it returns h.end(). If there is such an element, it returns an iterator to that element.
+        if(it == h.begin())
+        {
+            cout &lt;&lt; -1 &lt;&lt; endl ;
+        }
+        else 
+        {
+            it-- ;
+            cout &lt;&lt; *it &lt;&lt; endl ;
+            h.erase(it) ;
+        }
+    }
+
+
+
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+from bisect import bisect_right
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n, m = int(next(tok)), int(next(tok))
+    h = sorted(int(next(tok)) for _ in range(n))   # multiset&lt;ll&gt;: n inserts == one sort
+    out = []
+    for i in range(m):
+        x = int(next(tok))
+        j = bisect_right(h, x)
+        # what does this do is that it finds the first element in the multiset that is greater than x. If there is no such element, it returns h.end(). If there is such an element, it returns an iterator to that element.
+        if j == 0:                          # it == h.begin()
+            out.append(-1)
+        else:
+            j -= 1                          # it--
+            out.append(h[j])
+            h.pop(j)                        # ponytail: O(n) erase; C++ multiset is O(log n)
+    print('\n'.join(map(str, out)))
+
+solve()</code></pre>
+      </div>
+      <div class="callout gotcha"><strong>Gotcha</strong><code>h.erase(*it)</code> (by value) deletes <em>every</em> ticket at that price. Erase the iterator.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"assign each query the largest remaining item ≤ its limit, items consumed" &rarr; multiset predecessor + erase.</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+  <div class="excluded">
+    <h4>Excluded from this ledger</h4>
+    <ul>
+      <li><code>arrays/Nested_Ranges_Count.cpp</code> &mdash; compiles clean
+      (<code>g++ -O2 -std=c++17 -fsyntax-only</code>, no diagnostics) but produces the
+      wrong answer on the problem's own sample. Input <code>4 / 1 6 / 2 4 / 4 8 / 3 6</code>;
+      expected first line <code>2 0 0 0</code>, produced <code>1 0 0 0</code>. The cause is
+      structural, not a typo: the file is the Nested Ranges <em>Check</em> sweep with
+      <code>ans1[idx] = 1</code> changed to <code>ans1[idx]++</code>, and each index is
+      visited exactly once per pass, so a counter can never reach 2. A running
+      <code>max r</code> / <code>min r</code> certifies existence, not multiplicity
+      (rule 07); the counting version needs a Fenwick or segment tree over
+      coordinate-compressed right endpoints. Not rewritten here &mdash; the ledger does not
+      invent a working version.</li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/arrays_4_sweep_ordered.js"></script>
+</body>
+</html>

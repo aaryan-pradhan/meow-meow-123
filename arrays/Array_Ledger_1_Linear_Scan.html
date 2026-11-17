@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear Scan &amp; Frequency &middot; The Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../ledger/ledger.css">
+</head>
+<!-- data-base = path back to repo root; data-slug = this child's slug -->
+<body data-base=".." data-slug="arrays_1_linear_scan">
+
+<header class="masthead">
+  <div class="kicker"><a href="../LEDGER.html">The Ledger</a> &middot; Arrays</div>
+  <h1>Linear Scan &amp; Frequency</h1>
+  <p class="dek">Every problem here is answered by walking the array once (or
+  once after a sort) while carrying a tiny amount of state &mdash; a scalar, a
+  <code>pos[]</code> table, a frequency map, a stack. No windows, no two
+  pointers, no binary search. Reach for this page when the answer is a count or
+  an extremum over a sequence and nothing about the problem forces you to
+  revisit an element you have already passed.</p>
+  <p class="stats"><b>10</b> problems &middot; <b>5</b> families</p>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#master">Master table</a>
+  <a href="#recognition">Recognition rules</a>
+  <div class="toc-fam"><a href="#f1">1 &middot; Single-pass running state</a></div>
+  <div class="toc-fam"><a href="#f2">2 &middot; Parity-based construction</a></div>
+  <div class="toc-fam"><a href="#f3">3 &middot; Position-array incremental invariant</a></div>
+  <div class="toc-fam"><a href="#f4">4 &middot; Per-value frequency counting</a></div>
+  <div class="toc-fam"><a href="#f5">5 &middot; Monotonic stack</a></div>
+</nav>
+
+<main>
+  <section id="master">
+    <div class="section-head"><h2>Master table</h2>
+      <p>The 60-second scan. Each name jumps to its entry.</p></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table class="master">
+        <thead><tr><th>Problem</th><th>Family</th><th>Invariant / recurrence</th><th>Time</th></tr></thead>
+        <tbody id="master-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head"><h2>Recognition rules</h2>
+      <p>The judgment calls that separate these problems from each other.
+      Every rule must be demonstrated by at least two entries on this page.</p></div>
+    <div class="rules">
+      <div class="rule"><span class="n">1</span>
+        <p>Fix the <em>right</em> endpoint and the problem collapses to one carried
+        scalar. Maximum Subarray Sum carries the best sum ending at <span class="rule-code">j</span>,
+        Maximum Difference carries \(\min (a[0..j-1])\),
+        Increasing Array carries the running floor. In all three the recurrence is
+        one line and the seed is where the bugs live.</p></div>
+      <div class="rule"><span class="n">2</span>
+        <p>A neutral seed (<span class="rule-code">0</span>) is only safe when the empty
+        answer is legal. Maximum Subarray Sum must seed <span class="rule-code">cur = best = x[0]</span>
+        because the subarray is nonempty; Maximum Difference must start the loop at
+        <span class="rule-code">i=1</span> with <span class="rule-code">minSoFar = arr[0]</span>
+        so index 0 cannot pair with itself. Both bugs are invisible until the input is
+        all-negative or strictly decreasing &mdash; the wrong version returns 0.</p></div>
+      <div class="rule"><span class="n">3</span>
+        <p>Splitting by parity gives classes that never interact, so the only thing left
+        is the junction between them. Beautiful Permutation gets every within-half gap
+        &ge;&nbsp;2 for free and checks exactly one boundary; Parity Constrained Sort sorts
+        each class and ignores cross-class inversions because they are unfixable. Solve
+        each class trivially, then handle the single interaction.</p></div>
+      <div class="rule"><span class="n">4</span>
+        <p>When the answer is a sum of independent per-index indicators, maintain it
+        instead of recomputing it. Collecting Numbers computes
+        \(1 + \sum_i \big[\,\text{pos}[i] \lt \text{pos}[i-1]\,\big]\) once; Collecting Numbers II
+        keeps that same sum alive by touching only the &le;4 indicators a swap can flip &mdash;
+        subtract each one's old value <em>before</em> the swap, add its new value <em>after</em>.</p></div>
+      <div class="rule"><span class="n">5</span>
+        <p><span class="rule-code">unordered_set</span>/<span class="rule-code">unordered_map</span>
+        on plain integer keys is CSES-unsafe: an anti-hash test forces every key into one
+        bucket. Distinct Values TLE'd exactly this way and moved to sort + adjacent-run scan;
+        Distinct Subsequences uses <span class="rule-code">std::map</span> for its frequency
+        table for the same reason. Comparison-based structures cannot be attacked by input.</p></div>
+      <div class="rule"><span class="n">6</span>
+        <p>Ask "does contiguity matter?" before choosing the technique &mdash; the titles
+        will not tell you. Maximum Subarray Sum is meaningless without contiguity (Kadane);
+        Distinct Subsequences is pure per-value combinatorics because contiguity is
+        irrelevant (<span class="rule-code">\(\prod_v (f_v+1) - 1\)</span>); Distinct Values ignores
+        position entirely. Three problems about "runs of elements", three unrelated shapes.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== FAMILY 1 ===================== -->
+  <section class="family" id="f1">
+    <div class="family-head"><h2>1 &middot; Single-pass running state</h2></div>
+    <p class="family-note">One left-to-right pass, one or two scalars carried
+    forward, <code>O(1)</code> extra space. The recurrence is never the hard part &mdash;
+    picking <em>which</em> running value is sufficient, and seeding it so the
+    degenerate input still answers correctly, is the whole problem.</p>
+
+    <article class="entry" id="maximum-subarray-sum">
+      <div class="entry-head"><h3>Maximum Subarray Sum</h3><span class="badge num">\(O(n)\)</span></div>
+
+      <!-- 1 ................................................ THE ASK -->
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers. Find the largest
+possible sum of a contiguous, non-empty subarray.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_0, x_1, \dots, x_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the maximum subarray sum.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ -10^9 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>-1 3 -2 5 3 -5 2 2</code> → <code>9</code> (the block <code>3 -2 5 3</code>)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \max_{0 \le i \le j \lt n} \; \sum_{k=i}^{j} x_k \]</li>
+<li><span class="why">Group the blocks by their right end \(j\):</span>
+\[ \text{ans} = \max_{0 \le j \lt n} f(j), \qquad f(j) = \max_{0 \le i \le j} \sum_{k=i}^{j} x_k \]</li>
+<li><span class="why">Split off the block that is just \(x_j\); every other block ending at \(j\) is a block ending at \(j-1\), plus \(x_j\):</span>
+\[ f(j) = \max\big(x_j,\; f(j-1) + x_j\big), \qquad f(0) = x_0 \]</li>
+<li><span class="why">Simplest form, one pass with two variables:</span>
+\[ \text{cur} \leftarrow \max(x_j,\ \text{cur} + x_j), \qquad \text{best} \leftarrow \max(\text{best},\ \text{cur}) \]</li>
+</ol></div>
+</div>
+      </div>
+
+      <!-- 2 ....................................... KEY OBSERVATIONS -->
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Every block ends somewhere, so fixing the right end \(j\) splits the problem into
+\(n\) smaller questions: what is the best sum ending exactly at \(j\)?</li>
+<li>That best sum either extends the best block ending at \(j-1\) or starts fresh at \(j\):
+\(f(j) = \max(x_j,\ f(j-1) + x_j)\).</li>
+<li>Same thing in words: if \(f(j-1) \lt 0\), carrying it only lowers the sum, so restart.</li>
+<li>The best block need not end at \(n-1\), so the answer is \(\max_j f(j)\), kept in a
+separate variable <code>best</code>.</li>
+<li>The block must be non-empty, so seed with \(x_0\), not \(0\). An all-negative array
+must return its largest element.</li>
+</ol>
+      </div>
+
+      <!-- 3 ..................................... BRUTE FORCE → WHY -->
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Try every pair \((i, j)\)
+and add up the block. Prefix sums remove the inner addition, but not the pairs.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^3)\)</span> raw, <span class="cost">\(O(n^2)\)</span> with prefix sums.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(\binom{n}{2} \approx 2\cdot 10^{10}\) pairs. The sum
+itself can reach \(n \cdot 10^9 = 2\cdot 10^{14}\), which does not fit in <code>int</code>.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Keep \(f(j)\) in one <code>long long</code> and a running max:
+<span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> extra space.</span></div>
+</div>
+      </div>
+
+      <!-- 4 ................................................ DIAGRAM -->
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 560 186" role="img" aria-label="Kadane's running best-ending-here over -1 3 -2 5 3 -5 2 2">
+  <text class="s-td" x="8" y="14">x = -1 3 -2 5 3 -5 2 2</text>
+  <rect class="s-fill" x="110" y="30" width="240" height="9" rx="3"/>
+  <text class="s-ta" x="230" y="26" text-anchor="middle">best = 9</text>
+  <g>
+    <rect class="s-box" x="48"  y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="110" y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="172" y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="234" y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="296" y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="358" y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="420" y="46" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="482" y="46" width="54" height="32" rx="4"/>
+    <text class="s-t" x="75"  y="67" text-anchor="middle">-1</text>
+    <text class="s-t" x="137" y="67" text-anchor="middle">3</text>
+    <text class="s-t" x="199" y="67" text-anchor="middle">-2</text>
+    <text class="s-t" x="261" y="67" text-anchor="middle">5</text>
+    <text class="s-t" x="323" y="67" text-anchor="middle">3</text>
+    <text class="s-t" x="385" y="67" text-anchor="middle">-5</text>
+    <text class="s-t" x="447" y="67" text-anchor="middle">2</text>
+    <text class="s-t" x="509" y="67" text-anchor="middle">2</text>
+  </g>
+  <text class="s-td" x="8" y="104">cur</text>
+  <text class="s-t"  x="75"  y="104" text-anchor="middle">-1</text>
+  <text class="s-t"  x="137" y="104" text-anchor="middle">3</text>
+  <text class="s-t"  x="199" y="104" text-anchor="middle">1</text>
+  <text class="s-t"  x="261" y="104" text-anchor="middle">6</text>
+  <text class="s-ta" x="323" y="104" text-anchor="middle">9</text>
+  <text class="s-t"  x="385" y="104" text-anchor="middle">4</text>
+  <text class="s-t"  x="447" y="104" text-anchor="middle">6</text>
+  <text class="s-t"  x="509" y="104" text-anchor="middle">8</text>
+  <rect class="s-warn" x="110" y="114" width="54" height="20" rx="4"/>
+  <text class="s-tm" x="137" y="128" text-anchor="middle">restart</text>
+  <text class="s-td" x="8" y="166">cur = max(x, cur + x)   best = max(best, cur)</text>
+</svg>
+          <figcaption><code>cur</code> is the best sum ending at each index. At index 1
+          the carried \(-1\) hurts, so the block restarts there;
+          <code>best</code> peaks at index 4 over the block \(3 -2 5 3\).</figcaption>
+        </figure>
+      </div>
+
+      <!-- 5 ......................................... IMPLEMENTATION -->
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The array is read into a vector first purely so that
+        <code>x[0]</code> can seed both scalars before the loop starts at <code>i=1</code>;
+        the algorithm itself never looks back. The line to read carefully is
+        <code>cur = max(x[i], cur + x[i])</code> &mdash; the first argument is the
+        <em>restart</em> branch, and it is what makes a negative prefix impossible to
+        carry forward.</p>
+        <div class="src-meta"><span class="path">arrays/Maximum_Subarray_Sum.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Maximum Subarray Sum
+// Link: CSES 1643
+// Pattern: Kadane's — running best-ending-here, extend or restart at each element
+// Time: O(n)  Space: O(1)
+//
+// Max sum of a contiguous nonempty subarray.
+//
+// Example:
+//     -1 3 -2 5 3 -5 2 2 -&gt; 9   (subarray [3, -2, 5, 3])
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    vector&lt;long long&gt; x(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; x[i];
+
+    long long cur = x[0], best = x[0];
+    for (int i = 1; i &lt; n; i++) {
+        cur = max(x[i], cur + x[i]);
+        best = max(best, cur);
+    }
+
+    cout &lt;&lt; best &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())         # every whitespace-separated token, like cin
+
+def main():
+    n = int(next(tok))                       # cin &gt;&gt; n
+
+    x = [int(next(tok)) for _ in range(n)]   # vector&lt;long long&gt; x(n); cin &gt;&gt; x[i]
+
+    cur, best = x[0], x[0]                  # Python ints never overflow: no long long needed
+    for i in range(1, n):
+        cur = max(x[i], cur + x[i])
+        best = max(best, cur)
+
+    print(best)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>Seed both <code>cur</code> and
+      <code>best</code> with <code>x[0]</code>, not <code>0</code> &mdash; the subarray
+      must be non-empty, so an all-negative array must return its least-negative single
+      element. <code>best</code> must be tracked separately from <code>cur</code>: the
+      optimal block rarely ends at the last index.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"maximum sum of a contiguous
+      block" &rarr; extend-or-restart running sum, running max kept alongside.</div>
+    </article>
+
+    <article class="entry" id="maximum-difference">
+      <div class="entry-head"><h3>Maximum Difference</h3><span class="badge num">\(O(n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(N\) integers. Choose two indices
+\(i \lt j\) so that \(a_j - a_i\) is as large as possible, and print that value.
+It may be negative, for example when the array strictly decreases.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(N\), then \(a_0, \dots, a_{N-1}\).</dd>
+<dt>Output</dt><dd>One integer: \(\max (a_j - a_i)\) over \(i \lt j\).</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd><code>[1,2,3,4,5]</code> → <code>4</code> (\(i = 0,\ j = 4\))</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \max_{0 \le i \lt j \lt N} \big(a_j - a_i\big) \]</li>
+<li><span class="why">Fix \(j\). Then \(a_j\) is a constant, so maximising \(a_j - a_i\) means minimising \(a_i\):</span>
+\[ \text{ans} = \max_{1 \le j \lt N} \Big(a_j - \min_{0 \le i \lt j} a_i\Big) \]</li>
+<li><span class="why">Name the prefix minimum. It updates in one step:</span>
+\[ m_j = \min_{0 \le i \lt j} a_i, \qquad m_1 = a_0, \qquad m_{j+1} = \min(m_j,\ a_j) \]</li>
+<li><span class="why">Simplest form:</span>
+\[ \text{ans} = \max_{1 \le j \lt N} \big(a_j - m_j\big) \]</li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The answer is <em>not</em> \(\max a - \min a\), because the order \(i \lt j\) may forbid that pair.
+For \([5, 1]\) the only legal pair gives \(1 - 5 = -4\).</li>
+<li>Fix \(j\). Its best partner is the smallest value strictly before it, the prefix minimum \(m_j\).</li>
+<li>So \(\text{ans} = \max_j (a_j - m_j)\): one pass, one carried value.</li>
+<li>Order inside the loop matters. Score \(a_j\) against \(m_j\) <em>before</em> folding \(a_j\)
+into the minimum. Otherwise \(i = j\) is allowed and you get \(0\).</li>
+<li>Do not clamp the answer at \(0\). A strictly decreasing array has a negative answer.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For each \(j\), scan every
+\(i \lt j\) and keep the best difference.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(N^2)\)</span>: there are \(\frac{N(N-1)}{2}\) pairs.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">The file gives no bound.
+At a typical \(N = 10^5\) that is \(5\cdot 10^9\) comparisons, too slow.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Replace the inner scan with the running minimum \(m_j\):
+<span class="cost">\(O(N)\)</span> time, <span class="cost">\(O(1)\)</span> extra space.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 540 170" role="img" aria-label="Prefix minimum sweep over 7 1 5 3 6 4">
+  <text class="s-td" x="8" y="16">arr = 7 1 5 3 6 4</text>
+  <path class="s-hi" fill="none" d="M162 44 Q270 12 378 44"/>
+  <text class="s-ta" x="270" y="20" text-anchor="middle">+5</text>
+  <g>
+    <rect class="s-box"  x="60"  y="48" width="60" height="32" rx="4"/>
+    <rect class="s-good" x="132" y="48" width="60" height="32" rx="4"/>
+    <rect class="s-box"  x="204" y="48" width="60" height="32" rx="4"/>
+    <rect class="s-box"  x="276" y="48" width="60" height="32" rx="4"/>
+    <rect class="s-good" x="348" y="48" width="60" height="32" rx="4"/>
+    <rect class="s-box"  x="420" y="48" width="60" height="32" rx="4"/>
+    <text class="s-t" x="90"  y="69" text-anchor="middle">7</text>
+    <text class="s-t" x="162" y="69" text-anchor="middle">1</text>
+    <text class="s-t" x="234" y="69" text-anchor="middle">5</text>
+    <text class="s-t" x="306" y="69" text-anchor="middle">3</text>
+    <text class="s-t" x="378" y="69" text-anchor="middle">6</text>
+    <text class="s-t" x="450" y="69" text-anchor="middle">4</text>
+  </g>
+  <path class="s-hi" fill="none" d="M60 96 H132 V116 H480"/>
+  <text class="s-ta" x="64"  y="92"  >minSoFar = 7</text>
+  <text class="s-ta" x="136" y="132" >minSoFar = 1</text>
+  <text class="s-td" x="8" y="158">answer = 6 - 1 = 5   (i = 1, j = 4)</text>
+</svg>
+          <figcaption>The prefix minimum only ever steps down. Each element is scored
+          against the current step height; the best gap is <code>6</code> over the
+          <code>1</code> that precedes it.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Two lines in the loop body, and their order is the algorithm:
+        <code>maxDiff</code> is updated first, so <code>minSoFar</code> at that moment still
+        describes \(\text{arr}[0..i-1]\) only. The seeds do the same job from outside
+        the loop &mdash; <code>minSoFar = arr[0]</code> and \(\text{maxDiff} = \text{arr}[1] - \text{arr}[0]\)
+        mean the pass begins at <code>i=1</code> with one real pair already scored, so index 0
+        is never allowed to pair with itself.</p>
+        <div class="src-meta"><span class="path">arrays/Maximum_Difference.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Maximum Difference
+// Pattern: single pass, running min — max(arr[j] - min_so_far) over i &lt; j
+// Time: O(N)  Space: O(1)
+//
+// Given N elements in an array, select two indexes i and j such that i &lt; j
+// and arr[j] - arr[i] is maximum possible. Output that maximum difference.
+//
+// Example:
+//     [1,2,3,4,5] -&gt; 4   (i=0, j=4: 5-1=4)
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+int maxDifference(vector&lt;int&gt;&amp; arr) {
+    int minSoFar = arr[0];
+    int maxDiff = arr[1] - arr[0];
+
+    for (int i = 1; i &lt; (int)arr.size(); i++) {
+        maxDiff = max(maxDiff, arr[i] - minSoFar);
+        minSoFar = min(minSoFar, arr[i]);
+    }
+
+    return maxDiff;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n; cin &gt;&gt; n;
+    vector&lt;int&gt; arr(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; arr[i];
+
+    cout &lt;&lt; maxDifference(arr) &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def maxDifference(arr):                     # vector&lt;int&gt;&amp; -&gt; a list is always passed by reference
+    minSoFar = arr[0]
+    maxDiff = arr[1] - arr[0]
+
+    for i in range(1, len(arr)):
+        maxDiff = max(maxDiff, arr[i] - minSoFar)
+        minSoFar = min(minSoFar, arr[i])
+
+    return maxDiff
+
+def main():
+    n = int(next(tok))
+    arr = [int(next(tok)) for _ in range(n)]
+
+    print(maxDifference(arr))
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>Not "global max &minus; global min"
+      &mdash; that silently ignores <code>i &lt; j</code>. And starting the loop at
+      <code>i=0</code> with <code>minSoFar</code> already <code>arr[0]</code> lets index 0
+      pair with itself for a free <code>0</code>, which inflates the answer above every
+      legal pair on a decreasing array.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"best pair under an ordering
+      constraint <code>i &lt; j</code>" &rarr; running extremum of the prefix, scored before
+      it is updated.</div>
+    </article>
+
+    <article class="entry" id="increasing-array">
+      <div class="entry-head"><h3>Increasing Array</h3><span class="badge num">\(O(n)\)</span></div>
+
+      <!-- 1 ................................................ THE ASK -->
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers. In one move you may increase
+any single element by \(1\). Find the minimum number of moves that makes the array
+non-decreasing (\(a_0 \le a_1 \le \dots \le a_{n-1}\)).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(a_0, \dots, a_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the minimum number of moves.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le a_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>3 2 5 1 7</code> → <code>5</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Call the final array \(b\). Moves only raise values, and the total cost is the total raise:</span>
+\[ \min \sum_{i=0}^{n-1} (b_i - a_i) \quad \text{subject to} \quad b_i \ge a_i,\ \ b_i \ge b_{i-1} \]</li>
+<li><span class="why">Each \(b_i\) should be as small as both constraints allow, since a larger \(b_i\) costs more and also raises the floor for later elements:</span>
+\[ b_0 = a_0, \qquad b_i = \max(a_i,\ b_{i-1}) \]</li>
+<li><span class="why">Unrolling the recurrence shows \(b_i\) is just the prefix maximum:</span>
+\[ b_i = \max(a_0, a_1, \dots, a_i) \]</li>
+<li><span class="why">Simplest form:</span>
+\[ \text{ans} = \sum_{i=0}^{n-1} \Big( \max_{k \le i} a_k \;-\; a_i \Big) \]
+<span class="why">Sample: prefix maxima \(3,3,5,5,7\), so the answer is \(0+1+0+4+0 = 5\).</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <!-- 2 ....................................... KEY OBSERVATIONS -->
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Values can only go up, so \(b_i \ge a_i\) is forced and the answer is a sum of
+non-negative raises \(b_i - a_i\).</li>
+<li>Setting \(b_i\) above \(\max(a_i, b_{i-1})\) never helps: it costs more now and raises the
+floor for everything after. So \(b_i = \max(a_i, b_{i-1})\) is optimal.</li>
+<li>The choice at index \(i\) depends only on \(b_{i-1}\): one left-to-right pass, no lookahead, no DP.</li>
+<li>Compare against the <em>raised</em> previous value \(b_{i-1}\), not the original \(a_{i-1}\).
+A raise carries forward.</li>
+</ol>
+      </div>
+
+      <!-- 3 ..................................... BRUTE FORCE → WHY -->
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">At each index, rescan the
+prefix to find its maximum.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) steps. The answer can reach
+\(n \cdot 10^9 = 2\cdot 10^{14}\), which does not fit in <code>int</code>.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Carry the prefix maximum in one variable:
+<span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> space, sum in <code>long long</code>.</span></div>
+</div>
+      </div>
+
+      <!-- 4 ................................................ DIAGRAM -->
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 520 190" role="img" aria-label="Running floor over 3 2 5 1 7">
+  <text class="s-td" x="8" y="16">A = 3 2 5 1 7</text>
+  <g>
+    <rect class="s-box" x="40"  y="120" width="56" height="34" rx="4"/>
+    <rect class="s-box" x="132" y="120" width="56" height="34" rx="4"/>
+    <rect class="s-box" x="224" y="120" width="56" height="34" rx="4"/>
+    <rect class="s-box" x="316" y="120" width="56" height="34" rx="4"/>
+    <rect class="s-box" x="408" y="120" width="56" height="34" rx="4"/>
+    <text class="s-t" x="63" y="142">3</text><text class="s-t" x="155" y="142">2</text>
+    <text class="s-t" x="247" y="142">5</text><text class="s-t" x="339" y="142">1</text>
+    <text class="s-t" x="431" y="142">7</text>
+  </g>
+  <!-- the running floor -->
+  <path class="s-hi" d="M40 86 H96 V86 H188 V86 H280 V56 H372 V56 H464 V26"/>
+  <text class="s-ta" x="40" y="78">floor 3</text>
+  <text class="s-ta" x="230" y="48">floor 5</text>
+  <text class="s-ta" x="412" y="18">floor 7</text>
+  <!-- shortfalls paid -->
+  <rect class="s-warn" x="132" y="86" width="56" height="34" rx="4"/>
+  <text class="s-tm" x="143" y="108">+1</text>
+  <rect class="s-warn" x="316" y="56" width="56" height="64" rx="4"/>
+  <text class="s-tm" x="327" y="92">+4</text>
+  <text class="s-td" x="8" y="180">cost = 1 + 4 = 5</text>
+</svg>
+          <figcaption>The floor only ever rises. At index 1 and 3 the element sits
+          below it, so the gap is paid and the floor is unchanged.</figcaption>
+        </figure>
+      </div>
+
+      <!-- 5 ......................................... IMPLEMENTATION -->
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>prev</code> is the floor and is only ever assigned
+        in the <code>else</code> branch &mdash; when a shortfall is paid the element
+        becomes <code>prev</code> conceptually, so leaving <code>prev</code> alone is
+        exactly right. Reading and processing in the same loop keeps space at
+        <code>O(1)</code>: the array is never stored.</p>
+        <div class="src-meta"><span class="path">arrays/Increasing_Array.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Increasing Array
+// Link: CSES 1094
+// Pattern: single-pass greedy — track running previous (post-adjustment), pay the shortfall
+// Time: O(n)  Space: O(1)
+//
+// Only allowed move: increase any element by 1. Minimum total moves to make
+// the array non-decreasing.
+//
+// Example:
+//     3 2 5 1 7 -&gt; 5
+
+#include &lt;iostream&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    long long prev = 0, cost = 0;
+    for (int i = 0; i &lt; n; i++) {
+        long long x;
+        cin &gt;&gt; x;
+        if (x &lt; prev) cost += prev - x;
+        else prev = x;
+    }
+
+    cout &lt;&lt; cost &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    prev, cost = 0, 0
+    for i in range(n):
+        x = int(next(tok))
+        if x &lt; prev: cost += prev - x
+        else: prev = x
+
+    print(cost)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>Compare against the running
+      <code>prev</code>, not <code>a[i-1]</code>. A bump raises the floor for
+      everything after it, and the two differ the moment two dips occur in a row.
+      <code>cost</code> must be <code>long long</code>.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"one-directional edit
+      only, minimum total change to make a sequence monotone" &rarr; single-pass
+      running floor, pay the shortfall.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 2 ===================== -->
+  <section class="family" id="f2">
+    <div class="family-head"><h2>2 &middot; Parity-based construction</h2></div>
+    <p class="family-note">Split the values by parity and the two classes stop
+    interacting: within a class every pair differs by at least 2, and nothing can
+    cross between classes. What is left is one boundary to check (Beautiful
+    Permutation) or one sort per class (Parity Constrained Sort). No search.</p>
+
+    <article class="entry" id="beautiful-permutation">
+      <div class="entry-head"><h3>Beautiful Permutation</h3><span class="badge num">\(O(n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> A permutation of \(1, 2, \dots, n\) is <em>beautiful</em> if no two
+neighbouring numbers differ by exactly \(1\). Print any beautiful permutation, or
+<code>NO SOLUTION</code> if none exists.</p>
+<dl class="io">
+<dt>Input</dt><dd>One integer \(n\).</dd>
+<dt>Output</dt><dd>A beautiful permutation, or <code>NO SOLUTION</code>.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 10^6\)</dd>
+<dt>Sample</dt><dd><code>5</code> → <code>4 2 5 3 1</code> (any valid answer is accepted)</dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{find } p \text{ a permutation of } \{1,\dots,n\} \text{ with } |p_k - p_{k+1}| \ne 1 \ \ \text{for all } 1 \le k \lt n \]</li>
+<li><span class="why">Two different numbers of the same parity are at least \(2\) apart:</span>
+\[ u \equiv v \pmod 2,\ u \ne v \;\Longrightarrow\; |u - v| \ge 2 \]</li>
+<li><span class="why">So print all evens, then all odds. Let \(E\) be the largest even number \(\le n\). The only pair that could fail is the junction \((E, 1)\):</span>
+\[ p = (2, 4, \dots, E,\ 1, 3, 5, \dots), \qquad |E - 1| = E - 1 \]</li>
+<li><span class="why">Simplest form:</span>
+\[ E - 1 \ge 2 \iff E \ge 4 \iff n \ge 4 \]
+<span class="why">Also \(n = 1\) is fine, since there are no neighbours. Checking \(n = 2\) and \(n = 3\) by hand shows no solution exists.</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Two numbers of the same parity differ by at least \(2\), so <em>any</em> order inside one
+parity class is already safe.</li>
+<li>Print the evens as one run and the odds as another. Then only one neighbouring pair is left
+to check: the junction between the runs.</li>
+<li>Evens ascending, then odds ascending, puts the largest even \(E\) next to \(1\).
+That gap \(E - 1\) is at least \(3\) once \(n \ge 4\).</li>
+<li>Only \(n = 2\) and \(n = 3\) are impossible. Both are small enough to check by hand
+(\(2! = 2\) and \(3! = 6\) orders).</li>
+<li>\(n = 1\) is fine: there is no neighbouring pair at all.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Generate every permutation of
+\(1..n\) and test its neighbours.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n! \cdot n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n \le 10^6\) makes this hopeless. It is already dead at \(n = 12\), where
+\(12! \approx 4.8\cdot 10^8\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Construct the answer instead of searching. Two counting loops, nothing stored:
+<span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(1)\)</span> extra space.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 520 176" role="img" aria-label="Evens then odds for n = 6, with the junction gap highlighted">
+  <text class="s-td" x="8" y="18">n = 6</text>
+  <g>
+    <rect class="s-box" x="40"  y="30" width="64" height="32" rx="4"/>
+    <rect class="s-box" x="116" y="30" width="64" height="32" rx="4"/>
+    <rect class="s-box" x="192" y="30" width="64" height="32" rx="4"/>
+    <rect class="s-box" x="268" y="30" width="64" height="32" rx="4"/>
+    <rect class="s-box" x="344" y="30" width="64" height="32" rx="4"/>
+    <rect class="s-box" x="420" y="30" width="64" height="32" rx="4"/>
+    <text class="s-t" x="72"  y="51" text-anchor="middle">2</text>
+    <text class="s-t" x="148" y="51" text-anchor="middle">4</text>
+    <text class="s-t" x="224" y="51" text-anchor="middle">6</text>
+    <text class="s-t" x="300" y="51" text-anchor="middle">1</text>
+    <text class="s-t" x="376" y="51" text-anchor="middle">3</text>
+    <text class="s-t" x="452" y="51" text-anchor="middle">5</text>
+  </g>
+  <rect class="s-good" x="238" y="70" width="48" height="22" rx="4"/>
+  <text class="s-tm" x="110" y="86" text-anchor="middle">2</text>
+  <text class="s-tm" x="186" y="86" text-anchor="middle">2</text>
+  <text class="s-ta" x="262" y="86" text-anchor="middle">5</text>
+  <text class="s-tm" x="338" y="86" text-anchor="middle">2</text>
+  <text class="s-tm" x="414" y="86" text-anchor="middle">2</text>
+  <text class="s-td" x="148" y="114" text-anchor="middle">evens ascending</text>
+  <text class="s-td" x="376" y="114" text-anchor="middle">odds ascending</text>
+  <rect class="s-warn" x="40" y="130" width="444" height="26" rx="4"/>
+  <text class="s-tm" x="262" y="147" text-anchor="middle">n = 2 and n = 3: every arrangement has an adjacent gap of 1</text>
+</svg>
+          <figcaption>Adjacent gaps for <code>n = 6</code>. Inside each half the gap is
+          always 2; the only gap that has to be argued is the junction
+          <code>6 &rarr; 1</code>.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The whole solution is two <code>for</code> loops stepping by 2,
+        one starting at 2 and one starting at 1 &mdash; no array, no permutation object. The
+        only branch is the hard-coded <code>n == 2 || n == 3</code> guard, which is a proved
+        fact about those two inputs rather than a generic small-<code>n</code> special case:
+        <code>n == 1</code> deliberately falls through to the construction and prints
+        <code>1</code>.</p>
+        <div class="src-meta"><span class="path">arrays/Beautiful_Permutation.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Beautiful Permutation
+// Link: CSES 1070
+// Pattern: split by parity — evens ascending then odds ascending, so within
+// each half consecutive prints differ by 2, and the halves' boundary values
+// (largest even, 1) are far apart
+// Time: O(n)  Space: O(n) for output buffer
+//
+// Permutation of 1..n with no adjacent elements differing by exactly 1.
+// Print any valid one, or "NO SOLUTION" if none exists.
+//
+// Example:
+//     5 -&gt; 4 2 5 3 1   (any valid beautiful permutation accepted)
+
+#include &lt;iostream&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    if (n == 2 || n == 3) {
+        cout &lt;&lt; "NO SOLUTION\n";
+        return 0;
+    }
+
+    for (int i = 2; i &lt;= n; i += 2) cout &lt;&lt; i &lt;&lt; ' ';
+    for (int i = 1; i &lt;= n; i += 2) cout &lt;&lt; i &lt;&lt; ' ';
+    cout &lt;&lt; '\n';
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    if n == 2 or n == 3:                    # || -&gt; or,  &amp;&amp; -&gt; and,  ! -&gt; not
+        print("NO SOLUTION")
+        return
+
+    out = []                                # collect output, print once (fast, like one big cout)
+    for i in range(2, n + 1, 2): out.append(i)   # for (i = 2; i &lt;= n; i += 2): range stops BEFORE n+1
+    for i in range(1, n + 1, 2): out.append(i)
+    print(' '.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong><code>n == 1</code> is <em>not</em>
+      impossible &mdash; only <code>n == 2</code> and <code>n == 3</code> are, verified by
+      exhausting every arrangement. Getting the guard to <code>n &lt; 4</code> is the natural
+      wrong move and fails the single-element case.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"construct a permutation
+      avoiding an adjacent difference of exactly 1" &rarr; split by parity, each half is
+      internally safe, check the one junction.</div>
+    </article>
+
+    <article class="entry" id="parity-constrained-sort">
+      <div class="entry-head"><h3>Parity Constrained Sort</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> There are \(T\) test cases. Each one gives an array of \(N\) integers.
+You may swap two elements only if they have the same parity (both even or both odd), as many
+times as you like. Print the arrangement that is closest to sorted non-decreasing order.
+If several are tied, any of them is accepted.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(T\). For each case: \(N\), then \(a_0, \dots, a_{N-1}\).</dd>
+<dt>Output</dt><dd>For each case, the rearranged array.</dd>
+<dt>Limits</dt><dd>Not given in the file.</dd>
+<dt>Sample</dt><dd><code>[2,3,9,1,2,7]</code> → <code>[2,1,3,7,2,9]</code>; <code>[4,2,8]</code> → <code>[2,4,8]</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Split the positions by the parity of the value they hold:</span>
+\[ P_0 = \{\, i : a_i \text{ even} \,\}, \qquad P_1 = \{\, i : a_i \text{ odd} \,\} \]</li>
+<li><span class="why">A legal swap moves an even value into an even slot, or an odd value into an odd slot. So \(P_0\) and \(P_1\) never change, and inside each class every order can be reached.</span></li>
+<li><span class="why">Exchange argument. Take slots \(i \lt i'\) in the same class holding values \(u \gt u'\). Swapping them removes the inversion \((i, i')\). For any slot \(j\) of the other class, the number of inversions between \(j\) and the pair \(\{i, i'\}\) does not go up:</span>
+\[ [u' \gt w] + [w \gt u] \;\le\; [u \gt w] + [w \gt u'] \qquad (w = \text{value at } j,\ i \lt j \lt i') \]</li>
+<li><span class="why">Simplest form: sort each class and write it back into that class's slots, left to right:</span>
+\[ b\big|_{P_c} = \operatorname{sort}\big(a\big|_{P_c}\big), \qquad c \in \{0, 1\} \]</li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>A swap never changes the parity of the value in a slot, so the even slots \(P_0\) and odd
+slots \(P_1\) are fixed by the input. They are not a choice.</li>
+<li>Inside one class every order can be reached, so sorting that class removes every inversion within it.</li>
+<li>Inversions <em>between</em> the classes can change, but the exchange step in the breakdown shows
+that sorting a class never increases them. So sorting each class is optimal.</li>
+<li>The two classes are never compared with each other. The output slot order comes straight
+from the original array, so there is nothing to merge.</li>
+<li>Pass 2 can re-read <code>a[i] % 2</code> from the array it is overwriting, because the value
+written into a slot has the same parity as the value it replaces.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Bubble sort using only legal
+swaps, or search all reachable arrangements.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(N^2)\)</span> for the bubble sort; <span class="cost">\(O(k!)\)</span> for the search.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">The quadratic is paid once
+per test case. At \(N = 10^5\) that is about \(10^{10}\) swaps for one case.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Bucket by parity, <code>sort</code> each bucket, refill with two cursors:
+<span class="cost">\(O(N \log N)\)</span> per case, <span class="cost">\(O(N)\)</span> space.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 520 244" role="img" aria-label="Bucketing 2 3 9 1 2 7 by parity, sorting each bucket, refilling in place">
+  <text class="s-td" x="8" y="52">in</text>
+  <g>
+    <rect class="s-box" x="90"  y="30" width="48" height="30" rx="4"/>
+    <rect class="s-box" x="148" y="30" width="48" height="30" rx="4"/>
+    <rect class="s-box" x="206" y="30" width="48" height="30" rx="4"/>
+    <rect class="s-box" x="264" y="30" width="48" height="30" rx="4"/>
+    <rect class="s-box" x="322" y="30" width="48" height="30" rx="4"/>
+    <rect class="s-box" x="380" y="30" width="48" height="30" rx="4"/>
+    <text class="s-t" x="114" y="50" text-anchor="middle">2</text>
+    <text class="s-t" x="172" y="50" text-anchor="middle">3</text>
+    <text class="s-t" x="230" y="50" text-anchor="middle">9</text>
+    <text class="s-t" x="288" y="50" text-anchor="middle">1</text>
+    <text class="s-t" x="346" y="50" text-anchor="middle">2</text>
+    <text class="s-t" x="404" y="50" text-anchor="middle">7</text>
+    <text class="s-td" x="114" y="74" text-anchor="middle">E</text>
+    <text class="s-td" x="172" y="74" text-anchor="middle">O</text>
+    <text class="s-td" x="230" y="74" text-anchor="middle">O</text>
+    <text class="s-td" x="288" y="74" text-anchor="middle">O</text>
+    <text class="s-td" x="346" y="74" text-anchor="middle">E</text>
+    <text class="s-td" x="404" y="74" text-anchor="middle">O</text>
+  </g>
+  <text class="s-ta" x="90"  y="100">evens sorted</text>
+  <text class="s-ta" x="230" y="100">odds sorted</text>
+  <g>
+    <rect class="s-good" x="90"  y="110" width="48" height="30" rx="4"/>
+    <rect class="s-good" x="148" y="110" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="230" y="110" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="288" y="110" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="346" y="110" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="404" y="110" width="48" height="30" rx="4"/>
+    <text class="s-t" x="114" y="130" text-anchor="middle">2</text>
+    <text class="s-t" x="172" y="130" text-anchor="middle">2</text>
+    <text class="s-t" x="254" y="130" text-anchor="middle">1</text>
+    <text class="s-t" x="312" y="130" text-anchor="middle">3</text>
+    <text class="s-t" x="370" y="130" text-anchor="middle">7</text>
+    <text class="s-t" x="428" y="130" text-anchor="middle">9</text>
+  </g>
+  <text class="s-td" x="8" y="192">out</text>
+  <g>
+    <rect class="s-good" x="90"  y="170" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="148" y="170" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="206" y="170" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="264" y="170" width="48" height="30" rx="4"/>
+    <rect class="s-good" x="322" y="170" width="48" height="30" rx="4"/>
+    <rect class="s-fill" x="380" y="170" width="48" height="30" rx="4"/>
+    <text class="s-t" x="114" y="190" text-anchor="middle">2</text>
+    <text class="s-t" x="172" y="190" text-anchor="middle">1</text>
+    <text class="s-t" x="230" y="190" text-anchor="middle">3</text>
+    <text class="s-t" x="288" y="190" text-anchor="middle">7</text>
+    <text class="s-t" x="346" y="190" text-anchor="middle">2</text>
+    <text class="s-t" x="404" y="190" text-anchor="middle">9</text>
+  </g>
+  <text class="s-td" x="8" y="228">slot parities E O O O E O stay fixed; values move only inside a class</text>
+</svg>
+          <figcaption>The parity pattern of the slots is copied straight from the input.
+          Each sorted bucket is poured into its own slots in order, by a per-bucket cursor.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Two passes over the same array and no index bookkeeping: pass 1
+        pushes each value into <code>evens</code> or <code>odds</code>, pass 2 re-tests
+        <code>a[i] % 2</code> to decide which bucket's cursor (<code>ei</code> /
+        <code>oi</code>) supplies the replacement. The line that looks unsafe &mdash;
+        <code>if (a[i] % 2 == 0) a[i] = evens[ei++];</code> reading the array it is
+        overwriting &mdash; is fine because the incoming value always has the same parity as
+        the outgoing one. An all-even or all-odd array needs no special case: one bucket just
+        stays empty and its cursor is never advanced.</p>
+        <div class="src-meta"><span class="path">arrays/Parity_Constrained_Sort.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Parity-Constrained Sort (Boys/Girls Line)
+// Pattern: split by parity, sort each group independently, re-merge on a
+//          second pass keyed on the same parity check (no stored indices)
+// Time: O(N log N) per test case  Space: O(N)
+//
+// T test cases. Each has N integers. Only same-parity elements may be
+// swapped with each other (evens with evens, odds with odds). Output the
+// permutation closest to fully non-decreasing achievable under that
+// constraint. Multiple answers accepted if tied.
+//
+// Example:
+//     [2,3,9,1,2,7] -&gt; [2,1,3,7,2,9]
+//         [4,2,8]       -&gt; [2,4,8]
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int t; cin &gt;&gt; t;
+    while (t--) {
+        int n; cin &gt;&gt; n;
+        vector&lt;int&gt; a(n);
+        vector&lt;int&gt; evens, odds;
+        for (int i = 0; i &lt; n; i++) {
+            cin &gt;&gt; a[i];
+            if (a[i] % 2 == 0) evens.push_back(a[i]);
+            else odds.push_back(a[i]);
+        }
+        sort(evens.begin(), evens.end());
+        sort(odds.begin(), odds.end());
+
+        int ei = 0, oi = 0;
+        for (int i = 0; i &lt; n; i++) {
+            if (a[i] % 2 == 0) a[i] = evens[ei++];
+            else a[i] = odds[oi++];
+        }
+
+        for (int i = 0; i &lt; n; i++) cout &lt;&lt; a[i] &lt;&lt; ' ';
+        cout &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    out = []
+    t = int(next(tok))
+    for _ in range(t):                      # while (t--)
+        n = int(next(tok))
+        a = [0] * n                         # vector&lt;int&gt; a(n)
+        evens, odds = [], []
+        for i in range(n):
+            a[i] = int(next(tok))
+            if a[i] % 2 == 0: evens.append(a[i])    # push_back -&gt; append
+            else: odds.append(a[i])
+        evens.sort()                        # sort(evens.begin(), evens.end())
+        odds.sort()
+
+        ei, oi = 0, 0
+        for i in range(n):
+            if a[i] % 2 == 0:
+                a[i] = evens[ei]; ei += 1   # evens[ei++]: no post-increment, split in two
+            else:
+                a[i] = odds[oi]; oi += 1
+
+        out.append(' '.join(map(str, a)))
+    print('\n'.join(out))
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>Storing the even/odd <em>positions</em>
+      in extra vectors is the reflex and it is wasted work &mdash; the parity test is one
+      modulo, cheaper than the bookkeeping. Don't try to merge the buckets by value either:
+      the slot order is dictated by the input, not by comparison.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"swaps allowed only between
+      elements sharing some predicate" &rarr; positions per class are frozen, sort within each
+      class, cross-class inversions are unavoidable and ignorable.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 3 ===================== -->
+  <section class="family" id="f3">
+    <div class="family-head"><h2>3 &middot; Position-array incremental invariant</h2></div>
+    <p class="family-note">Invert the array into <code>pos[value] = index</code> and a
+    question about sweep order becomes \(n-1\) independent one-line
+    comparisons. The first problem sums them once; the second keeps that same sum alive
+    under updates by re-evaluating only the handful of comparisons a change can reach.</p>
+
+    <article class="entry" id="collecting-numbers">
+      <div class="entry-head"><h3>Collecting Numbers</h3><span class="badge num">\(O(n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> The array holds every number \(1, 2, \dots, n\) exactly once. You must
+collect the numbers in increasing order. In each round you walk the array from left to right
+and pick up the next number you need whenever you pass it. How many rounds are needed?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then the permutation \(x_0, \dots, x_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the number of rounds.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd><code>4 2 1 5 3</code> → <code>3</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(\text{pos}[v]\) be the index where value \(v\) sits.</span></li>
+<li><span class="why">After picking up \(k-1\), you stand at \(\text{pos}[k-1]\). You can pick up \(k\) in the same round exactly when it lies further right:</span>
+\[ k \text{ joins the round of } k-1 \iff \text{pos}[k-1] \lt \text{pos}[k] \]</li>
+<li><span class="why">Each place where this fails (a <em>break</em>) starts exactly one new round, and breaks do not affect each other.</span></li>
+<li><span class="why">Simplest form, where \([\,\cdot\,]\) is \(1\) if true and \(0\) if false:</span>
+\[ \text{rounds} = 1 + \sum_{k=2}^{n} \big[\, \text{pos}[k] \lt \text{pos}[k-1] \,\big] \]
+<span class="why">Sample: \(\text{pos} = (2, 1, 4, 0, 3)\) for \(v = 1..5\). Breaks happen at \(k = 2\) and \(k = 4\), so the answer is \(1 + 2 = 3\).</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Only neighbouring values interact. After taking \(k-1\) you are at \(\text{pos}[k-1]\),
+and you can still take \(k\) iff it lies to the right.</li>
+<li>So \(k-1\) and \(k\) share a round iff \(\text{pos}[k-1] \lt \text{pos}[k]\). Otherwise a new
+round is forced. Call that a <em>break</em>.</li>
+<li>Each break costs exactly one extra round, and no break creates or cancels another.
+The answer is a plain count.</li>
+<li>The first round always happens (value \(1\) is always taken), which is the \(+1\).</li>
+<li><code>pos[]</code> can be filled while reading the input. Nothing else is stored.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Simulate: walk the array,
+collect what you can, repeat until done.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n)\)</span> per round, up to \(n\) rounds, so <span class="cost">\(O(n^2)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\). A reversed array needs \(n\) rounds, so about \(4\cdot 10^{10}\) steps.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Build <code>pos[]</code> and count the breaks in one pass:
+<span class="cost">\(O(n)\)</span> time, <span class="cost">\(O(n)\)</span> space.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 470 206" role="img" aria-label="Array 4 2 1 5 3 and its position array, with the two breaks marked">
+  <text class="s-td" x="8" y="54">a</text>
+  <g>
+    <text class="s-td" x="101" y="24" text-anchor="middle">1</text>
+    <text class="s-td" x="177" y="24" text-anchor="middle">2</text>
+    <text class="s-td" x="253" y="24" text-anchor="middle">3</text>
+    <text class="s-td" x="329" y="24" text-anchor="middle">4</text>
+    <text class="s-td" x="405" y="24" text-anchor="middle">5</text>
+    <rect class="s-box" x="70"  y="32" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="146" y="32" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="222" y="32" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="298" y="32" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="374" y="32" width="62" height="32" rx="4"/>
+    <text class="s-t" x="101" y="53" text-anchor="middle">4</text>
+    <text class="s-t" x="177" y="53" text-anchor="middle">2</text>
+    <text class="s-t" x="253" y="53" text-anchor="middle">1</text>
+    <text class="s-t" x="329" y="53" text-anchor="middle">5</text>
+    <text class="s-t" x="405" y="53" text-anchor="middle">3</text>
+  </g>
+  <text class="s-td" x="8" y="124">pos</text>
+  <g>
+    <text class="s-td" x="101" y="94" text-anchor="middle">v=1</text>
+    <text class="s-td" x="177" y="94" text-anchor="middle">v=2</text>
+    <text class="s-td" x="253" y="94" text-anchor="middle">v=3</text>
+    <text class="s-td" x="329" y="94" text-anchor="middle">v=4</text>
+    <text class="s-td" x="405" y="94" text-anchor="middle">v=5</text>
+    <rect class="s-box"  x="70"  y="102" width="62" height="32" rx="4"/>
+    <rect class="s-warn" x="146" y="102" width="62" height="32" rx="4"/>
+    <rect class="s-box"  x="222" y="102" width="62" height="32" rx="4"/>
+    <rect class="s-warn" x="298" y="102" width="62" height="32" rx="4"/>
+    <rect class="s-box"  x="374" y="102" width="62" height="32" rx="4"/>
+    <text class="s-t" x="101" y="123" text-anchor="middle">3</text>
+    <text class="s-t" x="177" y="123" text-anchor="middle">2</text>
+    <text class="s-t" x="253" y="123" text-anchor="middle">5</text>
+    <text class="s-t" x="329" y="123" text-anchor="middle">1</text>
+    <text class="s-t" x="405" y="123" text-anchor="middle">4</text>
+  </g>
+  <text class="s-tm" x="177" y="154" text-anchor="middle">break</text>
+  <text class="s-tm" x="329" y="154" text-anchor="middle">break</text>
+  <text class="s-td" x="8" y="188">pos drops at v = 2 and v = 4   rounds = 1 + 2 = 3</text>
+</svg>
+          <figcaption>Reading <code>pos</code> left to right, every step <em>down</em> is a
+          round boundary. The array itself is never scanned again.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The read loop never stores the array &mdash; it stores the
+        inverse, <code>pos[x] = i</code>, with <code>i</code> running from 1, so
+        <code>pos</code> holds 1-based indices throughout. The counting loop then reads
+        <code>pos</code> in value order, which is why <code>rounds</code> starts at
+        <code>1</code> and the loop starts at <code>i = 2</code>: there are only
+        \(n-1\) adjacent pairs to test.</p>
+        <div class="src-meta"><span class="path">arrays/Collecting_Numbers.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Collecting Numbers
+// Link: CSES 2216
+// Pattern: position array, count rounds by adjacency breaks
+// Time: O(n)  Space: O(n)
+//
+// Repeatedly sweep left-to-right, each round collecting numbers in
+// increasing order as far as the sweep gets them contiguously. Count rounds
+// needed to collect 1..n.
+//
+// Example:
+//     4 2 1 5 3 -&gt; 3
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    vector&lt;int&gt; pos(n + 1);
+    for (int i = 1; i &lt;= n; i++) {
+        int x;
+        cin &gt;&gt; x;
+        pos[x] = i;
+    }
+
+    int rounds = 1;
+    for (int i = 2; i &lt;= n; i++) {
+        if (pos[i] &lt; pos[i - 1]) rounds++;
+    }
+
+    cout &lt;&lt; rounds &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    pos = [0] * (n + 1)
+    for i in range(1, n + 1):
+        x = int(next(tok))
+        pos[x] = i
+
+    rounds = 1
+    for i in range(2, n + 1):
+        if pos[i] &lt; pos[i - 1]: rounds += 1
+
+    print(rounds)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>The comparison is on
+      <em>values</em> indexed by value (\(\text{pos}[i] \lt \text{pos}[i-1]\)), not on the
+      array in index order. Scanning <code>a[]</code> and comparing neighbours answers a
+      different question entirely.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"how many left-to-right passes
+      to collect values in increasing order" &rarr; build <code>pos[]</code>, count the
+      places where it steps down.</div>
+    </article>
+
+    <article class="entry" id="collecting-numbers-ii">
+      <div class="entry-head"><h3>Collecting Numbers II</h3><span class="badge num">\(O((n+m) \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> Same setup as Collecting Numbers: a permutation of \(1..n\) and the same
+"rounds" count. Now \(m\) operations arrive. Each one swaps the values at two <em>positions</em>
+\(a\) and \(b\). After every swap, print the new number of rounds.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n, m\); the permutation; then \(m\) lines \(a\ b\) (1-based positions).</dd>
+<dt>Output</dt><dd>\(m\) integers: the number of rounds after each swap.</dd>
+<dt>Limits</dt><dd>\(1 \le n, m \le 2\cdot 10^5\)</dd>
+<dt>Sample</dt><dd><code>4 2 1 5 3</code>, swaps \((2,3), (1,5), (2,3)\) → <code>2 3 4</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">From Collecting Numbers, the answer is a sum of break indicators:</span>
+\[ R = 1 + \sum_{k=2}^{n} e_k, \qquad e_k = \big[\, \text{pos}[k] \lt \text{pos}[k-1] \,\big] \]</li>
+<li><span class="why">Swapping positions \(a, b\) changes \(\text{pos}\) for only two values:</span>
+\[ u = x_a, \quad w = x_b \]</li>
+<li><span class="why">\(\text{pos}[v]\) appears only in \(e_v\) and \(e_{v+1}\). So at most four indicators can change:</span>
+\[ A = \{\, u,\ u+1,\ w,\ w+1 \,\} \cap [2, n], \qquad |A| \le 4 \]</li>
+<li><span class="why">Simplest form: remove the old values of those indicators, do the swap, add the new values:</span>
+\[ R' = R \;-\; \sum_{k \in A} e_k^{\text{before}} \;+\; \sum_{k \in A} e_k^{\text{after}} \]</li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>The answer is \(1\) plus a sum of \(n-1\) independent indicators \(e_k\), one for each pair
+of values \((k-1, k)\).</li>
+<li>A swap of positions \(a, b\) changes \(\text{pos}\) for exactly two <em>values</em>,
+\(u = x_a\) and \(w = x_b\). The query gives positions, so look the values up first.</li>
+<li>Value \(v\) appears in only two indicators, \(e_v\) and \(e_{v+1}\). So at most \(4\)
+indicators can change per swap, whatever \(n\) is.</li>
+<li>Those four can overlap when \(u\) and \(w\) are close (for example \(w = u + 1\)).
+A <code>set&lt;int&gt;</code> removes duplicates without case analysis.</li>
+<li>Subtract each affected indicator <em>before</em> the swap and add it back <em>after</em>.
+Adding without subtracting counts it twice.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">Do the swap, then rerun the
+full \(O(n)\) count from Collecting Numbers.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n \cdot m)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = m = 2\cdot 10^5\) gives \(4\cdot 10^{10}\) operations.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Keep \(R\) and patch only the \(\le 4\) indicators a swap can touch:
+<span class="cost">\(O(\log n)\)</span> per query for the small set,
+<span class="cost">\(O((n+m) \log n)\)</span> overall.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 500 218" role="img" aria-label="Edge statuses before and after swapping positions 2 and 3 in 4 2 1 5 3">
+  <text class="s-ta" x="8" y="18">a = 4 2 1 5 3, swap positions (2,3): u = 2, v = 1, touched edges {2,3}</text>
+  <rect class="s-hi" fill="none" x="104" y="32" width="182" height="134" rx="8"/>
+  <text class="s-td" x="8" y="64">before</text>
+  <g>
+    <rect class="s-warn" x="110" y="44" width="80" height="34" rx="4"/>
+    <rect class="s-box"  x="200" y="44" width="80" height="34" rx="4"/>
+    <rect class="s-warn" x="290" y="44" width="80" height="34" rx="4"/>
+    <rect class="s-box"  x="380" y="44" width="80" height="34" rx="4"/>
+    <text class="s-t" x="150" y="65" text-anchor="middle">k=2 bad</text>
+    <text class="s-t" x="240" y="65" text-anchor="middle">k=3 ok</text>
+    <text class="s-t" x="330" y="65" text-anchor="middle">k=4 bad</text>
+    <text class="s-t" x="420" y="65" text-anchor="middle">k=5 ok</text>
+  </g>
+  <text class="s-td" x="8" y="144">after</text>
+  <g>
+    <rect class="s-good" x="110" y="124" width="80" height="34" rx="4"/>
+    <rect class="s-box"  x="200" y="124" width="80" height="34" rx="4"/>
+    <rect class="s-warn" x="290" y="124" width="80" height="34" rx="4"/>
+    <rect class="s-box"  x="380" y="124" width="80" height="34" rx="4"/>
+    <text class="s-t" x="150" y="145" text-anchor="middle">k=2 ok</text>
+    <text class="s-t" x="240" y="145" text-anchor="middle">k=3 ok</text>
+    <text class="s-t" x="330" y="145" text-anchor="middle">k=4 bad</text>
+    <text class="s-t" x="420" y="145" text-anchor="middle">k=5 ok</text>
+  </g>
+  <text class="s-td" x="8" y="196">breaks 1+2 = 3  &#8594;  1+1 = 2   edges k=4,5 were never recomputed</text>
+</svg>
+          <figcaption>Only the boxed window is re-evaluated. Edges 4 and 5 keep whatever they
+          contributed to the running total, untouched by the swap.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note"><code>isBad(k)</code> is the single indicator, deliberately a
+        lambda so the same expression is used for the initial build and for both sides of
+        every update. Both <code>x[]</code> (position &rarr; value) and <code>pos[]</code>
+        (value &rarr; position) are maintained, and both are swapped &mdash; forgetting
+        <code>swap(x[a], x[b])</code> corrupts every later query's <code>u, v</code> lookup.
+        The subtract-loop, the two swaps, and the add-loop must stay in that order.</p>
+        <div class="src-meta"><span class="path">arrays/Collecting_Numbers_II.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Collecting Numbers II
+// Link: CSES 2217
+// Pattern: same break-counting formula as Collecting Numbers I, but
+// maintained incrementally — a swap only changes pos[] for the two
+// swapped values, so only their up-to-4 adjacent edges can flip status
+// Time: O((n + m) log n)  Space: O(n)
+//
+// Same "rounds" formula as Collecting Numbers I, but m swaps (positions a,
+// b) are applied one at a time, reporting rounds after each. Naive O(n) per
+// swap is too slow for n, m up to 2e5.
+//
+// Example:
+//     4 2 1 5 3, swaps (2,3) (1,5) (2,3) -&gt; 2 3 4
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;set&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+
+    vector&lt;int&gt; x(n + 1), pos(n + 1);
+    for (int i = 1; i &lt;= n; i++) {
+        cin &gt;&gt; x[i];
+        pos[x[i]] = i;
+    }
+
+    // edge k means the pair (k-1, k); value w only affects edges k=w and
+    // k=w+1, since those are the only pairs w appears in
+    auto isBad = [&amp;](int k) {
+        return pos[k] &lt; pos[k - 1] ? 1 : 0;
+    };
+
+    long long breaks = 1;
+    for (int k = 2; k &lt;= n; k++) breaks += isBad(k);
+
+    for (int q = 0; q &lt; m; q++) {
+        int a, b;
+        cin &gt;&gt; a &gt;&gt; b;
+        int u = x[a], v = x[b];
+
+        set&lt;int&gt; edges;
+        for (int w : {u, v}) {
+            if (w &gt;= 2) edges.insert(w);
+            if (w + 1 &lt;= n) edges.insert(w + 1);
+        }
+
+        for (int k : edges) breaks -= isBad(k);
+
+        swap(pos[u], pos[v]);
+        swap(x[a], x[b]);
+
+        for (int k : edges) breaks += isBad(k);
+
+        cout &lt;&lt; breaks  &lt;&lt; '\n';
+    }
+
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n, m = int(next(tok)), int(next(tok))     # cin &gt;&gt; n &gt;&gt; m
+
+    x, pos = [0] * (n + 1), [0] * (n + 1)
+    for i in range(1, n + 1):
+        x[i] = int(next(tok))
+        pos[x[i]] = i
+
+    # edge k means the pair (k-1, k); value w only affects edges k=w and
+    # k=w+1, since those are the only pairs w appears in
+    def isBad(k):                           # lambda [&amp;]: a nested def sees pos automatically
+        return 1 if pos[k] &lt; pos[k - 1] else 0   # cond ? a : b  -&gt;  a if cond else b
+
+    breaks = 1
+    for k in range(2, n + 1): breaks += isBad(k)
+
+    out = []
+    for q in range(m):
+        a, b = int(next(tok)), int(next(tok))
+        u, v = x[a], x[b]
+
+        edges = set()                       # set&lt;int&gt;: only iterated, order doesn't matter here
+        for w in (u, v):
+            if w &gt;= 2: edges.add(w)
+            if w + 1 &lt;= n: edges.add(w + 1)
+
+        for k in edges: breaks -= isBad(k)
+
+        pos[u], pos[v] = pos[v], pos[u]     # swap(pos[u], pos[v])
+        x[a], x[b] = x[b], x[a]
+
+        for k in edges: breaks += isBad(k)
+
+        out.append(breaks)
+    print('\n'.join(map(str, out)))
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong><code>a</code> and <code>b</code> in
+      a query are array positions, not values &mdash; the values that move are
+      <code>u = x[a]</code>, <code>v = x[b]</code>, and they must be read <em>before</em> the
+      swap. The <code>set</code> is not decoration: when <code>u</code> and <code>v</code>
+      differ by 1 the candidate lists overlap, and counting a shared edge twice desynchronises
+      <code>breaks</code> permanently.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"a derived count, plus point
+      updates, report after each" &rarr; find the fixed-size neighbourhood of conditions one
+      update can reach, subtract old, apply, add new.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 4 ===================== -->
+  <section class="family" id="f4">
+    <div class="family-head"><h2>4 &middot; Per-value frequency counting</h2></div>
+    <p class="family-note">Position is irrelevant here. Both problems reduce the array to
+    "how often does each value occur" and then answer from that table alone &mdash; a run
+    count after sorting, or a product over the frequencies. If a sliding window feels
+    natural, the contiguity question has not been asked yet.</p>
+
+    <article class="entry" id="distinct-values">
+      <div class="entry-head"><h3>Distinct Values</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given a list of \(n\) integers. How many different values does it contain?</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_0, \dots, x_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the number of distinct values.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>2 3 2 2 3</code> → <code>2</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans} = \big|\, \{ x_0, x_1, \dots, x_{n-1} \} \,\big| \]</li>
+<li><span class="why">Sort the list into \(y_0 \le y_1 \le \dots \le y_{n-1}\). Equal values now sit next to each other in runs, and the answer is the number of runs.</span></li>
+<li><span class="why">Every run except the first begins at an index where the value changes.</span></li>
+<li><span class="why">Simplest form:</span>
+\[ \text{ans} = 1 + \sum_{i=1}^{n-1} \big[\, y_i \ne y_{i-1} \,\big] \qquad (n \ge 1) \]</li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Sorting puts equal values next to each other, so "have I seen this before?" becomes the local
+test \(y_i \ne y_{i-1}\).</li>
+<li>The sorted list is a sequence of runs. The answer is the number of runs, which is \(1 +\)
+the number of neighbouring unequal pairs.</li>
+<li>The only edge case is the seed: an empty list has \(0\) runs, not \(1\). Hence the <code>n &gt; 0</code> guard.</li>
+<li>A hash set is \(O(n)\) only <em>on average</em>. CSES has an anti-hash test that sends every
+key to one bucket, which makes it \(O(n^2)\).</li>
+<li>Sorting only compares values, so no input can slow it down: \(O(n \log n)\) on every test.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For each \(i\), scan
+\(x_0..x_{i-1}\) for an earlier copy, or use <code>unordered_set</code>.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span> for the scan. The hash set is <span class="cost">\(O(n)\)</span>
+on average but <span class="cost">\(O(n^2)\)</span> in the worst case.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) steps. The <code>unordered_set</code>
+version really did TLE on CSES's anti-hash test.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+<code>sort</code>, then count runs: <span class="cost">\(O(n \log n)\)</span> worst case, safe against adversarial input.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 470 196" role="img" aria-label="Sorting 2 3 2 2 3 turns duplicates into runs with one boundary">
+  <text class="s-td" x="8" y="50">in</text>
+  <g>
+    <rect class="s-box" x="70"  y="28" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="146" y="28" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="222" y="28" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="298" y="28" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="374" y="28" width="62" height="32" rx="4"/>
+    <text class="s-t" x="101" y="49" text-anchor="middle">2</text>
+    <text class="s-t" x="177" y="49" text-anchor="middle">3</text>
+    <text class="s-t" x="253" y="49" text-anchor="middle">2</text>
+    <text class="s-t" x="329" y="49" text-anchor="middle">2</text>
+    <text class="s-t" x="405" y="49" text-anchor="middle">3</text>
+  </g>
+  <rect class="s-fill" x="70"  y="86" width="214" height="9" rx="3"/>
+  <rect class="s-fill" x="298" y="86" width="138" height="9" rx="3"/>
+  <text class="s-td" x="8" y="126">sorted</text>
+  <g>
+    <rect class="s-box" x="70"  y="104" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="146" y="104" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="222" y="104" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="298" y="104" width="62" height="32" rx="4"/>
+    <rect class="s-box" x="374" y="104" width="62" height="32" rx="4"/>
+    <text class="s-t" x="101" y="125" text-anchor="middle">2</text>
+    <text class="s-t" x="177" y="125" text-anchor="middle">2</text>
+    <text class="s-t" x="253" y="125" text-anchor="middle">2</text>
+    <text class="s-t" x="329" y="125" text-anchor="middle">3</text>
+    <text class="s-t" x="405" y="125" text-anchor="middle">3</text>
+  </g>
+  <path class="s-hi" fill="none" d="M291 82 V146"/>
+  <text class="s-ta" x="291" y="162" text-anchor="middle">boundary</text>
+  <text class="s-td" x="8" y="186">distinct = 1 + 1 boundary = 2</text>
+</svg>
+          <figcaption>After sorting, duplicates collapse into runs. Only the single place
+          where consecutive entries differ has to be counted.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">Ten lines and no container beyond the input vector. The seed
+        <code>int distinct = n &gt; 0 ? 1 : 0;</code> carries the "first run is free" idea and
+        the empty-input case at once; the loop then adds a run per boundary. Keeping the
+        header comment's note about the <code>unordered_set</code> TLE is deliberate &mdash;
+        the choice of <code>sort</code> here is a correctness-under-judge decision, not a
+        stylistic one.</p>
+        <div class="src-meta"><span class="path">arrays/Distinct_Values.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Distinct Values
+// Link: CSES 1621
+// Pattern: sort, count runs of equal adjacent values
+// Time: O(n log n)  Space: O(n)
+//
+// unordered_set with the default hash is vulnerable to CSES's anti-hash
+// test (collisions force O(n) per op) -&gt; TLE. Sort is immune to that.
+//
+// Count distinct values in a list of n integers.
+//
+// Example:
+//     2 3 2 2 3 -&gt; 2
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    vector&lt;int&gt; x(n);
+    for (int i = 0; i &lt; n; i++) cin &gt;&gt; x[i];
+
+    sort(x.begin(), x.end());
+
+    int distinct = n &gt; 0 ? 1 : 0;
+    for (int i = 1; i &lt; n; i++) {
+        if (x[i] != x[i - 1]) distinct++;
+    }
+
+    cout &lt;&lt; distinct &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def main():
+    n = int(next(tok))
+
+    x = [int(next(tok)) for _ in range(n)]
+
+    x.sort()
+
+    distinct = 1 if n &gt; 0 else 0
+    for i in range(1, n):
+        if x[i] != x[i - 1]: distinct += 1
+
+    print(distinct)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong><code>unordered_set&lt;int&gt;</code>
+      is the obvious answer and it TLEs on CSES &mdash; the default integer hash is
+      predictable, so one crafted test forces every key into one bucket and every insert to
+      <code>O(n)</code>. Sort, or an ordered container, or a custom hash; never the
+      default.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"count distinct elements, on a
+      judge" &rarr; sort and count adjacent-unequal pairs, not a hash set.</div>
+    </article>
+
+    <article class="entry" id="distinct-subsequences">
+      <div class="entry-head"><h3>Distinct Subsequences</h3><span class="badge num">\(O(n \log n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers. Count its non-empty
+subsequences in which all elements are distinct. A subsequence keeps the original order
+but does not have to be contiguous. Print the count modulo \(10^9 + 7\).</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_0, \dots, x_{n-1}\).</dd>
+<dt>Output</dt><dd>One integer: the count \(\bmod\ (10^9 + 7)\).</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>1 2 1 3</code> → <code>11</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">Let \(f_v\) be the number of times value \(v\) appears. A valid subsequence uses each value at most once, so for each distinct \(v\) it does one of:</span>
+\[ \text{skip } v, \quad \text{or take exactly one of its } f_v \text{ copies} \;\Longrightarrow\; f_v + 1 \text{ options} \]</li>
+<li><span class="why">Choices for different values are independent, so multiply. This includes the subsequence that skips everything:</span>
+\[ \#\{\text{valid, including empty}\} = \prod_{v} (f_v + 1) \]</li>
+<li><span class="why">Simplest form: remove the empty one:</span>
+\[ \text{ans} = \Big( \prod_{v} (f_v + 1) \Big) - 1 \pmod{10^9 + 7} \]
+<span class="why">Sample: \(f_1 = 2,\ f_2 = 1,\ f_3 = 1\), so \(3 \cdot 2 \cdot 2 - 1 = 11\).</span></li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>Contiguity does not matter, so this is not a sliding-window problem despite the name.</li>
+<li>A valid subsequence uses each value at most once, so it is fully described by one choice
+per <em>distinct value</em>.</li>
+<li>A value with frequency \(f\) has exactly \(f + 1\) options: skip it, or take one of its
+\(f\) copies.</li>
+<li>It is not \(2^f\) per value. That treats each copy as a separate yes/no and allows two
+copies of the same value.</li>
+<li>Choices for different values are independent, so the count is a product. The all-skip
+choice is the empty subsequence, hence the final \(-1\).</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">List all \(2^n\) subsequences
+and test each for a repeated value.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(2^n \cdot n)\)</span>.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives \(2^{200000}\). It is already dead by \(n = 40\).</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Count per distinct value instead of per subsequence: one frequency <code>map</code> and one
+product, <span class="cost">\(O(n \log n)\)</span>.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 480 246" role="img" aria-label="Option columns for values 1 2 3 over the array 1 2 1 3">
+  <text class="s-td" x="8" y="18">a = 1 2 1 3</text>
+  <g>
+    <text class="s-td" x="89"  y="38" text-anchor="middle">1</text>
+    <text class="s-td" x="159" y="38" text-anchor="middle">2</text>
+    <text class="s-td" x="229" y="38" text-anchor="middle">3</text>
+    <text class="s-td" x="299" y="38" text-anchor="middle">4</text>
+    <rect class="s-box" x="60"  y="46" width="58" height="30" rx="4"/>
+    <rect class="s-box" x="130" y="46" width="58" height="30" rx="4"/>
+    <rect class="s-box" x="200" y="46" width="58" height="30" rx="4"/>
+    <rect class="s-box" x="270" y="46" width="58" height="30" rx="4"/>
+    <text class="s-t" x="89"  y="66" text-anchor="middle">1</text>
+    <text class="s-t" x="159" y="66" text-anchor="middle">2</text>
+    <text class="s-t" x="229" y="66" text-anchor="middle">1</text>
+    <text class="s-t" x="299" y="66" text-anchor="middle">3</text>
+  </g>
+  <text class="s-ta" x="95"  y="104" text-anchor="middle">value 1, f = 2</text>
+  <text class="s-ta" x="245" y="104" text-anchor="middle">value 2, f = 1</text>
+  <text class="s-ta" x="385" y="104" text-anchor="middle">value 3, f = 1</text>
+  <g>
+    <rect class="s-warn" x="40"  y="114" width="110" height="26" rx="4"/>
+    <rect class="s-box"  x="40"  y="146" width="110" height="26" rx="4"/>
+    <rect class="s-box"  x="40"  y="178" width="110" height="26" rx="4"/>
+    <text class="s-tm" x="95" y="131" text-anchor="middle">skip</text>
+    <text class="s-tm" x="95" y="163" text-anchor="middle">take index 1</text>
+    <text class="s-tm" x="95" y="195" text-anchor="middle">take index 3</text>
+  </g>
+  <g>
+    <rect class="s-warn" x="190" y="114" width="110" height="26" rx="4"/>
+    <rect class="s-box"  x="190" y="146" width="110" height="26" rx="4"/>
+    <text class="s-tm" x="245" y="131" text-anchor="middle">skip</text>
+    <text class="s-tm" x="245" y="163" text-anchor="middle">take index 2</text>
+  </g>
+  <g>
+    <rect class="s-warn" x="330" y="114" width="110" height="26" rx="4"/>
+    <rect class="s-box"  x="330" y="146" width="110" height="26" rx="4"/>
+    <text class="s-tm" x="385" y="131" text-anchor="middle">skip</text>
+    <text class="s-tm" x="385" y="163" text-anchor="middle">take index 4</text>
+  </g>
+  <text class="s-td" x="8" y="232">3 x 2 x 2 = 12 combinations, minus the all-skip row = 11</text>
+</svg>
+          <figcaption>One column per distinct value, one row per option. Picking one cell from
+          each column gives every valid subsequence exactly once; the shaded row picked across
+          all columns is the empty one.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">The array is never stored &mdash; values go straight into
+        <code>map&lt;int, ll&gt; freq</code> as they are read, which also handles values up to
+        \(10^9\) without any coordinate compression. The product runs over
+        <code>f + 1</code>, not <code>f</code>, and <code>mcorr</code> is applied exactly once
+        at the end: <code>msub</code> can return a negative residue, and correcting after every
+        operation instead of once is the usual way this template gets misused.</p>
+        <div class="src-meta"><span class="path">arrays/Distinct_Subsequences.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// Problem: Distinct Subsequences
+// Link: CSES 2429
+// Pattern: per-value option counting — a value with frequency f has (f+1)
+// independent options (exclude, or include one of its f occurrences);
+// multiply across distinct values, subtract 1 for the empty subsequence
+// Time: O(n log n)  Space: O(n)
+//
+// Count subsequences (not necessarily contiguous) where every element is
+// distinct, modulo 1e9+7.
+//
+// Example:
+//     1 2 1 3 -&gt; 11
+
+#include &lt;iostream&gt;
+#include &lt;map&gt;
+using namespace std;
+
+typedef long long ll;
+const ll MOD = 1000000007;
+
+ll mmul(ll a, ll b) { return (a % MOD * (b % MOD)) % MOD; }
+ll msub(ll a, ll b) { return (a % MOD - b % MOD) % MOD; }
+ll mcorr(ll a) { return (a % MOD + MOD) % MOD; }
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+
+    int n;
+    cin &gt;&gt; n;
+
+    map&lt;int, ll&gt; freq;
+    for (int i = 0; i &lt; n; i++) {
+        int v;
+        cin &gt;&gt; v;
+        freq[v]++;
+    }
+
+    ll ans = 1;
+    for (auto&amp; [val, f] : freq) {
+        ans = mmul(ans, f + 1);
+    }
+
+    ans = mcorr(msub(ans, 1));
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+MOD = 1000000007
+
+def mmul(a, b): return (a % MOD * (b % MOD)) % MOD
+def msub(a, b): return (a % MOD - b % MOD) % MOD   # Python % is already &gt;= 0 for MOD &gt; 0
+def mcorr(a): return (a % MOD + MOD) % MOD          # so this is a no-op here, kept to mirror C++
+
+def main():
+    n = int(next(tok))
+
+    freq = {}                               # map&lt;int, ll&gt;; dict is unordered but we only multiply
+    for i in range(n):
+        v = int(next(tok))
+        freq[v] = freq.get(v, 0) + 1        # freq[v]++ : missing key needs .get(v, 0)
+
+    ans = 1
+    for val, f in freq.items():             # for (auto&amp; [val, f] : freq)
+        ans = mmul(ans, f + 1)
+
+    ans = mcorr(msub(ans, 1))
+    print(ans)
+
+main()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>The per-value option count is
+      \(f+1\), never \(2^f\) &mdash; occurrences of one value are
+      alternatives, not independent switches. And the product counts the empty subsequence, so
+      the \(-1\) is part of the formula, not a fencepost fix.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"count subsequences with all
+      elements distinct, contiguity not required" &rarr; per-value <code>(f+1)</code> options,
+      multiply, subtract the empty one.</div>
+    </article>
+  </section>
+
+  <!-- ===================== FAMILY 5 ===================== -->
+  <section class="family" id="f5">
+    <div class="family-head"><h2>5 &middot; Monotonic stack</h2></div>
+    <p class="family-note">The one family here that keeps a <em>list</em> of running state
+    rather than a scalar. It applies when an element, once passed, can be proved useless to
+    every future element &mdash; then the survivors form a monotone stack and each index is
+    pushed and popped at most once.</p>
+
+    <article class="entry" id="nearest-smaller-values">
+      <div class="entry-head"><h3>Nearest Smaller Values</h3><span class="badge num">\(O(n)\)</span></div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="1">The ask</div>
+        <div class="ask">
+<p><b>Question.</b> You are given an array of \(n\) integers. For each position, find the
+nearest position to its left that holds a strictly smaller value. Print \(0\) if there is none.</p>
+<dl class="io">
+<dt>Input</dt><dd>\(n\), then \(x_1, \dots, x_n\) (positions are 1-based).</dd>
+<dt>Output</dt><dd>\(n\) integers: the answer for each position.</dd>
+<dt>Limits</dt><dd>\(1 \le n \le 2\cdot 10^5,\ \ 1 \le x_i \le 10^9\)</dd>
+<dt>Sample</dt><dd><code>2 5 1 4 8 3 2 5</code> → <code>0 1 0 3 4 3 3 7</code></dd>
+</dl>
+<div class="derive"><div class="derive-h">Breakdown</div><ol>
+<li><span class="why">State it exactly:</span>
+\[ \text{ans}_i = \max \{\, j \lt i : x_j \lt x_i \,\}, \qquad \text{or } 0 \text{ if the set is empty} \]</li>
+<li><span class="why">Domination: if \(j \lt i\) and \(x_j \ge x_i\), then for every later \(k \gt i\), index \(i\) is closer than \(j\), and</span>
+\[ x_j \lt x_k \;\Longrightarrow\; x_i \le x_j \lt x_k \]
+<span class="why">so \(i\) always beats \(j\). Index \(j\) can never be an answer again.</span></li>
+<li><span class="why">The indices that survive have strictly increasing values. Keep them on a stack, smallest value at the bottom.</span></li>
+<li><span class="why">Simplest form, for each \(i\) in order:</span>
+\[ \text{pop while } x_{\text{top}} \ge x_i; \qquad \text{ans}_i = \text{top (or } 0\text{)}; \qquad \text{push } i \]</li>
+</ol></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="2">Key observations</div>
+        <ol class="obs">
+<li>If \(j \lt i\) and \(x_j \ge x_i\), then \(j\) can never be the answer for any position after
+\(i\): \(i\) is nearer and not larger. So \(j\) is dead.</li>
+<li>The indices still alive, from bottom to top, have strictly increasing values. That is a
+monotonic stack of indices.</li>
+<li>The answer for \(i\) is whatever is on top after popping every value \(\ge x_i\). An empty
+stack means no smaller value exists.</li>
+<li>The pop test is \(\ge\), not \(\gt\). An equal value is not smaller, so it must go too.</li>
+<li>Each index is pushed once and popped at most once, so the inner <code>while</code> costs
+\(O(n)\) in total, not per element.</li>
+</ol>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="3">Brute force &rarr; why it dies</div>
+        <div class="brute">
+<div class="row"><span class="k">naive</span><span class="v">For each \(i\), walk left
+until a smaller value appears.</span></div>
+<div class="row"><span class="k">cost</span><span class="v">
+<span class="cost">\(O(n^2)\)</span>. A strictly decreasing array makes every walk reach the front.</span></div>
+<div class="row dies"><span class="k">dies at</span><span class="v">
+\(n = 2\cdot 10^5\) gives about \(2\cdot 10^{10}\) steps on that input.</span></div>
+<div class="row therefore"><span class="k">therefore</span><span class="v">
+Keep only the live indices on a stack and drop dominated ones for good:
+<span class="cost">\(O(n)\)</span> amortised, <span class="cost">\(O(n)\)</span> space.</span></div>
+</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="4">Diagram</div>
+        <figure class="diagram">
+<svg viewBox="0 0 570 234" role="img" aria-label="Nearest smaller value to the left for 2 5 1 4 8 3 2 5">
+  <text class="s-td" x="8" y="50">x</text>
+  <g>
+    <text class="s-td" x="81"  y="20" text-anchor="middle">1</text>
+    <text class="s-td" x="143" y="20" text-anchor="middle">2</text>
+    <text class="s-td" x="205" y="20" text-anchor="middle">3</text>
+    <text class="s-td" x="267" y="20" text-anchor="middle">4</text>
+    <text class="s-td" x="329" y="20" text-anchor="middle">5</text>
+    <text class="s-td" x="391" y="20" text-anchor="middle">6</text>
+    <text class="s-td" x="453" y="20" text-anchor="middle">7</text>
+    <text class="s-td" x="515" y="20" text-anchor="middle">8</text>
+    <rect class="s-box" x="54"  y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="116" y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="178" y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="240" y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="302" y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="364" y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="426" y="28" width="54" height="32" rx="4"/>
+    <rect class="s-box" x="488" y="28" width="54" height="32" rx="4"/>
+    <text class="s-t" x="81"  y="49" text-anchor="middle">2</text>
+    <text class="s-t" x="143" y="49" text-anchor="middle">5</text>
+    <text class="s-t" x="205" y="49" text-anchor="middle">1</text>
+    <text class="s-t" x="267" y="49" text-anchor="middle">4</text>
+    <text class="s-t" x="329" y="49" text-anchor="middle">8</text>
+    <text class="s-t" x="391" y="49" text-anchor="middle">3</text>
+    <text class="s-t" x="453" y="49" text-anchor="middle">2</text>
+    <text class="s-t" x="515" y="49" text-anchor="middle">5</text>
+  </g>
+  <path class="s-hi" fill="none" d="M143 62 Q112 92 81 62"/>
+  <path class="s-hi" fill="none" d="M267 62 Q236 92 205 62"/>
+  <path class="s-hi" fill="none" d="M329 62 Q298 92 267 62"/>
+  <path class="s-hi" fill="none" d="M391 62 Q298 126 205 62"/>
+  <path class="s-hi" fill="none" d="M453 62 Q329 158 205 62"/>
+  <path class="s-hi" fill="none" d="M515 62 Q484 92 453 62"/>
+  <text class="s-td" x="8" y="182">ans</text>
+  <text class="s-tm" x="81"  y="182" text-anchor="middle">0</text>
+  <text class="s-t"  x="143" y="182" text-anchor="middle">1</text>
+  <text class="s-tm" x="205" y="182" text-anchor="middle">0</text>
+  <text class="s-t"  x="267" y="182" text-anchor="middle">3</text>
+  <text class="s-t"  x="329" y="182" text-anchor="middle">4</text>
+  <text class="s-t"  x="391" y="182" text-anchor="middle">3</text>
+  <text class="s-t"  x="453" y="182" text-anchor="middle">3</text>
+  <text class="s-t"  x="515" y="182" text-anchor="middle">7</text>
+  <text class="s-td" x="8" y="214">at i = 6 (value 3): stack 3,4,5 pops 8 then 4, top is index 3 (value 1)</text>
+</svg>
+          <figcaption>Each arc points from a position to its answer. Positions 1 and 3 have
+          nothing smaller to their left and print 0; indices 4 and 5 are popped for good when
+          the 3 at index 6 arrives.</figcaption>
+        </figure>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label" data-n="5">Implementation</div>
+        <p class="impl-note">This file is the CSES/CPH shape &mdash; full macro block, no
+        comments, output printed inside the scan rather than buffered. The array is 1-indexed
+        (<code>v(n + 1)</code>, loop from 1), which is what makes the empty-stack case print
+        <code>0</code> for free: index 0 is never pushed, so "no candidate" and "index 0" can
+        never be confused. The stack holds <em>indices</em>, and <code>s.top()</code> is
+        printed directly because the index is what the problem asks for; the values are only
+        ever reached through <code>v[s.top()]</code>.</p>
+        <div class="src-meta"><span class="path">arrays/Nearest_Smaller_Values.cpp</span><span>verbatim</span></div>
+<pre class="source"><code>// orz
+#include &lt;bits/stdc++.h&gt;
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout &lt;&lt; "YES" &lt;&lt; endl
+#define pn cout &lt;&lt; "NO" &lt;&lt; endl
+#define pll pair&lt;ll,ll&gt;
+
+using namespace std;
+void solve() 
+{
+    ll n ;
+    cin &gt;&gt; n ;
+    vector &lt; ll &gt; v(n + 1) ;
+    for (ll i = 1 ; i &lt;= n ; i++)
+    {
+        cin &gt;&gt; v[i] ;
+    }
+    stack &lt; ll &gt; s ; 
+    for (ll i = 1 ; i &lt;= n ; i++)
+    {
+        while(!s.empty() &amp;&amp; v[s.top()] &gt;= v[i])
+        {
+            s.pop() ; 
+        }
+        if(s.empty())
+        {
+            cout &lt;&lt; 0 &lt;&lt; " " ;
+        }
+        else
+        {
+            cout &lt;&lt; s.top() &lt;&lt; " " ;
+        }
+        s.push(i) ; 
+        
+
+    }
+
+
+    
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    solve() ; 
+}
+    
+  </code></pre>
+<pre class="source py" hidden><code>import sys
+tok = iter(sys.stdin.read().split())
+
+def solve():
+    n = int(next(tok))
+    v = [0] * (n + 1)
+    for i in range(1, n + 1):
+        v[i] = int(next(tok))
+    s = []                                  # stack&lt;ll&gt;: a list; top = s[-1], push = append, pop = pop()
+    out = []
+    for i in range(1, n + 1):
+        while s and v[s[-1]] &gt;= v[i]:       # !s.empty() -&gt; s  (empty list is False)
+            s.pop()
+        if not s:
+            out.append(0)
+        else:
+            out.append(s[-1])
+        s.append(i)
+    print(' '.join(map(str, out)))
+
+solve()</code></pre>
+      </div>
+
+      <div class="callout gotcha"><strong>Gotcha</strong>The pop condition is
+      <code>v[s.top()] &gt;= v[i]</code>. With <code>&gt;</code> an equal-valued index survives
+      and gets reported as "smaller", which is wrong and only shows up on inputs with
+      duplicates. Also note <code>i</code> is pushed <em>after</em> its answer is printed
+      &mdash; pushing first makes every position its own answer.</div>
+      <div class="callout trigger"><strong>Recognize</strong>"nearest smaller / greater
+      element to the left or right" &rarr; monotonic stack of indices, pop everything the new
+      element dominates.</div>
+    </article>
+  </section>
+</main>
+</div>
+
+<footer>
+  <p><a href="../LEDGER.html">&larr; The Ledger</a></p>
+  <div class="excluded">
+    <h4>Excluded from this ledger</h4>
+    <ul>
+      <li>Nothing. All ten files pass
+        <code>g++ -O2 -std=c++17 -fsyntax-only</code>.</li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../ledger/data.js"></script>
+<script src="../ledger/data/arrays_1_linear_scan.js"></script>
+</body>
+</html>
