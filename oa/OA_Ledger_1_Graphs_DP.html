@@ -141,7 +141,7 @@ can be infected; \(M\) is the final number of infected nodes. You must remove ex
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>infected[p]</code> counts initial nodes per DSU root, and is only built after every merge is done. <code>sort(initial)</code> runs before the scan so that the strict <code>&gt;</code> keeps the smallest index on a tie. <code>main</code> is empty: this is a LeetCode-style <code>Solution</code> class with no stdin harness.</p>
-        <div class="src-meta"><span class="path">placement oa prep/eternal/minimize_malware_spread.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/eternal/minimize_malware_spread.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
 #define ll long long
@@ -400,7 +400,7 @@ any cities and roads may be used. Print the minimum total time, or \(-1\) if it 
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>dij(s)</code> fills the global <code>dist</code>. After each leg, both <code>dist</code> and <code>vis</code> are reset with <code>assign</code>, and <code>s</code> moves to the checkpoint just reached. The total fits in <code>ll</code>: at most 10 &middot; \(10^{5}\) &middot; \(10^{9}\) = \(10^{15}\).</p>
-        <div class="src-meta"><span class="path">placement oa prep/accenture/ordered_checkpoints.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/accenture/ordered_checkpoints.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 
 #define ll long long
@@ -620,7 +620,7 @@ solve()</code></pre>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">This file has no pasted statement. It is Codeforces 1324F. The parameter <code>n</code> in <code>dfsin</code>/<code>dfsout</code> is the current node and hides the global <code>n</code>. <code>0LL</code> makes both arguments of <code>max</code> long long.</p>
-        <div class="src-meta"><span class="path">placement oa prep/eternal/maximum_white_subtree.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/eternal/maximum_white_subtree.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
 #define ll long long
@@ -824,7 +824,7 @@ possible.</p>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>log2(i)</code> gives the msb position as a double, which is exact at these sizes. Each label <code>i</code> goes to <code>c1</code> or <code>c2</code> depending on bit <code>posmsb</code> of S, so every label in a block goes to the same side. The lists are consumed with <code>back()</code>/<code>pop_back()</code>.</p>
-        <div class="src-meta"><span class="path">placement oa prep/Ajay room problems/D_Treelabeling.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/Ajay room problems/D_Treelabeling.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
 
@@ -1067,7 +1067,7 @@ free. Find the minimum number of rolls.</p>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>min(1LL, ans)</code> and <code>min(0LL, ans)</code> handle the overshoot cases. The statement says N = 10 but lists only 9 values. With N = 9 the code prints the expected 1. With N = 10 the missing value reads as 0 and it prints 2.</p>
-        <div class="src-meta"><span class="path">placement oa prep/set_2/minimum_dice_rolls.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/set_2/minimum_dice_rolls.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
 
@@ -1231,7 +1231,7 @@ Maximise the total nutrition.</p>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">The loop starts at \(n - 1\), so <code>if(i == n)</code> never fires. The base layer is the vector's zero fill at parity <code>n &amp; 1</code>. The <code>ml &gt;= 0</code> guard is always true. The commented <code>rec</code> above is the top-down version this table came from.</p>
-        <div class="src-meta"><span class="path">placement oa prep/iit_ism_dhanbad/fruit_selection.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/iit_ism_dhanbad/fruit_selection.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 
 using namespace std;
@@ -1434,7 +1434,7 @@ days \(i..j\) with \(x \le i \le j \le y\)?</p>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">The identity <code>stnode()</code> uses &minus;INF = &minus;\(10^{18}\) for p, s and ans. Adding a real sum to it stays far below any real value and does not overflow. <code>arr</code> is a fixed global of 50050, and <code>st</code> is sized <code>4n + 10</code>.</p>
-        <div class="src-meta"><span class="path">placement oa prep/inmobi/peak_profit_window.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/inmobi/peak_profit_window.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
 #define INF 1e18 
@@ -1602,14 +1602,14 @@ solve()</code></pre>
   <div class="excluded">
     <h4>Excluded from this ledger</h4>
     <ul>
-      <li><code>placement oa prep/harness/maximum_weight_tree_degree.cpp</code> &mdash; <code>g++ -std=c++17</code>: <code>109:15: error: expected ';' after expression</code> (<code>k = ki</code>).</li>
-      <li><code>placement oa prep/Ajay room problems/mex_replacement.cpp</code> &mdash; even with <code>algodebug.h</code> found: <code>65:10: error: use of undeclared identifier 'M'</code>.</li>
-      <li><code>placement oa prep/squarepoint/odd_even_operations.cpp</code> &mdash; <code>27:1: error: unexpected character &lt;U+20B9&gt;</code> (a stray &#8377; inside <code>rec</code>).</li>
-      <li><code>placement oa prep/squarepoint/minimize_infected_nodes.cpp</code> &mdash; compiles, but <code>solve()</code> only builds the DSU and never prints an answer.</li>
-      <li><code>placement oa prep/iit_ism_dhanbad/minimum_sum_assignment.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
-      <li><code>placement oa prep/harness/maximum_memory_collection.cpp</code> &mdash; <code>maximumMemory</code> is a stub that returns 0.</li>
-      <li><code>placement oa prep/harness/multiply_divide_ways.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
-      <li><code>placement oa prep/accenture/test1.cpp</code> (TLDR grid) &mdash; compiles, but on its own sample <code>printf "2\n3 3 3 1\nRRL\nTDT\nTRT\n2 2 1 2\nLD\nLT\n" | ./test1</code> it prints <code>1 1000000000000000000</code>, expected <code>1 3</code>.</li>
+      <li><code>oa/harness/maximum_weight_tree_degree.cpp</code> &mdash; <code>g++ -std=c++17</code>: <code>109:15: error: expected ';' after expression</code> (<code>k = ki</code>).</li>
+      <li><code>oa/Ajay room problems/mex_replacement.cpp</code> &mdash; even with <code>algodebug.h</code> found: <code>65:10: error: use of undeclared identifier 'M'</code>.</li>
+      <li><code>oa/squarepoint/odd_even_operations.cpp</code> &mdash; <code>27:1: error: unexpected character &lt;U+20B9&gt;</code> (a stray &#8377; inside <code>rec</code>).</li>
+      <li><code>oa/squarepoint/minimize_infected_nodes.cpp</code> &mdash; compiles, but <code>solve()</code> only builds the DSU and never prints an answer.</li>
+      <li><code>oa/iit_ism_dhanbad/minimum_sum_assignment.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>oa/harness/maximum_memory_collection.cpp</code> &mdash; <code>maximumMemory</code> is a stub that returns 0.</li>
+      <li><code>oa/harness/multiply_divide_ways.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>oa/accenture/test1.cpp</code> (TLDR grid) &mdash; compiles, but on its own sample <code>printf "2\n3 3 3 1\nRRL\nTDT\nTRT\n2 2 1 2\nLD\nLT\n" | ./test1</code> it prints <code>1 1000000000000000000</code>, expected <code>1 3</code>.</li>
     </ul>
   </div>
 </footer>

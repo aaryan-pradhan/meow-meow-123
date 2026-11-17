@@ -54,9 +54,9 @@ LEDGER.add(
       time: '\\(O(1)\\)' }
   ],
   [
-    { file: 'placement oa prep/fair_pairs.cpp', why: "compile error: unfinished function body (line 38)" },
-    { file: 'placement oa prep/squarepoint/palindrome_transformation.cpp', why: "compile error: unfinished DSU struct (line 39)" },
-    { file: 'placement oa prep/harness/train_and_execute_algorithms.cpp', why: "empty stub" },
-    { file: 'placement oa prep/harness/max_position_after_shift.cpp', why: "empty stub" }
+    { file: 'oa/fair_pairs.cpp', why: "compile error: unfinished function body (line 38)" },
+    { file: 'oa/squarepoint/palindrome_transformation.cpp', why: "compile error: unfinished DSU struct (line 39)" },
+    { file: 'oa/harness/train_and_execute_algorithms.cpp', why: "empty stub" },
+    { file: 'oa/harness/max_position_after_shift.cpp', why: "empty stub" }
   ]
 );

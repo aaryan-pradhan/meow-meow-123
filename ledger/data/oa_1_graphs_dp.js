@@ -44,13 +44,13 @@ LEDGER.add(
       time: '\\(O((N+M) \\log N)\\)' }
   ],
   [
-    { file: 'placement oa prep/harness/maximum_weight_tree_degree.cpp', why: "compile error: expected ';' after expression (line 109)" },
-    { file: 'placement oa prep/Ajay room problems/mex_replacement.cpp', why: "compile error: use of undeclared identifier 'M' (line 65)" },
-    { file: 'placement oa prep/squarepoint/odd_even_operations.cpp', why: "compile error: stray U+20B9 character (line 27)" },
-    { file: 'placement oa prep/squarepoint/minimize_infected_nodes.cpp', why: "never prints an answer" },
-    { file: 'placement oa prep/iit_ism_dhanbad/minimum_sum_assignment.cpp', why: "empty stub" },
-    { file: 'placement oa prep/harness/maximum_memory_collection.cpp', why: "stub returns 0" },
-    { file: 'placement oa prep/harness/multiply_divide_ways.cpp', why: "empty stub" },
-    { file: 'placement oa prep/accenture/test1.cpp', why: "prints 1e18 where its sample expects 3" }
+    { file: 'oa/harness/maximum_weight_tree_degree.cpp', why: "compile error: expected ';' after expression (line 109)" },
+    { file: 'oa/Ajay room problems/mex_replacement.cpp', why: "compile error: use of undeclared identifier 'M' (line 65)" },
+    { file: 'oa/squarepoint/odd_even_operations.cpp', why: "compile error: stray U+20B9 character (line 27)" },
+    { file: 'oa/squarepoint/minimize_infected_nodes.cpp', why: "never prints an answer" },
+    { file: 'oa/iit_ism_dhanbad/minimum_sum_assignment.cpp', why: "empty stub" },
+    { file: 'oa/harness/maximum_memory_collection.cpp', why: "stub returns 0" },
+    { file: 'oa/harness/multiply_divide_ways.cpp', why: "empty stub" },
+    { file: 'oa/accenture/test1.cpp', why: "prints 1e18 where its sample expects 3" }
   ]
 );

@@ -19,7 +19,7 @@ window.LEDGER = (function () {
     mathematics: { label: 'Mathematics', dir: 'mathematics' },
     linked_list: { label: 'Linked List', dir: 'linked_list' },
     strings:     { label: 'Strings',     dir: 'strings' },
-    placement_oa:{ label: 'Placement OA', dir: 'placement%20oa%20prep' }
+    placement_oa:{ label: 'Placement OA', dir: 'oa' }
   };
 
   /* meta: {slug, topic, title, file, part}

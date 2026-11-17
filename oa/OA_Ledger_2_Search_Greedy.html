@@ -135,7 +135,7 @@ is the length of its longest block of equal characters. You may flip at most \(k
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>check(x)</code> counts down a copy of the budget (<code>switchCount = temp</code>). After a flip it sets <code>idle = 1</code> but keeps <code>p = c</code>, so the next equal character counts as continuing a run. <code>s</code> and <code>temp</code> are globals that <code>check</code> reads.</p>
-        <div class="src-meta"><span class="path">placement oa prep/minimize_gpu_idle_count.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/minimize_gpu_idle_count.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
 #define ll long long 
@@ -344,7 +344,7 @@ same time, each serving one receiver at a time. What is the minimum time until e
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>s[a[i]]++</code> builds the loads. <code>check</code> sums the excess (<code>mm</code>) and the halved spare capacity (<code>c</code>). <code>hi = INF</code> (\(10^{18}\)) costs about 60 iterations, though <code>hi = m</code> would be enough.</p>
-        <div class="src-meta"><span class="path">placement oa prep/sde/server_receivers.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/sde/server_receivers.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
 
@@ -521,7 +521,7 @@ for _ in range(t):
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">In this file <code>#define ll int</code>, so <code>pre</code> is <code>vector&lt;int&gt;</code>. <code>it - pre.begin() + 1</code> turns the iterator into a 1-based index. <code>main</code> is empty, because the function is the whole submission.</p>
-        <div class="src-meta"><span class="path">placement oa prep/eternal/array_first_greater_index.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/eternal/array_first_greater_index.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
 #define ll int 
@@ -651,7 +651,7 @@ distinct positions whose sum is \(x\)? Print <code>YES</code> or <code>NO</code>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>main</code> reads a test count T first, which the statement's sample lacks. With a leading <code>1</code> it prints the expected YES. <code>pos</code> stores the pair indices, but only <code>find</code> is ever used.</p>
-        <div class="src-meta"><span class="path">placement oa prep/accenture/four_sum.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/accenture/four_sum.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
 
@@ -796,7 +796,7 @@ for _ in range(t):
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>#include "algodebug.h"</code> is a local debug header in <code>../coding grind/</code>. The file compiles with that directory added via <code>-I</code>. <code>c &gt; 1e15</code> compares a long long with a double, which is exact at this size.</p>
-        <div class="src-meta"><span class="path">placement oa prep/accenture/fibonacci_index.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/accenture/fibonacci_index.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
 #include "algodebug.h"
@@ -958,7 +958,7 @@ ranked second, or \(-1\) if there are fewer than two distinct values.</p>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">The map is named <code>mp</code>, which is also a macro (<code>#define mp make_pair</code>). The declaration expands to <code>map&lt;ll,ll&gt; make_pair</code> and compiles, because that name just hides <code>std::make_pair</code>. Pairs are pushed as <code>{count, value}</code>.</p>
-        <div class="src-meta"><span class="path">placement oa prep/iit_ism_dhanbad/second_most_frequent.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/iit_ism_dhanbad/second_most_frequent.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>// orz
 #include &lt;bits/stdc++.h&gt;
 
@@ -1112,7 +1112,7 @@ categories sold so far (including this item's category). Maximise the total prof
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note"><code>map&lt;ll, vector&lt;ll&gt;&gt;</code> groups prices by category. After sorting, <code>v[0]</code> is a category's opener and <code>fst</code> collects the openers. <code>(i + 1) * fst[i]</code> pays the rising multiplier, and every <code>v[i]</code> with i &ge; 1 pays <code>fst.size()</code>. The hardcoded <code>main</code> prints the sample's 29.</p>
-        <div class="src-meta"><span class="path">placement oa prep/maximum_profit.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/maximum_profit.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 using namespace std;
 #define ll long long 
@@ -1250,7 +1250,7 @@ Print the alphabetically smallest such \(s\), or <code>-1</code> if none exists.
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">The file defines its own integer <code>ceil(ll, ll)</code>, which hides <code>std::ceil</code> for these arguments. In the <code>n &gt; ds</code> branch, <code>data</code> is sorted descending and popped from the back, so it comes out ascending.</p>
-        <div class="src-meta"><span class="path">placement oa prep/harness/repeated_string_cover.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/harness/repeated_string_cover.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 
 #define ll long long
@@ -1444,7 +1444,7 @@ solve()</code></pre>
       <div class="sec">
         <div class="sec-label" data-n="5">Implementation</div>
         <p class="impl-note">The <code>&amp;&amp;</code> short-circuits, so <code>p / q</code> is only evaluated once the division is known to be exact. <code>py</code> and <code>pn</code> print YES and NO.</p>
-        <div class="src-meta"><span class="path">placement oa prep/rubrik/trapezium_area.cpp</span><span>verbatim</span></div>
+        <div class="src-meta"><span class="path">oa/rubrik/trapezium_area.cpp</span><span>verbatim</span></div>
 <pre class="source"><code>#include &lt;bits/stdc++.h&gt;
 
 #define ll long long 
@@ -1511,10 +1511,10 @@ for _ in range(t):
   <div class="excluded">
     <h4>Excluded from this ledger</h4>
     <ul>
-      <li><code>placement oa prep/fair_pairs.cpp</code> &mdash; <code>g++ -std=c++17</code>: <code>38:5: error: expected unqualified-id</code> (<code>countFairPairs</code> is unfinished: its body closes after the variable declarations, leaving <code>return 0; }</code> outside any function).</li>
-      <li><code>placement oa prep/squarepoint/palindrome_transformation.cpp</code> &mdash; <code>39:23: error: expected ';' at end of declaration</code> (the DSU struct is unfinished).</li>
-      <li><code>placement oa prep/harness/train_and_execute_algorithms.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
-      <li><code>placement oa prep/harness/max_position_after_shift.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>oa/fair_pairs.cpp</code> &mdash; <code>g++ -std=c++17</code>: <code>38:5: error: expected unqualified-id</code> (<code>countFairPairs</code> is unfinished: its body closes after the variable declarations, leaving <code>return 0; }</code> outside any function).</li>
+      <li><code>oa/squarepoint/palindrome_transformation.cpp</code> &mdash; <code>39:23: error: expected ';' at end of declaration</code> (the DSU struct is unfinished).</li>
+      <li><code>oa/harness/train_and_execute_algorithms.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
+      <li><code>oa/harness/max_position_after_shift.cpp</code> &mdash; <code>solve()</code> is an empty stub.</li>
     </ul>
   </div>
 </footer>
