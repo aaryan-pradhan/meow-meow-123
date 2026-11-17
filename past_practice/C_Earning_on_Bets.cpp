@@ -1,0 +1,85 @@
+
+#include "bits/stdc++.h"
+
+#define ll long long 
+#define endl "\n"
+#define fr first
+#define sc second
+#define MOD 1000000007
+#define MOD1 998244353
+#define INF 1e18
+#define mp make_pair
+#define PI acos(-1) 
+#define py cout << "YES" << endl
+#define pn cout << "NO" << endl
+#define pll pair<ll,ll>
+
+using namespace std;
+ll gcd(ll a , ll b)
+{
+    while(b)
+    {
+        a = a % b ;
+        swap(a,b) ;
+    }
+    return a ;
+}
+void solve() 
+{
+    ll n ; 
+    cin >> n ; 
+    vector < ll > k(n) ; 
+    ll lcm = 1 ; 
+    ll s = 0 ; 
+    for(ll i = 0 ; i < n ; i++)
+    {
+        cin >> k[i] ;
+        lcm = (lcm * k[i]) / gcd(lcm, k[i]) ;
+
+    }
+    for(ll i = 0 ; i < n ; i++)
+    {
+        s+= lcm / k[i] ;
+    }
+    if(s < lcm)
+    {
+        for(ll i = 0 ; i < n ; i++)
+        {
+            cout << lcm / k[i] << " " ;
+        }
+        cout << endl ;
+    }
+    else
+    {
+        cout << -1 << endl ;
+    }
+    
+
+    
+
+
+    
+   
+
+
+
+
+
+
+}
+signed main() 
+{
+
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+ 
+    ll t ; 
+    cin >> t ;
+    for(ll i = 0 ; i < t ; i++)
+    {
+        solve() ;
+    }
+}
+    
+  
