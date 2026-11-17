@@ -24,13 +24,12 @@ ll rec( ll l , ll r)
     {
         return 0 ; 
     }
-₹
     if(dp[l][r] != -1)
     {
         return dp[l][r] ; 
     }
     ll ans = 0 ; 
-    if(tu%2)
+    if(tu % 2 == 0)
     {
         ans = max(A[l] + rec(l + 1 , r) , A[r] + rec(l , r - 1)) ;
 
