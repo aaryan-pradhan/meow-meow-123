@@ -8,9 +8,9 @@ class Solution:
         for i in range(0, n):
             x = nums[i]
 
+            while k >= 2 and nums[k - 1] == x and nums[k - 2] == x:
+                k -= 1
+
             nums[k] = x
             k += 1
-
-            while k >= 3 and nums[k - 1] == nums[k - 3]:
-                k -= 1
         return k
